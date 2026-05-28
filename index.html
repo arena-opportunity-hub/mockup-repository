@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opportunity Hub — Mockup Catalogue</title>
+  <link rel="stylesheet" href="shared/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: #F5F6F8;
+      color: #212121;
+      min-height: 100vh;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      background: #1976D2;
+      color: #fff;
+      padding: 32px 40px 28px;
+      border-bottom: 1px solid #1256A0;
+    }
+    .page-header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      margin-bottom: 4px;
+    }
+    .page-header .subtitle {
+      font-size: 13px;
+      opacity: 0.82;
+      font-weight: 400;
+    }
+
+    /* ── Filter bar ── */
+    .filter-bar {
+      background: #fff;
+      border-bottom: 1px solid #E0E0E0;
+      padding: 10px 40px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .filter-bar span {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #757575;
+      margin-right: 6px;
+    }
+    .filter-btn {
+      background: none;
+      border: 1px solid #E0E0E0;
+      border-radius: 16px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: 'Roboto', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #757575;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .filter-btn:hover {
+      background: #E3F0FC;
+      border-color: #1976D2;
+      color: #1256A0;
+    }
+    .filter-btn.active {
+      background: #1976D2;
+      border-color: #1976D2;
+      color: #fff;
+    }
+
+    /* ── Main content ── */
+    .catalogue {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 40px 56px;
+    }
+
+    /* ── Sprint section header ── */
+    .sprint-label {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #757575;
+      margin: 32px 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sprint-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #E0E0E0;
+    }
+
+    /* ── Card grid ── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    /* ── Catalogue card ── */
+    .catalogue-card {
+      background: #fff;
+      border: 1px solid #E0E0E0;
+      border-radius: 4px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: box-shadow 0.15s;
+    }
+    .catalogue-card:hover {
+      box-shadow: 0 2px 8px rgba(25, 118, 210, 0.10);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #212121;
+      line-height: 1.3;
+    }
+
+    /* ── Status badge ── */
+    .status-badge {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-radius: 10px;
+      padding: 2px 8px;
+      white-space: nowrap;
+    }
+    .status-badge.done        { background: #E1F5EE; color: #0F6E56; }
+    .status-badge.in-progress { background: #E3F0FC; color: #1256A0; }
+    .status-badge.planned     { background: #F1EFE8; color: #5F5E5A; }
+
+    /* ── Description ── */
+    .card-desc {
+      font-size: 13px;
+      color: #757575;
+      line-height: 1.5;
+      flex: 1;
+    }
+
+    /* ── Card footer ── */
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+    }
+
+    /* ── Role badge ── */
+    .role-badge {
+      background: #F5F5F5;
+      color: #424242;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 9px;
+      text-transform: none;
+    }
+
+    /* ── Open button ── */
+    .open-btn {
+      display: inline-block;
+      background: #1976D2;
+      color: #fff;
+      text-decoration: none;
+      border: none;
+      border-radius: 4px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 5px 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .open-btn:hover {
+      background: #1256A0;
+    }
+    .open-btn.disabled {
+      opacity: 0.4;
+      pointer-events: none;
+      cursor: default;
+    }
+
+    /* ── Hidden card (role filter) ── */
+    .catalogue-card.hidden {
+      display: none;
+    }
+
+    /* Empty state when all cards in a section are filtered out */
+    .sprint-section.all-hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="page-header">
+    <h1>Opportunity Hub — Mockup Catalogue</h1>
+    <p class="subtitle">GitHub Pages · alle Screens nach Sprint</p>
+  </header>
+
+  <div class="catalogue">
+
+    <!-- ── Sprint 1 ── -->
+    <div class="sprint-section" data-sprint="1">
+      <div class="sprint-label">Sprint 1 — Opportunity-Erfassung &amp; -Anzeige</div>
+      <div class="card-grid">
+
+        <div class="catalogue-card" data-status="done" data-role="Ersteller">
+          <div class="card-top">
+            <span class="card-title">Opportunity erfassen</span>
+            <span class="status-badge done">Fertig</span>
+          </div>
+          <p class="card-desc">Eingabe-Maske zum manuellen Anlegen einer Opportunity: Projektdaten, Skills, Zeitleiste und Anforderungen.</p>
+          <div class="card-footer">
+            <span class="role-badge">Ersteller</span>
+            <a class="open-btn" href="mockups/opportunity-form.html">Öffnen →</a>
+          </div>
+        </div>
+
+        <div class="catalogue-card" data-status="done" data-role="Ersteller">
+          <div class="card-top">
+            <span class="card-title">Opportunity-Liste</span>
+            <span class="status-badge done">Fertig</span>
+          </div>
+          <p class="card-desc">Tabellarische Anzeige aller Opportunities mit Status-Pills, Skill-Chips, Frist-Badges und Filter nach Status und Freitext.</p>
+          <div class="card-footer">
+            <span class="role-badge">Ersteller</span>
+            <a class="open-btn" href="mockups/opportunity-list.html">Öffnen →</a>
+          </div>
+        </div>
+
+        <div class="catalogue-card" data-status="planned" data-role="Manager">
+          <div class="card-top">
+            <span class="card-title">Opportunity-Details</span>
+            <span class="status-badge planned">Geplant</span>
+          </div>
+          <p class="card-desc">Detailansicht einer Opportunity mit Tabs: Matches (Kandidatenliste nach Pool, Filter, Score), Status &amp; Historie (Aktivitäts-Timeline) und Details (Projektdaten, Skills). Vollständige Score-Aufschlüsselung als Drawer direkt im Matches-Tab.</p>
+          <div class="card-footer">
+            <span class="role-badge">Manager</span>
+            <span class="open-btn disabled" style="opacity:0.4;cursor:default;pointer-events:none">Öffnen →</span>
+          </div>
+        </div>
+
+        <div class="catalogue-card" data-status="planned" data-role="Manager">
+          <div class="card-top">
+            <span class="card-title">Feedback &amp; Transparenz</span>
+            <span class="status-badge planned">Geplant</span>
+          </div>
+          <p class="card-desc">Manager-Ansicht zur Bewertung von Kandidaten (Genehmigen / In Prüfung / Ablehnen) und Ersteller-Ansicht mit vollständigem Status-Verlauf.</p>
+          <div class="card-footer">
+            <span class="role-badge">Manager</span>
+            <span class="open-btn disabled" style="opacity:0.4;cursor:default;pointer-events:none">Öffnen →</span>
+          </div>
+        </div>
+
+        <div class="catalogue-card" data-status="planned" data-role="Manager">
+          <div class="card-top">
+            <span class="card-title">Verfügbarkeit &amp; Export</span>
+            <span class="status-badge planned">Geplant</span>
+          </div>
+          <p class="card-desc">Drei Tabs: Kalenderübersicht aller Consultant-Verfügbarkeiten, Eingabe-Maske zur Verfügbarkeitspflege, und Dispolisten-Export als Excel.</p>
+          <div class="card-footer">
+            <span class="role-badge">Manager</span>
+            <span class="open-btn disabled" style="opacity:0.4;cursor:default;pointer-events:none">Öffnen →</span>
+          </div>
+        </div>
+
+
+        <div class="catalogue-card" data-status="done" data-role="Ersteller">
+          <div class="card-top">
+            <span class="card-title">Modus-Auswahl</span>
+            <span class="status-badge done">Fertig</span>
+          </div>
+          <p class="card-desc">Wahl-Screen Schritt 1 von 3: Manuell erfassen vs. KI-gestützt (PDF-Upload). Ausgewählter Modus wechselt visuell, Schritt-Indikator zeigt den Fortschritt im Wizard.</p>
+          <div class="card-footer">
+            <span class="role-badge">Ersteller</span>
+            <a class="open-btn" href="mockups/opportunity-mode-select.html">Öffnen →</a>
+          </div>
+        </div>
+
+        <div class="catalogue-card" data-status="done" data-role="Ersteller">
+          <div class="card-top">
+            <span class="card-title">Leerer Zustand</span>
+            <span class="status-badge done">Fertig</span>
+          </div>
+          <p class="card-desc">Zwei Varianten des leeren Zustands der Opportunity-Liste: (1) noch keine Opportunities erstellt mit CTA, (2) Filter ergibt keine Treffer mit Reset-Aktion.</p>
+          <div class="card-footer">
+            <span class="role-badge">Ersteller</span>
+            <a class="open-btn" href="mockups/empty-state.html">Öffnen →</a>
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+
+  </div><!-- /.catalogue -->
+
+  <script>
+    (function () {
+      const filterBtns = document.querySelectorAll('.filter-btn');
+      const cards = document.querySelectorAll('.catalogue-card');
+      const sections = document.querySelectorAll('.sprint-section');
+
+      function applyFilter(role) {
+        cards.forEach(function (card) {
+          const cardRole = card.getAttribute('data-role');
+          if (role === 'alle' || cardRole === role) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+
+        // Hide sprint sections where every card is filtered out
+        sections.forEach(function (section) {
+          const visible = section.querySelectorAll('.catalogue-card:not(.hidden)');
+          if (visible.length === 0) {
+            section.classList.add('all-hidden');
+          } else {
+            section.classList.remove('all-hidden');
+          }
+        });
+      }
+
+      filterBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          filterBtns.forEach(function (b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          applyFilter(btn.getAttribute('data-role'));
+        });
+      });
+    })();
+  </script>
+
+</body>
+</html>
