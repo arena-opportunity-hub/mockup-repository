@@ -170,77 +170,7 @@
       `;
     }
 
-    /* ── Tab 2: Pflegen ── */
-    function TabPflegen() {
-      return html`
-        <${Grid} container spacing=${3} alignItems="start">
-
-          <${Grid} item xs=${12} md=${5}>
-            <${Paper} variant="outlined" sx=${{ p: 3 }}>
-              <${Typography} variant="subtitle1" fontWeight=${700} sx=${{ mb: 2.5 }}>Verfügbarkeit eintragen<//>
-              <${Stack} spacing=${2}>
-                <${TextField} label="Mitarbeiter" select size="small" defaultValue="Max Mustermann">
-                  ${EMPLOYEES.map(e => html`<${MenuItem} key=${e.name} value=${e.name}>${e.name}<//>`) }
-                <//>
-                <${TextField} label="Status" select size="small" defaultValue="Bench">
-                  ${['Bench','Billable','Prolongation möglich','Reserviert','Urlaub / Abwesenheit','Junior','Teilzeit','Ausgeschieden'].map(s =>
-                    html`<${MenuItem} key=${s} value=${s}>${s}<//>`) }
-                <//>
-                <${TextField} label="Von" type="date" size="small" defaultValue="2026-07-01" InputLabelProps=${{ shrink: true }} />
-                <${TextField} label="Bis" type="date" size="small" defaultValue="2026-09-30" InputLabelProps=${{ shrink: true }} />
-                <${TextField} label="Kapazität (%)" type="number" size="small" defaultValue="100" inputProps=${{ min: 0, max: 100 }} />
-                <${TextField} label="Notiz (optional)" multiline rows=${2} size="small" placeholder="Freitext …" />
-                <${Stack} direction="row" spacing=${1}>
-                  <${Button} variant="contained">Speichern<//>
-                  <${Button} variant="text" color="inherit">Abbrechen<//>
-                <//>
-              <//>
-            <//>
-          <//>
-
-          <${Grid} item xs=${12} md=${7}>
-            <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'block', mb: 1 }}>Aktuelle Einträge<//>
-            <${TableContainer} component=${Paper} variant="outlined">
-              <${Table} size="small">
-                <${TableHead}>
-                  <${TableRow}>
-                    ${['Mitarbeiter','Status','Von','Bis','%',''].map(c => html`
-                      <${TableCell} key=${c} sx=${{ fontWeight: 700, textTransform: 'uppercase', fontSize: '11px', letterSpacing: 0.5, color: 'text.secondary', whiteSpace: 'nowrap' }}>
-                        ${c}
-                      <//>
-                    `)}
-                  <//>
-                <//>
-                <${TableBody}>
-                  ${ENTRIES.map(e => html`
-                    <${TableRow} key=${e.name}>
-                      <${TableCell}><${Typography} variant="body2" sx=${{ whiteSpace: 'nowrap' }}>${e.name}<//>  <//>
-                      <${TableCell}>
-                        <${Stack} direction="row" alignItems="center" spacing=${0.75}>
-                          <${Box} sx=${{ width: 8, height: 8, borderRadius: '50%', bgcolor: e.color, flexShrink: 0 }} />
-                          <${Typography} variant="body2" sx=${{ whiteSpace: 'nowrap' }}>${e.status}<//>
-                        <//>
-                      <//>
-                      <${TableCell}><${Typography} variant="body2" sx=${{ whiteSpace: 'nowrap' }}>${e.von}<//>  <//>
-                      <${TableCell}><${Typography} variant="body2" sx=${{ whiteSpace: 'nowrap' }}>${e.bis}<//>  <//>
-                      <${TableCell}><${Typography} variant="body2">${e.pct}%<//>  <//>
-                      <${TableCell}>
-                        <${Button} variant="outlined" color="inherit" size="small" sx=${{ fontSize: '11px' }}>
-                          Bearbeiten
-                        <//>
-                      <//>
-                    <//>
-                  `)}
-                <//>
-              <//>
-            <//>
-          <//>
-
-        <//>
-      `;
-    }
-
-    /* ── Tab 3: Export ── */
+    /* ── Tab 2: Export ── */
     function TabExport() {
       return html`
         <${Box} sx=${{ maxWidth: 680 }}>
@@ -350,13 +280,11 @@
 
             <${Tabs} value=${tab} onChange=${(_, v) => setTab(v)} sx=${{ mb: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
               <${Tab} label="Übersicht" />
-              <${Tab} label="Verfügbarkeit pflegen" />
               <${Tab} label="Dispolisten-Export" />
             <//>
 
             ${tab === 0 && html`<${TabUebersicht} />`}
-            ${tab === 1 && html`<${TabPflegen} />`}
-            ${tab === 2 && html`<${TabExport} />`}
+            ${tab === 1 && html`<${TabExport} />`}
 
           <//>
         <//>

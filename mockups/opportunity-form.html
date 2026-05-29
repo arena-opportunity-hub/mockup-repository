@@ -18,7 +18,7 @@
     const { createElement: h, useState, useCallback, useMemo } = React;
     const { createRoot } = ReactDOM;
     const { Box, Typography, Button, Paper, Container, Stack, Grid, TextField, MenuItem,
-            ToggleButtonGroup, ToggleButton, IconButton, Autocomplete, Tooltip,
+            ToggleButtonGroup, ToggleButton, IconButton, Autocomplete, Tooltip, Chip,
             ThemeProvider, createTheme, CssBaseline } = MaterialUI;
 
     const html = htm.bind(h);
@@ -137,14 +137,19 @@
       industry_system: ['Avaloq', 'Corebanking', 'EU-AML-Paket', 'Finanz Informatik', 'Murex', 'SAP FSCM', 'SWIFT'],
     };
 
-    let nextId = 6;
+    let nextId = 10;
     const INITIAL_SKILLS = {
-      domain:          [{ id: 1, name: 'AML', type: 'pflicht', unmapped: false }, { id: 2, name: 'Compliance', type: 'pflicht', unmapped: false }],
-      tool:            [{ id: 3, name: 'MS Office', type: 'optional', unmapped: false }],
+      domain:          [{ id: 1, kind: 'skill', name: 'AML', type: 'pflicht', unmapped: false }, { id: 2, kind: 'skill', name: 'Compliance', type: 'pflicht', unmapped: false }],
+      tool:            [{ id: 3, kind: 'skill', name: 'MS Office', type: 'optional', unmapped: false }],
       method:          [],
       soft:            [],
       language:        [],
-      industry_system: [{ id: 4, name: 'EU-AML-Paket', type: 'pflicht', unmapped: false }, { id: 5, name: 'FutureSkill 9000', type: 'optional', unmapped: true }],
+      industry_system: [
+        { id: 4, kind: 'skill', name: 'EU-AML-Paket', type: 'pflicht', unmapped: false },
+        { id: 5, kind: 'group', label: 'Regulatorik-Framework', type: 'optional',
+          skills: [{ id: 6, name: 'MiFID II', unmapped: false }, { id: 7, name: 'DSGVO', unmapped: false }] },
+        { id: 8, kind: 'skill', name: 'FutureSkill 9000', type: 'optional', unmapped: true },
+      ],
     };
 
     /* ── SkillRow ────────────────────────────────────────────── */
@@ -225,6 +230,108 @@
       `;
     }
 
+    /* ── SkillGroupRow ───────────────────────────────────────── */
+    function SkillGroupRow({ group, catalog, onUpdateGroup, onRemoveGroup, onAddSkill, onUpdateSkill, onRemoveSkill }) {
+      const hasUnmapped = group.skills.some(sk => sk.unmapped && sk.name);
+      return html`
+        <${Box} sx=${{
+          border: '1px solid', borderColor: hasUnmapped ? '#F9A825' : '#1976D2',
+          borderRadius: 1.5, overflow: 'hidden',
+        }}>
+          <!-- Header -->
+          <${Stack} direction="row" alignItems="center" gap=${1} sx=${{
+            px: 1.5, py: 0.875,
+            bgcolor: hasUnmapped ? '#FFF8E1' : '#E3F0FC',
+            borderBottom: '1px solid', borderColor: hasUnmapped ? '#F9A825' : '#b3d2f0',
+          }}>
+            <${Box} sx=${{
+              bgcolor: '#1976D2', color: '#fff', px: 0.75, py: 0.125, borderRadius: '6px',
+              fontSize: '10px', fontWeight: 700, letterSpacing: 0.5, flexShrink: 0,
+            }}>ODER<//>
+            <${TextField}
+              variant="standard" size="small"
+              placeholder="Gruppenbezeichnung (optional, z. B. »Wiki-Tool«)"
+              value=${group.label}
+              onChange=${e => onUpdateGroup('label', e.target.value)}
+              InputProps=${{ disableUnderline: true }}
+              sx=${{ flex: 1, '& input': { fontSize: '13px', fontWeight: 500 } }}
+            />
+            <${ToggleButtonGroup}
+              value=${group.type} exclusive size="small"
+              onChange=${(_, v) => v && onUpdateGroup('type', v)}
+              sx=${{ flexShrink: 0 }}
+            >
+              <${ToggleButton} value="pflicht" sx=${{
+                px: 1.25, py: 0.25, fontSize: '11px', fontWeight: 700,
+                '&.Mui-selected': { bgcolor: 'error.main', color: '#fff', '&:hover': { bgcolor: 'error.dark' } },
+              }}>Pflicht<//>
+              <${ToggleButton} value="optional" sx=${{
+                px: 1.25, py: 0.25, fontSize: '11px', fontWeight: 700,
+                '&.Mui-selected': { bgcolor: 'primary.main', color: '#fff', '&:hover': { bgcolor: 'primary.dark' } },
+              }}>Optional<//>
+            <//>
+            <${IconButton} size="small" onClick=${onRemoveGroup}
+              sx=${{ color: 'text.disabled', '&:hover': { color: 'error.main' }, flexShrink: 0 }}>✕<//>
+          <//>
+
+          <!-- Skills within group -->
+          <${Box} sx=${{ px: 1.5, pt: 0.875, pb: 1 }}>
+            <${Stack} spacing=${0.5}>
+              ${group.skills.map((sk, i) => html`
+                <${Stack} key=${sk.id} direction="row" alignItems="center" gap=${0.75}>
+                  <${Box} sx=${{ minWidth: 30, textAlign: 'right', color: '#1976D2', fontSize: '10px', fontWeight: 700, flexShrink: 0 }}>
+                    ${i > 0 ? 'ODER' : ''}
+                  <//>
+                  <${Box} sx=${{
+                    flex: 1, border: '1px solid', borderRadius: 1, px: 1, py: 0.375,
+                    borderColor: sk.unmapped ? '#F9A825' : 'divider',
+                    bgcolor: sk.unmapped ? '#FFFDE7' : 'background.paper',
+                  }}>
+                    <${Autocomplete}
+                      freeSolo value=${sk.name || null} inputValue=${sk.name}
+                      options=${catalog} size="small" disableClearable
+                      onInputChange=${(_, val, reason) => {
+                        if (reason === 'input') {
+                          onUpdateSkill(sk.id, 'name', val);
+                          onUpdateSkill(sk.id, 'unmapped', val !== '' && !catalog.includes(val));
+                        }
+                      }}
+                      onChange=${(_, val) => {
+                        const name = typeof val === 'string' ? val : '';
+                        onUpdateSkill(sk.id, 'name', name);
+                        onUpdateSkill(sk.id, 'unmapped', false);
+                      }}
+                      renderInput=${params => html`
+                        <${TextField} ...${params} variant="standard" placeholder="Skill eingeben …"
+                          InputProps=${{ ...params.InputProps, disableUnderline: true }}
+                          sx=${{ '& input': { fontSize: '13px' } }}
+                        />
+                      `}
+                    />
+                  <//>
+                  ${sk.unmapped && sk.name && html`
+                    <${Tooltip} title="Nicht im Decidalo-Katalog — wird als 'unmapped' gespeichert." arrow placement="top">
+                      <${Box} sx=${{
+                        bgcolor: '#FAEEDA', color: '#854F0B', px: 0.875, py: 0.25, borderRadius: '10px',
+                        fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap', cursor: 'help', flexShrink: 0,
+                      }}>⚠ unmapped<//>
+                    <//>
+                  `}
+                  <${IconButton} size="small" onClick=${() => onRemoveSkill(sk.id)}
+                    sx=${{ color: 'text.disabled', '&:hover': { color: 'error.main' }, flexShrink: 0 }}>✕<//>
+                <//>
+              `)}
+            <//>
+            <${Button} size="small" variant="text" color="primary"
+              onClick=${onAddSkill}
+              sx=${{ mt: 0.5, fontSize: '12px', py: 0.25, pl: 5 }}>
+              + Alternative hinzufügen
+            <//>
+          <//>
+        <//>
+      `;
+    }
+
     /* ── App ─────────────────────────────────────────────────── */
     function App() {
 
@@ -240,14 +347,52 @@
       }, []);
 
       const removeSkill = useCallback((cat, id) => {
-        setSkillsByCat(prev => ({ ...prev, [cat]: prev[cat].filter(sk => sk.id !== id) }));
+        setSkillsByCat(prev => ({ ...prev, [cat]: prev[cat].filter(item => item.id !== id) }));
       }, []);
 
-      const totalUnmapped = useMemo(() =>
-        Object.values(skillsByCat).flat().filter(sk => sk.unmapped && sk.name).length,
-      [skillsByCat]);
+      const addGroup = useCallback(cat => {
+        setSkillsByCat(prev => ({ ...prev, [cat]: [...prev[cat], {
+          id: nextId++, kind: 'group', label: '', type: 'pflicht',
+          skills: [{ id: nextId++, name: '', unmapped: false }],
+        }]}));
+      }, []);
+
+      const updateGroup = useCallback((cat, id, field, value) => {
+        setSkillsByCat(prev => ({ ...prev, [cat]: prev[cat].map(item => item.id === id ? { ...item, [field]: value } : item) }));
+      }, []);
+
+      const addSkillToGroup = useCallback((cat, groupId) => {
+        setSkillsByCat(prev => ({ ...prev, [cat]: prev[cat].map(item =>
+          item.id === groupId ? { ...item, skills: [...item.skills, { id: nextId++, name: '', unmapped: false }] } : item
+        )}));
+      }, []);
+
+      const updateGroupSkill = useCallback((cat, groupId, skillId, field, value) => {
+        setSkillsByCat(prev => ({ ...prev, [cat]: prev[cat].map(item =>
+          item.id === groupId
+            ? { ...item, skills: item.skills.map(sk => sk.id === skillId ? { ...sk, [field]: value } : sk) }
+            : item
+        )}));
+      }, []);
+
+      const removeGroupSkill = useCallback((cat, groupId, skillId) => {
+        setSkillsByCat(prev => ({ ...prev, [cat]: prev[cat].map(item =>
+          item.id === groupId ? { ...item, skills: item.skills.filter(sk => sk.id !== skillId) } : item
+        )}));
+      }, []);
+
+      const totalUnmapped = useMemo(() => {
+        let count = 0;
+        Object.values(skillsByCat).flat().forEach(item => {
+          if (item.kind === 'group') count += item.skills.filter(sk => sk.unmapped && sk.name).length;
+          else if (item.unmapped && item.name) count++;
+        });
+        return count;
+      }, [skillsByCat]);
 
       /* Timeline */
+      const [customerSystems, setCustomerSystems] = useState([]);
+
       const [startMode, setStartMode] = useState('date');   // 'asap' | 'month' | 'date'
       const [startDate, setStartDate] = useState('2026-07-01');
       const [startMonth, setStartMonth] = useState('2026-07');
@@ -341,21 +486,38 @@
                       `}
                     <//>
                     <${Stack} spacing=${0.625}>
-                      ${catSkills.map(sk => html`
-                        <${SkillRow}
-                          key=${sk.id}
-                          skill=${sk}
-                          catalog=${catalog}
-                          onUpdate=${(field, val) => updateSkill(key, sk.id, field, val)}
-                          onRemove=${() => removeSkill(key, sk.id)}
-                        />
-                      `)}
+                      ${catSkills.map(item => item.kind === 'group'
+                        ? html`<${SkillGroupRow}
+                            key=${item.id}
+                            group=${item}
+                            catalog=${catalog}
+                            onUpdateGroup=${(field, val) => updateGroup(key, item.id, field, val)}
+                            onRemoveGroup=${() => removeSkill(key, item.id)}
+                            onAddSkill=${() => addSkillToGroup(key, item.id)}
+                            onUpdateSkill=${(sid, field, val) => updateGroupSkill(key, item.id, sid, field, val)}
+                            onRemoveSkill=${sid => removeGroupSkill(key, item.id, sid)}
+                          />`
+                        : html`<${SkillRow}
+                            key=${item.id}
+                            skill=${item}
+                            catalog=${catalog}
+                            onUpdate=${(field, val) => updateSkill(key, item.id, field, val)}
+                            onRemove=${() => removeSkill(key, item.id)}
+                          />`
+                      )}
                       <${Button}
                         variant="outlined" color="inherit" size="small"
                         onClick=${() => addSkill(key)}
                         sx=${{ borderStyle: 'dashed', justifyContent: 'flex-start', color: 'text.secondary', borderColor: 'divider', fontSize: '12px', py: 0.5 }}
                       >
                         + ${label} hinzufügen
+                      <//>
+                      <${Button}
+                        variant="outlined" color="inherit" size="small"
+                        onClick=${() => addGroup(key)}
+                        sx=${{ borderStyle: 'dashed', justifyContent: 'flex-start', color: '#1976D2', borderColor: '#b3d2f0', fontSize: '12px', py: 0.5, bgcolor: '#F5F9FF' }}
+                      >
+                        + ODER-Gruppe hinzufügen
                       <//>
                     <//>
                   <//>
@@ -468,20 +630,34 @@
             <!-- ── Anforderungen ── -->
             <${SectionCard} title="Anforderungen">
               <${Grid} container spacing=${2}>
-                <${Grid} item xs=${4}>
-                  <${TextField} label="Sprache" select fullWidth size="small" defaultValue="Deutsch">
-                    ${['Deutsch','Englisch','Deutsch & Englisch'].map(v => html`<${MenuItem} key=${v} value=${v}>${v}<//>`) }
-                  <//>
-                <//>
-                <${Grid} item xs=${4}>
+                <${Grid} item xs=${6}>
                   <${TextField} label="Region" select fullWidth size="small" defaultValue="">
                     ${REGIONEN.map(v => html`<${MenuItem} key=${v} value=${v}>${v}<//>`) }
                   <//>
                 <//>
-                <${Grid} item xs=${4}>
+                <${Grid} item xs=${6}>
                   <${TextField} label="Remote-Anteil" select fullWidth size="small" defaultValue="25">
                     ${['0','25','50','75','100'].map(v => html`<${MenuItem} key=${v} value=${v}>${v} %<//>`) }
                   <//>
+                <//>
+                <${Grid} item xs=${12}>
+                  <${Autocomplete}
+                    multiple freeSolo
+                    value=${customerSystems}
+                    onChange=${(_, val) => setCustomerSystems(val)}
+                    options=${SKILL_CATALOG.industry_system}
+                    size="small"
+                    fullWidth
+                    renderTags=${(val, getTagProps) => val.map((option, i) => html`
+                      <${Chip} key=${option} label=${option} size="small" ...${getTagProps({ index: i })} />
+                    `)}
+                    renderInput=${params => html`
+                      <${TextField} ...${params}
+                        label="Kundensysteme / Legacy-Systeme (optional)"
+                        helperText="Kundenspezifische Altsysteme und Tools — fließen in die Domain-Fit-Berechnung ein (z. B. OSPlus, Avaloq, SAP FSCM)"
+                      />
+                    `}
+                  />
                 <//>
               <//>
             </${SectionCard}>

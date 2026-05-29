@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verfügbarkeit anlegen — Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style> * { box-sizing: border-box; } body { margin: 0; } </style>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@mui/material@5/umd/material-ui.development.js"></script>
+  <script src="https://unpkg.com/htm/dist/htm.umd.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const { createElement: h, useState, useMemo, useCallback } = React;
+    const { createRoot } = ReactDOM;
+    const { Box, Typography, Button, Paper, Container, Stack, Grid,
+            TextField, MenuItem, Divider, Tooltip, Slider,
+            ThemeProvider, createTheme, CssBaseline } = MaterialUI;
+
+    const html = htm.bind(h);
+
+    const theme = createTheme({
+      palette: { primary: { main: '#1976D2' }, error: { main: '#E53935' } },
+      components: { MuiButton: { defaultProps: { disableElevation: true } } },
+    });
+
+    /* ── Status-Vokabular ────────────────────────────────────── */
+    const STATUS_OPTIONS = [
+      { value: 'billable',             label: 'Billable',                dot: '#00B050', pill: { bg: '#E1F5EE', fg: '#0F6E56' }, requiresKunde: true,
+        hint: 'Mitarbeiter ist in einem Kundenprojekt billable. Kunde ist Pflichtfeld.' },
+      { value: 'prolongation_possible',label: 'Prolongation möglich',    dot: '#B4F1B1', pill: { bg: '#E8F5E9', fg: '#2E7D32' }, requiresKunde: true,
+        hint: 'Aktuelles Projekt läuft aus — Verlängerung möglich. Matching berücksichtigt Freiwerden. Kunde Pflicht.' },
+      { value: 'reserved',             label: 'Reserviert',              dot: '#C4BD97', pill: { bg: '#FAEEDA', fg: '#854F0B' }, requiresKunde: false,
+        hint: 'Für ein Projekt vorgemerkt, aber noch nicht bestätigt.' },
+      { value: 'offered',              label: 'Angeboten',               dot: '#1976D2', pill: { bg: '#E3F0FC', fg: '#1256A0' }, requiresKunde: true,
+        hint: 'Kandidat wurde einem Kunden angeboten — Entscheidung ausstehend. Kunde Pflicht.' },
+      { value: 'parttime',             label: 'Teilzeit',                dot: '#FFC000', pill: { bg: '#FFF8E1', fg: '#8a6000' }, requiresKunde: false,
+        hint: 'Reduzierte Kapazität. Kapazität % gibt die verfügbare Arbeitszeit an.' },
+{ value: 'absence',              label: 'Abwesenheit',             dot: '#0070C0', pill: { bg: '#E8EAF6', fg: '#283593' }, requiresKunde: false,
+        hint: 'Urlaub, Krankheit oder sonstige Abwesenheit. Nicht für Matching verfügbar.' },
+      { value: 'left_company',         label: 'Ausgeschieden',           dot: '#455A64', pill: { bg: '#F1EFE8', fg: '#5F5E5A' }, requiresKunde: false,
+        hint: 'Mitarbeiter hat das Unternehmen verlassen. Kein Matching möglich.' },
+    ];
+
+    /* ── Mitarbeiter ─────────────────────────────────────────── */
+    const EMPLOYEES = [
+      { name: 'Max Mustermann',   initials: 'MM', color: '#1976D2', role: 'Senior Consultant' },
+      { name: 'Sandra Koch',      initials: 'SK', color: '#388E3C', role: 'Consultant' },
+      { name: 'Felix Weber',      initials: 'FW', color: '#F57C00', role: 'Consultant' },
+      { name: 'Thomas Berger',    initials: 'TB', color: '#7B1FA2', role: 'Senior Consultant' },
+      { name: 'Jana Richter',     initials: 'JR', color: '#0097A7', role: 'Consultant' },
+      { name: 'Lisa Müller',      initials: 'LM', color: '#AD1457', role: 'Principal Consultant' },
+    ];
+
+
+    const KUNDEN = [
+      'Allianz SE', 'Commerzbank AG', 'Deutsche Bank AG', 'Finanz Informatik',
+      'Generali Deutschland', 'Hypoteq AG', 'Munich Re', 'Reply GmbH', 'Volksbank Rhein-Main',
+    ];
+
+    /* ── Helpers ─────────────────────────────────────────────── */
+    function fmtDate(iso) {
+      if (!iso) return '—';
+      return new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function statusCfg(val) {
+      return STATUS_OPTIONS.find(s => s.value === val) || STATUS_OPTIONS[0];
+    }
+
+    function MockupBar() {
+      return html`
+        <${Paper} square elevation=${0} sx=${{
+          position: 'sticky', top: 0, zIndex: 1100,
+          borderBottom: '1px solid', borderColor: 'divider',
+          px: 4, py: 1.25,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <${Typography} variant="overline" color="text.secondary">
+            Mockup · <${Box} component="span" sx=${{ color: 'primary.main' }}>Verfügbarkeit anlegen<//>
+          <//>
+          <${Button} component="a" href="../index.html" size="small">← Katalog<//>
+        <//>
+      `;
+    }
+
+    function Avatar({ initials, color, size = 40 }) {
+      return html`
+        <${Box} sx=${{
+          width: size, height: size, borderRadius: '50%', bgcolor: color, color: '#fff',
+          fontWeight: 700, fontSize: (size * 0.35) + 'px', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>${initials}<//>
+      `;
+    }
+
+    function StatusPill({ value, size = 'normal' }) {
+      const cfg = statusCfg(value);
+      return html`
+        <${Box} sx=${{
+          display: 'inline-flex', alignItems: 'center', gap: 0.75,
+          bgcolor: cfg.pill.bg, color: cfg.pill.fg,
+          px: size === 'small' ? 1 : 1.25, py: 0.25, borderRadius: '12px',
+          fontSize: size === 'small' ? '11px' : '12px', fontWeight: 700,
+          textTransform: 'uppercase', letterSpacing: 0.4, whiteSpace: 'nowrap',
+        }}>
+          <${Box} sx=${{ width: 8, height: 8, borderRadius: '50%', bgcolor: cfg.dot, flexShrink: 0 }} />
+          ${cfg.label}
+        <//>
+      `;
+    }
+
+    function SectionHeader({ children }) {
+      return html`
+        <${Typography} variant="overline" color="text.secondary" sx=${{
+          display: 'block', fontWeight: 700, letterSpacing: 0.5, mb: 1.75,
+          borderBottom: '1px solid', borderColor: 'divider', pb: 1,
+        }}>${children}<//>
+      `;
+    }
+
+    /* ── App ─────────────────────────────────────────────────── */
+    function App() {
+      const [employee,   setEmployee]   = useState('Max Mustermann');
+      const [status,     setStatus]     = useState('billable');
+      const [von,        setVon]        = useState('2026-07-01');
+      const [bis,        setBis]        = useState('2026-09-30');
+      const [kapazitaet, setKapazitaet] = useState(100);
+      const [kunde,      setKunde]      = useState('');
+      const [projektRef, setProjektRef] = useState('');
+      const [kommentar,  setKommentar]  = useState('');
+      const [submitted,  setSubmitted]  = useState(false);
+      const [saved,      setSaved]      = useState(false);
+
+      const cfg           = useMemo(() => statusCfg(status), [status]);
+      const kundeRequired = cfg.requiresKunde;
+      const emp           = useMemo(() => EMPLOYEES.find(e => e.name === employee) || EMPLOYEES[0], [employee]);
+
+      /* Validation */
+      const errVonBis = von && bis && von > bis;
+      const errKunde  = submitted && kundeRequired && !kunde.trim();
+      const hasErrors = errVonBis || errKunde;
+
+      const handleSave = useCallback(() => {
+        setSubmitted(true);
+        if (errVonBis || (kundeRequired && !kunde.trim())) return;
+        setSaved(true);
+        setSubmitted(false);
+      }, [errVonBis, kundeRequired, kunde]);
+
+      const handleReset = useCallback(() => {
+        setStatus('bench'); setVon('2026-07-01'); setBis('2026-09-30');
+        setKapazitaet(100); setKunde(''); setProjektRef(''); setKommentar('');
+        setSubmitted(false); setSaved(false);
+      }, []);
+
+      return html`
+        <${ThemeProvider} theme=${theme}>
+          <${CssBaseline} />
+          <${MockupBar} />
+          <${Container} maxWidth="sm" sx=${{ py: 4 }}>
+
+            <!-- Page header -->
+            <${Stack} direction="row" alignItems="center" gap=${2} sx=${{ mb: 3 }}>
+              <${Box} sx=${{ flex: 1 }}>
+                <${Typography} variant="h6" fontWeight=${700}>Verfügbarkeitseintrag anlegen<//>
+                <${Typography} variant="body2" color="text.secondary">
+                  Eintrag beeinflusst nachfolgende Match-Runs sofort
+                <//>
+              <//>
+              <${Button} component="a" href="availability.html" variant="outlined" color="inherit" size="small">
+                ← Zurück zur Übersicht
+              <//>
+            <//>
+
+            <!-- Success banner -->
+            ${saved && html`
+              <${Box} sx=${{
+                display: 'flex', alignItems: 'center', gap: 1.5,
+                bgcolor: '#E1F5EE', border: '1px solid #b8e6d4', borderRadius: 1.5,
+                px: 2.5, py: 1.5, mb: 2.5,
+              }}>
+                <${Box} sx=${{ fontSize: '20px' }}>✓<//>
+                <${Box} sx=${{ flex: 1 }}>
+                  <${Typography} variant="body2" fontWeight=${700} sx=${{ color: '#0F6E56', mb: 0.25 }}>
+                    Eintrag gespeichert
+                  <//>
+                  <${Typography} variant="body2" sx=${{ color: '#0F6E56', opacity: 0.85 }}>
+                    Der neue Eintrag erscheint sofort in der Mitarbeiter-Detailansicht. Nächster Match-Run berücksichtigt die Änderung.
+                  <//>
+                <//>
+                <${Button} size="small" sx=${{ color: '#0F6E56', fontWeight: 700 }} onClick=${handleReset}>
+                  Weiteren Eintrag anlegen
+                <//>
+              <//>
+            `}
+
+            <${Paper} variant="outlined" sx=${{ p: 3 }}>
+
+                  <!-- 1. Mitarbeiter -->
+                  <${SectionHeader}>Mitarbeiter<//>
+                  <${Stack} direction="row" alignItems="center" gap=${1.5} sx=${{ mb: 2.5 }}>
+                    <${Avatar} initials=${emp.initials} color=${emp.color} />
+                    <${Box} sx=${{ flex: 1 }}>
+                      <${TextField}
+                        select label="Mitarbeiter" size="small" fullWidth
+                        value=${employee} onChange=${e => { setEmployee(e.target.value); setSavedId(null); }}
+                      >
+                        ${EMPLOYEES.map(e => html`
+                          <${MenuItem} key=${e.name} value=${e.name}>
+                            <${Stack} direction="row" alignItems="center" gap=${1}>
+                              <${Box} sx=${{ width: 8, height: 8, borderRadius: '50%', bgcolor: e.color, flexShrink: 0 }} />
+                              <${Box}>
+                                <${Typography} variant="body2">${e.name}<//>
+                                <${Typography} variant="caption" color="text.secondary">${e.role}<//>
+                              <//>
+                            <//>
+                          <//>
+                        `)}
+                      <//>
+                    <//>
+                  <//>
+
+                  <${Divider} sx=${{ mb: 2.5 }} />
+
+                  <!-- 2. Status & Zeitraum -->
+                  <${SectionHeader}>Status & Zeitraum<//>
+
+                  <!-- Status select -->
+                  <${TextField}
+                    select label="Status *" size="small" fullWidth
+                    value=${status} onChange=${e => { setStatus(e.target.value); setSavedId(null); }}
+                    sx=${{ mb: 0.75 }}
+                  >
+                    ${STATUS_OPTIONS.map(s => html`
+                      <${MenuItem} key=${s.value} value=${s.value}>
+                        <${Stack} direction="row" alignItems="center" gap=${1.25}>
+                          <${Box} sx=${{ width: 12, height: 12, borderRadius: '50%', bgcolor: s.dot, flexShrink: 0 }} />
+                          <${Typography} variant="body2">${s.label}<//>
+                          ${s.requiresKunde && html`
+                            <${Box} sx=${{ ml: 'auto', bgcolor: '#E3F0FC', color: '#1256A0', px: 0.75, py: 0.125, borderRadius: '8px', fontSize: '10px', fontWeight: 700 }}>
+                              Kunde Pflicht
+                            <//>
+                          `}
+                        <//>
+                      <//>
+                    `)}
+                  <//>
+                  <!-- Status hint -->
+                  <${Typography} variant="caption" color="text.secondary" sx=${{ display: 'block', mb: 2, fontStyle: 'italic', ml: 0.25 }}>
+                    ${cfg.hint}
+                  <//>
+
+                  <!-- Von / Bis -->
+                  <${Grid} container spacing=${1.5} sx=${{ mb: 2 }}>
+                    <${Grid} item xs=${6}>
+                      <${TextField}
+                        label="Von *" type="date" size="small" fullWidth
+                        value=${von} onChange=${e => setVon(e.target.value)}
+                        InputLabelProps=${{ shrink: true }}
+                        error=${!!errVonBis}
+                      />
+                    <//>
+                    <${Grid} item xs=${6}>
+                      <${TextField}
+                        label="Bis *" type="date" size="small" fullWidth
+                        value=${bis} onChange=${e => setBis(e.target.value)}
+                        InputLabelProps=${{ shrink: true }}
+                        error=${!!errVonBis}
+                        helperText=${errVonBis ? '"Bis" muss nach "Von" liegen' : ''}
+                      />
+                    <//>
+                  <//>
+
+                  <!-- Kapazität -->
+                  <${Stack} direction="row" alignItems="center" gap=${2} sx=${{ mb: 0.5 }}>
+                    <${Typography} variant="body2" color="text.secondary" sx=${{ minWidth: 90 }}>
+                      Kapazität *
+                    <//>
+                    <${Slider}
+                      value=${kapazitaet}
+                      onChange=${(_, v) => setKapazitaet(v)}
+                      min=${0} max=${100} step=${25}
+                      marks=${[
+                        { value: 0,   label: '0%'   },
+                        { value: 25,  label: '25%'  },
+                        { value: 50,  label: '50%'  },
+                        { value: 75,  label: '75%'  },
+                        { value: 100, label: '100%' },
+                      ]}
+                      sx=${{ flex: 1 }}
+                    />
+                    <${Box} sx=${{
+                      minWidth: 52, textAlign: 'center',
+                      bgcolor: '#E3F0FC', color: '#1256A0',
+                      px: 1, py: 0.25, borderRadius: '10px',
+                      fontSize: '13px', fontWeight: 700,
+                    }}>
+                      ${kapazitaet}%
+                    <//>
+                  <//>
+                  ${kapazitaet < 100 && html`
+                    <${Typography} variant="caption" color="text.secondary" sx=${{ display: 'block', mb: 1.5, ml: 0.25, fontStyle: 'italic' }}>
+                      Teilzeit-Verfügbarkeit — Matching berücksichtigt ${kapazitaet}% Kapazität (Verfügbarkeitsfaktor × ${(kapazitaet / 100).toFixed(1)})
+                    <//>
+                  `}
+
+                  <${Divider} sx=${{ mb: 2.5, mt: kapazitaet === 100 ? 2 : 0 }} />
+
+                  <!-- 3. Projektbezug (conditional) -->
+                  <${Box} sx=${{ mb: 2.5 }}>
+                    <${Stack} direction="row" alignItems="center" gap=${1} sx=${{ mb: 1.75, borderBottom: '1px solid', borderColor: 'divider', pb: 1 }}>
+                      <${Typography} variant="overline" color="text.secondary" sx=${{ fontWeight: 700, letterSpacing: 0.5 }}>
+                        Projektbezug
+                      <//>
+                      ${kundeRequired && html`
+                        <${Box} sx=${{ bgcolor: '#FCEBEB', color: '#791F1F', px: 0.875, py: 0.125, borderRadius: '8px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                          Pflichtfelder für diesen Status
+                        <//>
+                      `}
+                    <//>
+
+                    <${TextField}
+                      select label=${kundeRequired ? 'Kunde *' : 'Kunde (optional)'}
+                      size="small" fullWidth
+                      value=${kunde} onChange=${e => setKunde(e.target.value)}
+                      error=${errKunde}
+                      helperText=${errKunde ? 'Kunde ist für diesen Status Pflichtfeld' : ''}
+                      sx=${{ mb: 1.5,
+                        ...(kundeRequired ? { '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: errKunde ? 'error.main' : '#1976D2' } } } : {}),
+                      }}
+                    >
+                      <${MenuItem} value="">— kein Kunde —<//>
+                      ${KUNDEN.map(k => html`<${MenuItem} key=${k} value=${k}>${k}<//>`) }
+                    <//>
+
+                    <${TextField}
+                      label="Projekt-Referenz (optional)" size="small" fullWidth
+                      placeholder="z. B. CB-IFRS9-2026"
+                      value=${projektRef} onChange=${e => setProjektRef(e.target.value)}
+                    />
+                  <//>
+
+                  <${Divider} sx=${{ mb: 2.5 }} />
+
+                  <!-- 4. Kommentar -->
+                  <${SectionHeader}>Kommentar<//>
+                  <${TextField}
+                    label="Kommentar (optional)" multiline rows=${3} size="small" fullWidth
+                    placeholder="Freitext — z. B. Hintergrund zur Verfügbarkeit, Besonderheiten, interne Absprachen"
+                    value=${kommentar} onChange=${e => setKommentar(e.target.value.slice(0, 500))}
+                    helperText=${kommentar.length + ' / 500'}
+                    FormHelperTextProps=${{ sx: { textAlign: 'right' } }}
+                    sx=${{ mb: 2.5 }}
+                  />
+
+                  <!-- Footer -->
+                  <${Box} sx=${{ bgcolor: '#F5F6F8', borderRadius: 1, px: 2, py: 1.25, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <${Box} sx=${{ fontSize: '16px' }}>ℹ<//>
+                    <${Typography} variant="caption" color="text.secondary">
+                      Der Eintrag erscheint sofort in der Mitarbeiter-Detailansicht und wird beim nächsten automatischen Match-Run berücksichtigt.
+                    <//>
+                  <//>
+
+                  <${Stack} direction="row" spacing=${1}>
+                    <${Button}
+                      variant="contained" size="small"
+                      onClick=${handleSave}
+                      disabled=${saved}
+                    >
+                      Eintrag speichern
+                    <//>
+                    <${Button} variant="text" color="inherit" size="small" onClick=${handleReset}>
+                      Zurücksetzen
+                    <//>
+                  <//>
+
+                  ${submitted && hasErrors && html`
+                    <${Box} sx=${{ mt: 1.5, bgcolor: '#FFEBEE', border: '1px solid #FFCDD2', borderRadius: 1, px: 1.5, py: 1 }}>
+                      <${Typography} variant="caption" sx=${{ color: '#C62828' }}>
+                        Bitte korrigiere die markierten Felder vor dem Speichern.
+                      <//>
+                    <//>
+                  `}
+
+                <//>
+          <//>
+        <//>
+      `;
+    }
+
+    createRoot(document.getElementById('root')).render(html`<${App} />`);
+  </script>
+</body>
+</html>

@@ -86,38 +86,38 @@
     /* ── Data ────────────────────────────────────────────────── */
     const CANDIDATES = [
       // direct (8)
-      { pool:'direct',  name:'Max Mustermann',   initials:'MM',  avatarColor:'#1976D2', role:'Senior Consultant',    manager:'Anna Schmidt',  score:80, status:'Genehmigt',  comment:'Anna Schmidt: «Hervorragende Passung. Max hat exakt die benötigte AWS-Erfahrung.»', chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-AML-Paket',matched:true},{label:'MS Office',matched:false}] },
-      { pool:'direct',  name:'Sandra Koch',      initials:'SK',  avatarColor:'#388E3C', role:'Consultant',           manager:'Anna Schmidt',  score:84, status:'In Prüfung', comment:'Anna Schmidt: «Sandra ist interessiert, ich spreche noch mit ihr.»',             chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-AML-Paket',matched:false},{label:'MS Office',matched:false}] },
-      { pool:'direct',  name:'David Klein',      initials:'DK',  avatarColor:'#37474F', role:'Backend Developer',    manager:'Anna Schmidt',  score:83, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-AML-Paket',matched:true},{label:'MS Office',matched:true}] },
-      { pool:'direct',  name:'Julia Neumann',    initials:'JN',  avatarColor:'#6A1B9A', role:'Senior Consultant',    manager:'Klaus Bauer',   score:77, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-AML-Paket',matched:false}] },
+      { pool:'direct',  name:'Max Mustermann',   initials:'MM',  avatarColor:'#1976D2', role:'Senior Consultant',    manager:'Anna Schmidt',  score:80, status:'Genehmigt',  comment:'Anna Schmidt: «Hervorragende Passung. Max hat exakt die benötigte AWS-Erfahrung.»', chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:true,isGroup:true,matchedSkill:'EU-AML-Paket'},{label:'MS Office',matched:false}] },
+      { pool:'direct',  name:'Sandra Koch',      initials:'SK',  avatarColor:'#388E3C', role:'Consultant',           manager:'Anna Schmidt',  score:84, status:'In Prüfung', comment:'Anna Schmidt: «Sandra ist interessiert, ich spreche noch mit ihr.»',             chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true},{label:'MS Office',matched:false}] },
+      { pool:'direct',  name:'David Klein',      initials:'DK',  avatarColor:'#37474F', role:'Backend Developer',    manager:'Anna Schmidt',  score:83, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:true,isGroup:true,matchedSkill:'EU-AML-Paket'},{label:'MS Office',matched:true}] },
+      { pool:'direct',  name:'Julia Neumann',    initials:'JN',  avatarColor:'#6A1B9A', role:'Senior Consultant',    manager:'Klaus Bauer',   score:77, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
       { pool:'direct',  name:'Patrick Hoffmann', initials:'PH',  avatarColor:'#00838F', role:'Consultant',           manager:'Klaus Bauer',   score:75, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:false},{label:'MS Office',matched:true}] },
-      { pool:'direct',  name:'Maria Keller',     initials:'MK',  avatarColor:'#AD1457', role:'Principal Consultant', manager:'Marco Lehmann', score:72, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-AML-Paket',matched:false}] },
+      { pool:'direct',  name:'Maria Keller',     initials:'MK',  avatarColor:'#AD1457', role:'Principal Consultant', manager:'Marco Lehmann', score:72, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
       { pool:'direct',  name:'Tobias Schulz',    initials:'TS',  avatarColor:'#558B2F', role:'Backend Developer',    manager:'Anna Schmidt',  score:68, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'MS Office',matched:false}] },
       { pool:'direct',  name:'Sarah Braun',      initials:'SB',  avatarColor:'#E65100', role:'Consultant',           manager:'Klaus Bauer',   score:65, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'Compliance',matched:true},{label:'MS Office',matched:true}] },
       // soon (12)
-      { pool:'soon',    name:'Thomas Berger',    initials:'TB',  avatarColor:'#7B1FA2', role:'Senior Consultant',    manager:'Klaus Bauer',   score:78, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-AML-Paket',matched:false}] },
-      { pool:'soon',    name:'Kai Fischer',      initials:'KF',  avatarColor:'#1565C0', role:'Senior Consultant',    manager:'Marco Lehmann', score:76, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-AML-Paket',matched:false}] },
+      { pool:'soon',    name:'Thomas Berger',    initials:'TB',  avatarColor:'#7B1FA2', role:'Senior Consultant',    manager:'Klaus Bauer',   score:78, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
+      { pool:'soon',    name:'Kai Fischer',      initials:'KF',  avatarColor:'#1565C0', role:'Senior Consultant',    manager:'Marco Lehmann', score:76, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
       { pool:'soon',    name:'Lisa Müller',      initials:'LM',  avatarColor:'#0097A7', role:'Principal Consultant', manager:'Marco Lehmann', score:74, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'MS Office',matched:true},{label:'Compliance',matched:false}] },
       { pool:'soon',    name:'Nina Wagner',      initials:'NW',  avatarColor:'#2E7D32', role:'Consultant',           manager:'Anna Schmidt',  score:73, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:false},{label:'MS Office',matched:true}] },
       { pool:'soon',    name:'Robert Becker',    initials:'RB',  avatarColor:'#4527A0', role:'Principal',            manager:'Klaus Bauer',   score:71, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:true}] },
       { pool:'soon',    name:'Laura Zimmer',     initials:'LZ',  avatarColor:'#00695C', role:'Consultant',           manager:'Anna Schmidt',  score:70, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'Compliance',matched:true},{label:'MS Office',matched:true}] },
       { pool:'soon',    name:'Michael Krause',   initials:'MKr', avatarColor:'#C62828', role:'Senior Consultant',    manager:'Marco Lehmann', score:67, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:false}] },
-      { pool:'soon',    name:'Anna Richter',     initials:'AR',  avatarColor:'#F57F17', role:'Consultant',           manager:'Klaus Bauer',   score:66, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'EU-AML-Paket',matched:false}] },
+      { pool:'soon',    name:'Anna Richter',     initials:'AR',  avatarColor:'#F57F17', role:'Consultant',           manager:'Klaus Bauer',   score:66, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
       { pool:'soon',    name:'Stefan Vogel',     initials:'SV',  avatarColor:'#01579B', role:'Backend Developer',    manager:'Anna Schmidt',  score:63, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'MS Office',matched:false}] },
-      { pool:'soon',    name:'Petra Schwarz',    initials:'PS',  avatarColor:'#880E4F', role:'Consultant',           manager:'Marco Lehmann', score:61, status:'Ausstehend', comment:null, chips:[{label:'Compliance',matched:true},{label:'EU-AML-Paket',matched:false}] },
+      { pool:'soon',    name:'Petra Schwarz',    initials:'PS',  avatarColor:'#880E4F', role:'Consultant',           manager:'Marco Lehmann', score:61, status:'Ausstehend', comment:null, chips:[{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
       { pool:'soon',    name:'Jan Lange',        initials:'JL',  avatarColor:'#827717', role:'Senior Consultant',    manager:'Klaus Bauer',   score:59, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'Compliance',matched:true}] },
       { pool:'soon',    name:'Eva Wolf',         initials:'EW',  avatarColor:'#4E342E', role:'Consultant',           manager:'Anna Schmidt',  score:57, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:false}] },
       // partial (12)
       { pool:'partial', name:'Felix Weber',      initials:'FW',  avatarColor:'#F57C00', role:'Consultant',           manager:'Anna Schmidt',  score:69, status:'In Prüfung', comment:'Anna Schmidt: «Prüfe die Verfügbarkeit noch einmal ab.»', chips:[{label:'AML',matched:true},{label:'Compliance',matched:false}] },
       { pool:'partial', name:'Chris Huber',      initials:'CH',  avatarColor:'#5C6BC0', role:'Consultant',           manager:'Marco Lehmann', score:55, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:false}] },
       { pool:'partial', name:'Sabine Hartmann',  initials:'SH',  avatarColor:'#00897B', role:'Senior Consultant',    manager:'Anna Schmidt',  score:53, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'MS Office',matched:true}] },
-      { pool:'partial', name:'Marco Kremer',     initials:'MKr2',avatarColor:'#8D6E63', role:'Consultant',           manager:'Klaus Bauer',   score:51, status:'Ausstehend', comment:null, chips:[{label:'Compliance',matched:true},{label:'EU-AML-Paket',matched:false}] },
+      { pool:'partial', name:'Marco Kremer',     initials:'MKr2',avatarColor:'#8D6E63', role:'Consultant',           manager:'Klaus Bauer',   score:51, status:'Ausstehend', comment:null, chips:[{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
       { pool:'partial', name:'Claudia Bauer',    initials:'CB',  avatarColor:'#78909C', role:'Principal',            manager:'Marco Lehmann', score:49, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'Compliance',matched:true}] },
-      { pool:'partial', name:'Daniel Schubert',  initials:'DS',  avatarColor:'#BF360C', role:'Consultant',           manager:'Anna Schmidt',  score:47, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'EU-AML-Paket',matched:false}] },
+      { pool:'partial', name:'Daniel Schubert',  initials:'DS',  avatarColor:'#BF360C', role:'Consultant',           manager:'Anna Schmidt',  score:47, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
       { pool:'partial', name:'Gabi Schröder',    initials:'GS',  avatarColor:'#1A237E', role:'Senior Consultant',    manager:'Klaus Bauer',   score:45, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'Compliance',matched:false}] },
       { pool:'partial', name:'Hans Zimmermann',  initials:'HZ',  avatarColor:'#006064', role:'Consultant',           manager:'Marco Lehmann', score:43, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'MS Office',matched:false}] },
       { pool:'partial', name:'Ines Braun',       initials:'IB',  avatarColor:'#4A148C', role:'Consultant',           manager:'Anna Schmidt',  score:41, status:'Ausstehend', comment:null, chips:[{label:'Compliance',matched:false},{label:'MS Office',matched:false}] },
-      { pool:'partial', name:'Klaus Werner',     initials:'KW',  avatarColor:'#263238', role:'Senior Consultant',    manager:'Klaus Bauer',   score:39, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'EU-AML-Paket',matched:false}] },
+      { pool:'partial', name:'Klaus Werner',     initials:'KW',  avatarColor:'#263238', role:'Senior Consultant',    manager:'Klaus Bauer',   score:39, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
       { pool:'partial', name:'Lena Meyer',       initials:'LMy', avatarColor:'#B71C1C', role:'Consultant',           manager:'Marco Lehmann', score:37, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'Compliance',matched:false}] },
       { pool:'partial', name:'Markus Peters',    initials:'MP',  avatarColor:'#33691E', role:'Consultant',           manager:'Anna Schmidt',  score:35, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'MS Office',matched:false}] },
     ];
@@ -254,13 +254,31 @@
                           <${Typography} variant="body2" fontWeight=${700}>${c.name}<//>
                           <${Typography} variant="caption" color="text.secondary" sx=${{ display: 'block', mb: 0.75 }}>${c.role}<//>
                           <${Stack} direction="row" flexWrap="wrap" gap=${0.5}>
-                            ${c.chips.map(ch => html`
-                              <${Box} key=${ch.label} sx=${{
-                                display: 'inline-block', px: 1, py: 0.25, borderRadius: '12px', fontSize: '12px',
-                                bgcolor: ch.matched ? '#E1F5EE' : '#FCEBEB',
-                                color:   ch.matched ? '#0F6E56' : '#791F1F',
-                              }}>${ch.label}<//>
-                            `)}
+                            ${c.chips.map(ch => ch.isGroup
+                              ? html`
+                                <${Tooltip} key=${ch.label}
+                                  title=${ch.matched ? 'ODER-Gruppe erfüllt durch: ' + ch.matchedSkill : 'ODER-Gruppe: keine Alternative nachgewiesen'}
+                                  arrow placement="top"
+                                >
+                                  <${Box} sx=${{
+                                    display: 'inline-flex', alignItems: 'center', gap: 0.5, cursor: 'help',
+                                    px: 1, py: 0.25, borderRadius: '12px', fontSize: '12px',
+                                    bgcolor: ch.matched ? '#E1F5EE' : '#FCEBEB',
+                                    color:   ch.matched ? '#0F6E56' : '#791F1F',
+                                  }}>
+                                    <${Box} sx=${{ fontSize: '9px', fontWeight: 700, opacity: 0.65 }}>ODER<//>
+                                    ${ch.label}
+                                  <//>
+                                <//>
+                              `
+                              : html`
+                                <${Box} key=${ch.label} sx=${{
+                                  display: 'inline-block', px: 1, py: 0.25, borderRadius: '12px', fontSize: '12px',
+                                  bgcolor: ch.matched ? '#E1F5EE' : '#FCEBEB',
+                                  color:   ch.matched ? '#0F6E56' : '#791F1F',
+                                }}>${ch.label}<//>
+                              `
+                            )}
                           <//>
                         <//>
                         <${Stack} alignItems="flex-end" sx=${{ flexShrink: 0, minWidth: 110 }}>
@@ -353,8 +371,9 @@
         ['Kunde', 'Hypoteq AG'], ['Branche', 'Banking'], ['Vertragsart', 'T&M'],
         ['Startdatum', '01.07.2026'], ['Enddatum', '31.12.2026'], ['Auslastung', '100 %'],
         ['Level', 'Senior Consultant'], ['Region', 'Deutschland'], ['Remote-Anteil', '25 %'],
-        ['Sprache', 'Deutsch'], ['Abzugeben bis', '30.05.2026'],
+        ['Abzugeben bis', '30.05.2026'],
       ];
+      const CUSTOMER_SYSTEMS = ['Avaloq', 'SAP FSCM'];
       const SKILL_CATEGORIES = [
         { key: 'domain',          label: 'Domain' },
         { key: 'tool',            label: 'Tool' },
@@ -364,10 +383,11 @@
         { key: 'industry_system', label: 'Branche / System' },
       ];
       const SKILLS = [
-        { cat: 'domain',          name: 'AML',          type: 'pflicht'  },
-        { cat: 'domain',          name: 'Compliance',   type: 'pflicht'  },
-        { cat: 'industry_system', name: 'EU-AML-Paket', type: 'pflicht'  },
-        { cat: 'tool',            name: 'MS Office',    type: 'optional' },
+        { cat: 'domain',          name: 'AML',        type: 'pflicht'  },
+        { cat: 'domain',          name: 'Compliance', type: 'pflicht'  },
+        { cat: 'industry_system', kind: 'group', label: 'EU-Regulatorik', type: 'pflicht',
+          skills: ['EU-AML-Paket', 'MiFID II'] },
+        { cat: 'tool',            name: 'MS Office',  type: 'optional' },
       ];
       return html`
         <${Stack} spacing=${1.5}>
@@ -384,6 +404,22 @@
                   <${Typography} variant="body2" fontWeight=${500}>${val}<//>
                 <//>
               `)}
+            <//>
+
+            <${Box} sx=${{ borderTop: '1px solid', borderColor: 'divider', pt: 2, mt: 2 }}>
+              <${Typography} variant="caption" color="text.secondary" sx=${{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.75 }}>
+                Kundensysteme / Legacy-Systeme
+              <//>
+              <${Stack} direction="row" flexWrap="wrap" gap=${0.75} sx=${{ mb: 0.5 }}>
+                ${CUSTOMER_SYSTEMS.map(sys => html`
+                  <${Box} key=${sys} sx=${{ bgcolor: '#E3F0FC', color: '#1256A0', px: 1.25, py: 0.25, borderRadius: '12px', fontSize: '12px', fontWeight: 500 }}>
+                    ${sys}
+                  <//>
+                `)}
+              <//>
+              <${Typography} variant="caption" color="text.disabled" sx=${{ fontStyle: 'italic' }}>
+                Fließt als customer_specific_systems in die Domain-Fit-Berechnung ein
+              <//>
             <//>
           <//>
 
@@ -426,23 +462,46 @@
                       <//>
                     <//>
                     <${Stack} spacing=${0.625}>
-                      ${cat.skills.map(sk => html`
-                        <${Box} key=${sk.name} sx=${{
-                          display: 'flex', alignItems: 'center', gap: 1.5,
-                          border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 1.75, py: 1,
-                        }}>
-                          <${Typography} variant="body2" fontWeight=${500} sx=${{ flex: 1 }}>${sk.name}<//>
-                          <${Box} sx=${{
-                            display: 'inline-block',
-                            bgcolor: sk.type === 'pflicht' ? '#FCEBEB' : '#E3F0FC',
-                            color:   sk.type === 'pflicht' ? '#791F1F' : '#1256A0',
-                            px: 1.25, py: 0.25, borderRadius: '12px',
-                            fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4,
-                          }}>
-                            ${sk.type === 'pflicht' ? 'Pflicht' : 'Optional'}
+                      ${cat.skills.map(sk => sk.kind === 'group'
+                        ? html`
+                          <${Box} key=${sk.label} sx=${{ border: '1px solid #1976D2', borderRadius: 1.5, overflow: 'hidden' }}>
+                            <${Stack} direction="row" alignItems="center" gap=${1} sx=${{ px: 1.5, py: 0.875, bgcolor: '#E3F0FC', borderBottom: '1px solid #b3d2f0' }}>
+                              <${Box} sx=${{ bgcolor: '#1976D2', color: '#fff', px: 0.75, py: 0.125, borderRadius: '6px', fontSize: '10px', fontWeight: 700, letterSpacing: 0.5, flexShrink: 0 }}>ODER<//>
+                              <${Typography} variant="body2" fontWeight=${600} sx=${{ flex: 1, color: '#1256A0' }}>${sk.label || 'ODER-Gruppe'}<//>
+                              <${Box} sx=${{ bgcolor: '#FCEBEB', color: '#791F1F', px: 1.25, py: 0.25, borderRadius: '12px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, flexShrink: 0 }}>
+                                ${sk.type === 'pflicht' ? 'Pflicht' : 'Optional'}
+                              <//>
+                            <//>
+                            <${Box} sx=${{ px: 1.5, py: 0.875 }}>
+                              ${sk.skills.map((name, i) => html`
+                                <${Stack} key=${name} direction="row" alignItems="center" gap=${1} sx=${{ mb: i < sk.skills.length - 1 ? 0.5 : 0 }}>
+                                  <${Typography} variant="caption" sx=${{ color: '#1976D2', fontWeight: 700, minWidth: 28, textAlign: 'right', flexShrink: 0 }}>
+                                    ${i === 0 ? '' : 'ODER'}
+                                  <//>
+                                  <${Typography} variant="body2">${name}<//>
+                                <//>
+                              `)}
+                            <//>
                           <//>
-                        <//>
-                      `)}
+                        `
+                        : html`
+                          <${Box} key=${sk.name} sx=${{
+                            display: 'flex', alignItems: 'center', gap: 1.5,
+                            border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 1.75, py: 1,
+                          }}>
+                            <${Typography} variant="body2" fontWeight=${500} sx=${{ flex: 1 }}>${sk.name}<//>
+                            <${Box} sx=${{
+                              display: 'inline-block',
+                              bgcolor: sk.type === 'pflicht' ? '#FCEBEB' : '#E3F0FC',
+                              color:   sk.type === 'pflicht' ? '#791F1F' : '#1256A0',
+                              px: 1.25, py: 0.25, borderRadius: '12px',
+                              fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4,
+                            }}>
+                              ${sk.type === 'pflicht' ? 'Pflicht' : 'Optional'}
+                            <//>
+                          <//>
+                        `
+                      )}
                     <//>
                   <//>
                 `)
@@ -539,7 +598,7 @@
               <//>
               <${ScoreComponent} name="AML"          level="Nachgewiesen"     barPct=${100} barColor="#E53935" points="+21,7" pointsColor="#C62828" />
               <${ScoreComponent} name="Compliance"   level="Nachgewiesen"     barPct=${100} barColor="#E53935" points="+21,7" pointsColor="#C62828" />
-              <${ScoreComponent} name="EU-AML-Paket" level="Nachgewiesen"     barPct=${100} barColor="#E53935" points="+21,7" pointsColor="#C62828" />
+              <${ScoreComponent} name="EU-Regulatorik (ODER)" level="EU-AML-Paket nachgewiesen" barPct=${100} barColor="#E53935" points="+21,7" pointsColor="#C62828" />
               <${Typography} variant="caption" color="text.secondary" sx=${{ display: 'block', textAlign: 'right', mt: 0.75 }}>
                 Zwischensumme: <strong>65 / 65 Punkte</strong>
               <//>
@@ -561,9 +620,11 @@
               <${SectionLabel}>
                 Domain Fit <${Box} component="span" sx=${{ fontStyle: 'italic', fontWeight: 400, textTransform: 'none', fontSize: '11px' }}>— Gewicht 15 %<//>
               <//>
-              <${ScoreComponent} name="Banking" level="Erfahrung vorhanden" barPct=${100} barColor="#2E7D32" points="+15" pointsColor="#2E7D32" />
+              <${ScoreComponent} name="Branche: Banking"        level="Erfahrung vorhanden"  barPct=${100} barColor="#2E7D32" points="1,0" pointsColor="#2E7D32" />
+              <${ScoreComponent} name="Kunde: Hypoteq AG"       level="Keine Vorerfahrung"   barPct=${0}   barColor="#2E7D32" points="—"   pointsColor="#9E9E9E" />
+              <${ScoreComponent} name="System: Avaloq"          level="Nachgewiesen"         barPct=${100} barColor="#2E7D32" points="1,0" pointsColor="#2E7D32" />
               <${Typography} variant="caption" color="text.secondary" sx=${{ display: 'block', textAlign: 'right', mt: 0.75 }}>
-                Zwischensumme: <strong>15 / 15 Punkte</strong>
+                Zwischensumme: <strong> 15 / 15 Punkte</strong>
               <//>
             <//>
 
