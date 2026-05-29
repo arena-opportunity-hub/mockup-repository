@@ -17,7 +17,7 @@
   <script>
     const { createElement: h, useState, useCallback, useMemo } = React;
     const { createRoot } = ReactDOM;
-    const { Box, Typography, Button, Paper, Container, Stack, Table, TableHead, TableBody, TableRow, TableCell, TableContainer, TextField, MenuItem, IconButton, ThemeProvider, createTheme, CssBaseline } = MaterialUI;
+    const { Box, Typography, Button, Paper, Container, Stack, Table, TableHead, TableBody, TableRow, TableCell, TableContainer, TextField, MenuItem, IconButton, Tooltip, ThemeProvider, createTheme, CssBaseline } = MaterialUI;
 
     const html = htm.bind(h);
 
@@ -37,11 +37,12 @@
     };
 
     const DATA = [
-      { title: 'Backend-Projekt Datenmigration',  creator: 'Jannik Schröder', client: 'Hypoteq AG',         deadline: '2026-05-30', skills: ['Java', 'AWS', 'Docker'],                 extraSkills: 2, matches: 12, status: 'Offen' },
-      { title: 'Container Plattform Initiative',   creator: 'Lars Gehrken',    client: 'Reply GmbH',         deadline: '2026-06-05', skills: ['Docker', 'Kubernetes', 'GitOps'],          extraSkills: 1, matches: 5,  status: 'In Prüfung' },
-      { title: 'Business Analysten IT-Consulting', creator: 'Sandra Koch',     client: 'IPSWAYS / Insurance', deadline: '2026-06-28', skills: ['Business Analysis', 'Scrum', 'BPMN'],    extraSkills: 2, matches: 7,  status: 'Offen' },
-      { title: 'Compliance-Beratung DSGVO',        creator: 'Max Mustermann',  client: 'Finanz Informatik',  deadline: '2026-04-10', skills: ['DSGVO', 'Compliance'],                    extraSkills: 0, matches: 3,  status: 'Genehmigt' },
-      { title: 'Cloud-Migration Sparkasse',        creator: 'Thomas Berger',   client: 'Finanz Informatik',  deadline: '2026-07-15', skills: ['AWS', 'Terraform', 'CI/CD'],              extraSkills: 1, matches: 0,  status: 'Entwurf' },
+      { title: 'Backend-Projekt Datenmigration',  creator: 'Jannik Schröder', client: 'Hypoteq AG',          startDate: '2026-07-01', deadline: '2026-05-30', skills: ['Java', 'AWS', 'Docker'],                    extraSkills: 2, matches: 12, status: 'Offen' },
+      { title: 'Container Plattform Initiative',   creator: 'Lars Gehrken',    client: 'Reply GmbH',          startDate: '2026-07-15', deadline: '2026-06-05', skills: ['Docker', 'Kubernetes', 'GitOps'],            extraSkills: 1, matches: 5,  status: 'In Prüfung' },
+      { title: 'Business Analysten IT-Consulting', creator: 'Sandra Koch',     client: 'IPSWAYS / Insurance', startDate: '2026-08-01', deadline: '2026-06-28', skills: ['Business Analysis', 'Scrum', 'BPMN'],        extraSkills: 2, matches: 7,  status: 'Offen' },
+      { title: 'Compliance-Beratung DSGVO',        creator: 'Max Mustermann',  client: 'Finanz Informatik',   startDate: '2026-05-15', deadline: '2026-04-10', skills: ['DSGVO', 'Compliance'],                       extraSkills: 0, matches: 3,  status: 'Genehmigt' },
+      { title: 'KI-Beratung Retail Banking',       creator: 'Jannik Schröder', client: 'Volksbank Rhein-Main',startDate: '2026-08-15', deadline: '2026-06-10', skills: ['GenAI', 'LLM', 'Prompt Engineering'],        extraSkills: 3, matches: 0,  status: 'Offen', noMatch: true },
+      { title: 'Cloud-Migration Sparkasse',        creator: 'Thomas Berger',   client: 'Finanz Informatik',   startDate: '2026-09-01', deadline: '2026-07-15', skills: ['AWS', 'Terraform', 'CI/CD'],                 extraSkills: 1, matches: 0,  status: 'Entwurf' },
     ];
 
     function daysBadge(iso) {
@@ -76,7 +77,7 @@
       `;
     }
 
-    const COLS = ['', 'Titel', 'Kunde', 'Abzugeben bis', 'Frist', 'Skills', 'Matches', 'Status', ''];
+    const COLS = ['', 'Titel', 'Kunde', 'Startdatum', 'Abzugeben bis', 'Frist', 'Skills', 'Matches', 'Status'];
 
     function App() {
       const [statusFilter, setStatusFilter]   = useState('');
@@ -193,6 +194,10 @@
                         <${TableCell}>${d.client}<//>
 
                         <${TableCell}>
+                          ${new Date(d.startDate + 'T00:00:00').toLocaleDateString('de-DE')}
+                        <//>
+
+                        <${TableCell}>
                           ${new Date(d.deadline + 'T00:00:00').toLocaleDateString('de-DE')}
                         <//>
 
@@ -214,12 +219,30 @@
                         <//>
 
                         <${TableCell}>
-                          ${d.matches > 0 ? html`
-                            <${Stack} direction="row" alignItems="center" gap=${0.75}>
-                              <${Box} sx=${{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main', flexShrink: 0 }} />
-                              <${Typography} variant="body2" fontWeight=${700} color="primary.main">${d.matches}<//>
-                            <//>
-                          ` : html`<${Typography} variant="body2" color="text.disabled">—<//>` }
+                          ${d.matches > 0
+                            ? html`
+                              <${Stack} direction="row" alignItems="center" gap=${0.75}>
+                                <${Box} sx=${{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main', flexShrink: 0 }} />
+                                <${Typography} variant="body2" fontWeight=${700} color="primary.main">${d.matches}<//>
+                              <//>
+                            `
+                            : d.noMatch
+                              ? html`
+                                <${Tooltip}
+                                  title="Kein Kandidat gefunden. Mögliche Ursachen: Skills zu speziell, Zeitraum zu eng oder keine Verfügbarkeit. Details in der Opportunity."
+                                  arrow placement="top"
+                                >
+                                  <${Box} sx=${{
+                                    display: 'inline-flex', alignItems: 'center', gap: 0.5,
+                                    bgcolor: '#FFF3E0', color: '#E65100',
+                                    px: 1, py: 0.25, borderRadius: '10px',
+                                    fontSize: '12px', fontWeight: 700, whiteSpace: 'nowrap', cursor: 'help',
+                                  }}>
+                                    ⚠ Kein Treffer
+                                  <//>
+                                <//>
+                              `
+                              : html`<${Typography} variant="body2" color="text.disabled">—<//>` }
                         <//>
 
                         <${TableCell}>
@@ -230,13 +253,6 @@
                             letterSpacing: 0.5, whiteSpace: 'nowrap',
                           }}>
                             ${d.status}
-                          <//>
-                        <//>
-
-                        <${TableCell} align="right">
-                          <${Button} variant="outlined" size="small" color="inherit"
-                            onClick=${e => e.stopPropagation()}>
-                            Details
                           <//>
                         <//>
 

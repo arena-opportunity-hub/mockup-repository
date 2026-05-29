@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Feedback &amp; Transparenz — Mockup</title>
+  <title>Manager-Sicht — Mockup</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
   <style> * { box-sizing: border-box; } body { margin: 0; } </style>
@@ -15,9 +15,14 @@
 <body>
   <div id="root"></div>
   <script>
-    const { createElement: h, useState, useCallback } = React;
+    const { createElement: h, useState, useCallback, useMemo } = React;
     const { createRoot } = ReactDOM;
-    const { Box, Typography, Button, Paper, Container, Stack, Divider, Table, TableHead, TableBody, TableRow, TableCell, TableContainer, TextField, ThemeProvider, createTheme, CssBaseline } = MaterialUI;
+    const { Box, Typography, Button, Paper, Container, Stack,
+            Table, TableHead, TableBody, TableRow, TableCell, TableContainer,
+            TextField, MenuItem, IconButton, Tooltip, Checkbox,
+            Dialog, DialogTitle, DialogContent, DialogActions,
+            ToggleButtonGroup, ToggleButton,
+            ThemeProvider, createTheme, CssBaseline } = MaterialUI;
 
     const html = htm.bind(h);
 
@@ -26,220 +31,486 @@
       components: { MuiButton: { defaultProps: { disableElevation: true } } },
     });
 
+    /* ── Config ──────────────────────────────────────────────── */
+    const STATUS_CFG = {
+      ausstehend: { label: 'Ausstehend', bgcolor: '#FAEEDA', color: '#854F0B' },
+      in_review:  { label: 'In Prüfung', bgcolor: '#E6F1FB', color: '#0C447C' },
+      approved:   { label: 'Genehmigt',  bgcolor: '#E1F5EE', color: '#0F6E56' },
+      rejected:   { label: 'Abgelehnt',  bgcolor: '#FCEBEB', color: '#791F1F' },
+    };
+
+    const POOL_CFG = {
+      direct:  { dot: '#2E7D32', label: 'Sofort'  },
+      soon:    { dot: '#E65100', label: 'Bald'    },
+      partial: { dot: '#B71C1C', label: 'Teilw.'  },
+    };
+
+    const OPPS = [
+      'Backend-Projekt Datenmigration',
+      'Container Plattform Initiative',
+      'Business Analysten IT-Consulting',
+    ];
+
+    /* ── Data ────────────────────────────────────────────────── */
+    const INITIAL_PROPOSALS = [
+      // ausstehend — älteste zuerst
+      { id:1, employee:'Max Mustermann',  initials:'MM',  color:'#1976D2', role:'Senior Consultant',    opportunity:'Backend-Projekt Datenmigration',   client:'Hypoteq AG',          startDate:'2026-07-01', endDate:'2026-12-31', score:80, pool:'direct',  status:'ausstehend', comment:null,                                createdAt:'2026-04-15' },
+      { id:3, employee:'David Klein',     initials:'DK',  color:'#37474F', role:'Backend Developer',    opportunity:'Backend-Projekt Datenmigration',   client:'Hypoteq AG',          startDate:'2026-07-01', endDate:'2026-12-31', score:83, pool:'direct',  status:'ausstehend', comment:null,                                createdAt:'2026-04-15' },
+      { id:5, employee:'Thomas Berger',   initials:'TB',  color:'#7B1FA2', role:'Senior Consultant',    opportunity:'Container Plattform Initiative',   client:'Reply GmbH',          startDate:'2026-07-15', endDate:'2027-01-31', score:78, pool:'soon',    status:'ausstehend', comment:null,                                createdAt:'2026-04-18' },
+      { id:7, employee:'Sarah Braun',     initials:'SB',  color:'#E65100', role:'Consultant',           opportunity:'Business Analysten IT-Consulting', client:'IPSWAYS / Insurance', startDate:'2026-08-01', endDate:'2026-12-31', score:65, pool:'direct',  status:'ausstehend', comment:null,                                createdAt:'2026-04-20' },
+      { id:8, employee:'Julia Neumann',   initials:'JN',  color:'#6A1B9A', role:'Senior Consultant',    opportunity:'Business Analysten IT-Consulting', client:'IPSWAYS / Insurance', startDate:'2026-08-01', endDate:'2026-12-31', score:77, pool:'direct',  status:'ausstehend', comment:null,                                createdAt:'2026-04-20' },
+      // in_review
+      { id:2, employee:'Sandra Koch',     initials:'SK',  color:'#388E3C', role:'Consultant',           opportunity:'Backend-Projekt Datenmigration',   client:'Hypoteq AG',          startDate:'2026-07-01', endDate:'2026-12-31', score:84, pool:'direct',  status:'in_review',  comment:'Spreche noch mit ihr.',             createdAt:'2026-04-15' },
+      { id:6, employee:'Felix Weber',     initials:'FW',  color:'#F57C00', role:'Consultant',           opportunity:'Container Plattform Initiative',   client:'Reply GmbH',          startDate:'2026-07-15', endDate:'2027-01-31', score:69, pool:'partial', status:'in_review',  comment:'Prüfe die Verfügbarkeit noch ab.',  createdAt:'2026-04-18' },
+      // approved
+      { id:4, employee:'Tobias Schulz',   initials:'TS',  color:'#558B2F', role:'Backend Developer',    opportunity:'Backend-Projekt Datenmigration',   client:'Hypoteq AG',          startDate:'2026-07-01', endDate:'2026-12-31', score:68, pool:'direct',  status:'approved',   comment:'Passt gut, sofort einsetzbar.',     createdAt:'2026-04-15' },
+    ];
+
+    const INITIAL_AUDIT = [
+      { ts:'heute, 09:14',   actor:'Anna Schmidt', employee:'Felix Weber',   opp:'Container Plattform Initiative',   from:'ausstehend', to:'in_review',  comment:'Prüfe die Verfügbarkeit noch ab.' },
+      { ts:'gestern, 14:35', actor:'Anna Schmidt', employee:'Sandra Koch',   opp:'Backend-Projekt Datenmigration',   from:'ausstehend', to:'in_review',  comment:'Spreche noch mit ihr.' },
+      { ts:'gestern, 14:30', actor:'Anna Schmidt', employee:'Tobias Schulz', opp:'Backend-Projekt Datenmigration',   from:'ausstehend', to:'approved',   comment:'Passt gut, sofort einsetzbar.' },
+    ];
+
+    /* ── Helpers ─────────────────────────────────────────────── */
+    function fmtDate(iso) {
+      return new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    }
+
+    function statusKey(label) {
+      return Object.keys(STATUS_CFG).find(k => STATUS_CFG[k].label === label);
+    }
+
+    /* ── Components ──────────────────────────────────────────── */
     function MockupBar() {
       return html`
         <${Paper} square elevation=${0} sx=${{
-          position: 'sticky', top: 0, zIndex: 1100,
-          borderBottom: '1px solid', borderColor: 'divider',
-          px: 4, py: 1.25,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          position:'sticky', top:0, zIndex:1100,
+          borderBottom:'1px solid', borderColor:'divider',
+          px:4, py:1.25, display:'flex', alignItems:'center', justifyContent:'space-between',
         }}>
           <${Typography} variant="overline" color="text.secondary">
-            Mockup · <${Box} component="span" sx=${{ color: 'primary.main' }}>Feedback &amp; Transparenz<//>
+            Mockup · <${Box} component="span" sx=${{ color:'primary.main' }}>Manager-Sicht<//> — Zu bewerten
           <//>
           <${Button} component="a" href="../index.html" size="small">← Katalog<//>
         <//>
       `;
     }
 
-    function StatusBadge({ label }) {
-      const MAP = {
-        'Genehmigt':  { bgcolor: '#E1F5EE', color: '#0F6E56' },
-        'In Prüfung': { bgcolor: '#E6F1FB', color: '#0C447C' },
-        'Abgelehnt':  { bgcolor: '#FCEBEB', color: '#791F1F' },
-        'Ausstehend': { bgcolor: '#FAEEDA', color: '#854F0B' },
-      };
-      const s = MAP[label] || { bgcolor: '#F1EFE8', color: '#5F5E5A' };
+    function Avatar({ initials, color, size=36 }) {
       return html`
         <${Box} sx=${{
-          display: 'inline-block', bgcolor: s.bgcolor, color: s.color,
-          px: 1.25, py: 0.25, borderRadius: '12px',
-          fontSize: '12px', fontWeight: 700, whiteSpace: 'nowrap',
-        }}>${label}<//>
-      `;
-    }
-
-    function ScoreBar({ score }) {
-      const color = score >= 85 ? '#2E7D32' : score >= 70 ? '#1976D2' : '#E65100';
-      return html`
-        <${Stack} direction="row" alignItems="center" spacing=${1}>
-          <${Box} sx=${{ width: 72, height: 6, bgcolor: '#E0E0E0', borderRadius: '3px', overflow: 'hidden' }}>
-            <${Box} sx=${{ width: score + '%', height: '100%', bgcolor: color, borderRadius: '3px' }} />
-          <//>
-          <${Typography} variant="body2" fontWeight=${700}>${score}<//>
-        <//>
-      `;
-    }
-
-    function Avatar({ initials, bgcolor }) {
-      return html`
-        <${Box} sx=${{
-          width: 32, height: 32, borderRadius: '50%',
-          bgcolor, color: '#fff', fontWeight: 700, fontSize: '11px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          width:size, height:size, borderRadius:'50%', bgcolor:color, color:'#fff',
+          fontWeight:700, fontSize:(size*0.38)+'px', flexShrink:0,
+          display:'flex', alignItems:'center', justifyContent:'center',
         }}>${initials}<//>
       `;
     }
 
-    function ActionGroup({ onDecide }) {
+    function StatusPill({ status, comment }) {
+      const cfg = STATUS_CFG[status] || STATUS_CFG.ausstehend;
+      const pill = html`
+        <${Box} sx=${{
+          display:'inline-flex', alignItems:'center', gap:0.5,
+          bgcolor:cfg.bgcolor, color:cfg.color,
+          px:1.25, py:0.25, borderRadius:'12px',
+          fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:0.4, whiteSpace:'nowrap',
+        }}>
+          ${cfg.label}${comment ? html` <${Box} component="span" sx=${{ opacity:0.7 }}>ⓘ<//>` : null}
+        <//>
+      `;
+      return comment
+        ? html`<${Tooltip} title=${comment} arrow placement="top"><${Box} sx=${{ display:'inline-block', cursor:'help' }}>${pill}<//><//>`
+        : pill;
+    }
+
+    function ScoreCell({ score, pool }) {
+      const color = score >= 80 ? '#2E7D32' : score >= 65 ? '#1976D2' : '#E65100';
+      const pc    = POOL_CFG[pool] || POOL_CFG.direct;
       return html`
-        <${Stack} spacing=${0.75}>
-          <${Stack} direction="row" spacing=${0.75} flexWrap="wrap">
-            <${Button} size="small" onClick=${() => onDecide('Genehmigt')}
-              sx=${{ bgcolor: '#E1F5EE', color: '#0F6E56', border: '1px solid #b8e6d4', '&:hover': { bgcolor: '#c8eedd' } }}>
-              Genehmigen
+        <${Stack} spacing=${0.5} sx=${{ minWidth:100 }}>
+          <${Stack} direction="row" alignItems="center" gap=${1}>
+            <${Box} sx=${{ flex:1, height:5, bgcolor:'#E0E0E0', borderRadius:'3px', overflow:'hidden' }}>
+              <${Box} sx=${{ width:score+'%', height:'100%', bgcolor:color, borderRadius:'3px' }} />
             <//>
-            <${Button} size="small" onClick=${() => onDecide('In Prüfung')}
-              sx=${{ bgcolor: '#E6F1FB', color: '#0C447C', border: '1px solid #b3d2f0', '&:hover': { bgcolor: '#cfe0f5' } }}>
-              In Prüfung
-            <//>
-            <${Button} size="small" onClick=${() => onDecide('Abgelehnt')}
-              sx=${{ bgcolor: '#FCEBEB', color: '#791F1F', border: '1px solid #f5c6c6', '&:hover': { bgcolor: '#fad5d5' } }}>
-              Ablehnen
-            <//>
+            <${Typography} variant="caption" fontWeight=${700} sx=${{ color, minWidth:20, textAlign:'right' }}>${score}<//>
           <//>
-          <${TextField} multiline rows=${2} size="small" placeholder="Kommentar (optional)" fullWidth />
+          <${Stack} direction="row" alignItems="center" gap=${0.5}>
+            <${Box} sx=${{ width:7, height:7, borderRadius:'50%', bgcolor:pc.dot, flexShrink:0 }} />
+            <${Typography} variant="caption" color="text.secondary" sx=${{ fontSize:'11px' }}>${pc.label}<//>
+          <//>
         <//>
       `;
     }
 
-    const INITIAL_CANDIDATES = [
-      { name: 'Max Mustermann', initials: 'MM', avatarColor: '#1976D2', role: 'Senior Consultant', score: 91, status: 'Genehmigt' },
-      { name: 'Sandra Koch',    initials: 'SK', avatarColor: '#388E3C', role: 'Senior Consultant', score: 84, status: 'In Prüfung' },
-      { name: 'Felix Weber',    initials: 'FW', avatarColor: '#F57C00', role: 'Consultant',        score: 69, status: 'Ausstehend' },
-    ];
+    /* ── Status-Dialog (Einzelbewertung) ─────────────────────── */
+    function StatusDialog({ proposal, onSave, onClose }) {
+      const [status,  setStatus]  = useState(() => proposal.status === 'ausstehend' ? 'in_review' : proposal.status);
+      const [comment, setComment] = useState(proposal.comment || '');
+      const MAX = 1000;
+      const canSave = status !== proposal.status || comment !== (proposal.comment || '');
 
-    const TIMELINE = [
-      { icon: '➕', dotClass: 'grey',   title: 'Opportunity erstellt',        desc: 'von Jannik Schröder',                                                         meta: 'vor 3 Tagen',    comment: null },
-      { icon: '◎',  dotClass: 'blue',   title: 'Matching gestartet',          desc: '6 Kandidaten gefunden: 3 sofort verfügbar, 2 bald, 1 teilweise',              meta: 'vor 3 Tagen',    comment: null },
-      { icon: '✉',  dotClass: 'blue',   title: 'Manager informiert',          desc: 'Anna Schmidt, Klaus Bauer, Marco Lehmann per E-Mail benachrichtigt',          meta: 'vor 3 Tagen',    comment: null },
-      { icon: '✓',  dotClass: 'green',  title: 'Genehmigt — Max Mustermann',  desc: null,                                                                           meta: 'gestern, 14:32', comment: 'Anna Schmidt: «Hervorragende Passung. Max hat exakt die benötigte AWS-Erfahrung.»' },
-      { icon: '⏸',  dotClass: 'yellow', title: 'In Prüfung — Sandra Koch',    desc: null,                                                                           meta: 'gestern, 14:35', comment: 'Anna Schmidt: «Sandra ist interessiert, ich spreche noch mit ihr.»' },
-      { icon: '⏸',  dotClass: 'yellow', title: 'In Prüfung — Felix Weber',    desc: null,                                                                           meta: 'heute, 09:14',   comment: 'Anna Schmidt: «Prüfe die Verfügbarkeit.»' },
-    ];
-
-    const DOT_COLORS = {
-      grey:   { bgcolor: '#F1EFE8', color: '#5F5E5A' },
-      blue:   { bgcolor: '#E3F0FC', color: '#1976D2' },
-      green:  { bgcolor: '#E1F5EE', color: '#0F6E56' },
-      yellow: { bgcolor: '#FAEEDA', color: '#854F0B' },
-    };
-
-    function TimelineDot({ icon, dotClass }) {
-      const c = DOT_COLORS[dotClass];
       return html`
-        <${Box} sx=${{
-          width: 32, height: 32, borderRadius: '50%',
-          bgcolor: c.bgcolor, color: c.color,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '14px', flexShrink: 0,
-        }}>${icon}<//>
+        <${Dialog} open onClose=${onClose} maxWidth="sm" fullWidth>
+          <${DialogTitle} sx=${{ pb:1 }}>
+            <${Typography} variant="subtitle1" fontWeight=${700}>${proposal.employee}<//>
+            <${Typography} variant="body2" color="text.secondary">${proposal.opportunity}<//>
+          <//>
+          <${DialogContent}>
+            <${Typography} variant="caption" color="text.secondary" sx=${{ display:'block', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5, mb:1 }}>
+              Status setzen
+            <//>
+            <${ToggleButtonGroup}
+              value=${status} exclusive size="small" fullWidth
+              onChange=${(_, v) => v && setStatus(v)}
+              sx=${{ mb:0.5 }}
+            >
+              <${ToggleButton} value="in_review" sx=${{ flex:1, py:0.625, fontSize:'12px', fontWeight:700, '&.Mui-selected':{ bgcolor:'#E6F1FB', color:'#0C447C', borderColor:'#b3d2f0' } }}>
+                In Prüfung
+              <//>
+              <${ToggleButton} value="approved" sx=${{ flex:1, py:0.625, fontSize:'12px', fontWeight:700, '&.Mui-selected':{ bgcolor:'#E1F5EE', color:'#0F6E56', borderColor:'#b8e6d4' } }}>
+                Genehmigen
+              <//>
+              <${ToggleButton} value="rejected" sx=${{ flex:1, py:0.625, fontSize:'12px', fontWeight:700, '&.Mui-selected':{ bgcolor:'#FCEBEB', color:'#791F1F', borderColor:'#f5c6c6' } }}>
+                Ablehnen
+              <//>
+            <//>
+            <${Typography} variant="caption" color="text.disabled" sx=${{ display:'block', mb:2.5, fontStyle:'italic' }}>
+              Status „Abgelehnt" ist umkehrbar — zurück auf „In Prüfung" jederzeit möglich.
+            <//>
+            <${TextField}
+              label="Kommentar (optional)" multiline rows=${3} fullWidth size="small"
+              value=${comment}
+              onChange=${e => setComment(e.target.value.slice(0, MAX))}
+              helperText=${comment.length + ' / ' + MAX}
+              FormHelperTextProps=${{ sx:{ textAlign:'right' } }}
+            />
+          <//>
+          <${DialogActions} sx=${{ px:3, pb:2.5 }}>
+            <${Button} onClick=${onClose} color="inherit">Abbrechen<//>
+            <${Button} variant="contained" disabled=${!canSave} onClick=${() => onSave(proposal, status, comment)}>
+              Speichern
+            <//>
+          <//>
+        <//>
       `;
     }
 
-    function App() {
-      const [candidates, setCandidates] = useState(INITIAL_CANDIDATES);
+    /* ── Bulk-Ablehnen-Dialog ────────────────────────────────── */
+    function BulkDialog({ proposals, onConfirm, onClose }) {
+      const [comment, setComment] = useState('');
+      const MAX = 1000;
+      return html`
+        <${Dialog} open onClose=${onClose} maxWidth="sm" fullWidth>
+          <${DialogTitle}>
+            <${Typography} variant="subtitle1" fontWeight=${700}>${proposals.length} Kandidaten ablehnen<//>
+          <//>
+          <${DialogContent}>
+            <${Paper} variant="outlined" sx=${{ mb:2, maxHeight:160, overflowY:'auto' }}>
+              ${proposals.map(p => html`
+                <${Stack} key=${p.id} direction="row" alignItems="center" gap=${1.25}
+                  sx=${{ px:1.5, py:0.875, borderBottom:'1px solid', borderColor:'divider', '&:last-child':{ borderBottom:'none' } }}>
+                  <${Avatar} initials=${p.initials} color=${p.color} size=${28} />
+                  <${Box}>
+                    <${Typography} variant="body2" fontWeight=${500}>${p.employee}<//>
+                    <${Typography} variant="caption" color="text.secondary">${p.opportunity}<//>
+                  <//>
+                <//>
+              `)}
+            <//>
+            <${Box} sx=${{ bgcolor:'#FFF3E0', border:'1px solid #FFCC80', borderRadius:1, px:1.5, py:1, mb:2 }}>
+              <${Typography} variant="caption" sx=${{ color:'#E65100' }}>
+                ⚠ Individuelle Genehmigungen erfordern eine bewusste Einzel-Entscheidung. Bulk-Aktion nur für Ablehnung verfügbar.
+              <//>
+            <//>
+            <${TextField}
+              label="Gemeinsamer Kommentar (optional)" multiline rows=${3} fullWidth size="small"
+              value=${comment}
+              onChange=${e => setComment(e.target.value.slice(0, MAX))}
+              helperText=${comment.length + ' / ' + MAX}
+              FormHelperTextProps=${{ sx:{ textAlign:'right' } }}
+            />
+          <//>
+          <${DialogActions} sx=${{ px:3, pb:2.5 }}>
+            <${Button} onClick=${onClose} color="inherit">Abbrechen<//>
+            <${Button} variant="contained" color="error" onClick=${() => onConfirm(comment)}>
+              ${proposals.length} Kandidaten ablehnen
+            <//>
+          <//>
+        <//>
+      `;
+    }
 
-      const decide = useCallback((name, status) => {
-        setCandidates(cs => cs.map(c => c.name === name ? { ...c, status } : c));
+    /* ── App ─────────────────────────────────────────────────── */
+    function App() {
+      const [proposals, setProposals] = useState(INITIAL_PROPOSALS);
+      const [selected,  setSelected]  = useState(() => new Set());
+      const [fStatus,   setFStatus]   = useState('');
+      const [fOpp,      setFOpp]      = useState('');
+      const [dateFrom,  setDateFrom]  = useState('');
+      const [dateTo,    setDateTo]    = useState('');
+      const [dialog,    setDialog]    = useState(null);
+      const [bulkOpen,  setBulkOpen]  = useState(false);
+      const [auditLog,  setAuditLog]  = useState(INITIAL_AUDIT);
+
+      /* Filter & sort: ausstehend (älteste zuerst) → in_review → approved/rejected */
+      const filtered = useMemo(() => proposals.filter(p =>
+        (!fStatus  || p.status === fStatus) &&
+        (!fOpp     || p.opportunity === fOpp) &&
+        (!dateFrom || p.startDate >= dateFrom) &&
+        (!dateTo   || p.startDate <= dateTo)
+      ), [proposals, fStatus, fOpp, dateFrom, dateTo]);
+
+      const sorted = useMemo(() => {
+        const pend = filtered.filter(p => p.status === 'ausstehend').sort((a,b) => a.createdAt.localeCompare(b.createdAt));
+        const rev  = filtered.filter(p => p.status === 'in_review').sort((a,b)  => a.createdAt.localeCompare(b.createdAt));
+        const done = filtered.filter(p => ['approved','rejected'].includes(p.status));
+        return [...pend, ...rev, ...done];
+      }, [filtered]);
+
+      /* Selection (nur ausstehend + in_review auswählbar) */
+      const selectableIds = useMemo(() => sorted.filter(p => ['ausstehend','in_review'].includes(p.status)).map(p => p.id), [sorted]);
+      const allSel        = selectableIds.length > 0 && selectableIds.every(id => selected.has(id));
+      const someSel       = selectableIds.some(id => selected.has(id));
+      const selCount      = [...selected].filter(id => selectableIds.includes(id)).length;
+
+      const toggleOne = useCallback(id => {
+        setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
       }, []);
+
+      const toggleAll = useCallback(() => {
+        setSelected(prev => {
+          if (selectableIds.every(id => prev.has(id))) {
+            const n = new Set(prev); selectableIds.forEach(id => n.delete(id)); return n;
+          }
+          const n = new Set(prev); selectableIds.forEach(id => n.add(id)); return n;
+        });
+      }, [selectableIds]);
+
+      /* Einzelbewertung */
+      const saveStatus = useCallback((proposal, newStatus, comment) => {
+        setProposals(prev => prev.map(p => p.id === proposal.id ? { ...p, status: newStatus, comment: comment || null } : p));
+        setAuditLog(prev => [{
+          ts: 'gerade eben', actor: 'Anna Schmidt',
+          employee: proposal.employee, opp: proposal.opportunity,
+          from: proposal.status, to: newStatus,
+          comment: comment || null,
+        }, ...prev]);
+        setDialog(null);
+      }, []);
+
+      /* Bulk-Ablehnen */
+      const saveBulkReject = useCallback((comment) => {
+        const ids      = [...selected].filter(id => selectableIds.includes(id));
+        const affected = proposals.filter(p => ids.includes(p.id));
+        setProposals(prev => prev.map(p => ids.includes(p.id) ? { ...p, status: 'rejected', comment: comment || null } : p));
+        setAuditLog(prev => [
+          ...affected.map(p => ({ ts: 'gerade eben', actor: 'Anna Schmidt', employee: p.employee, opp: p.opportunity, from: p.status, to: 'rejected', comment: comment || null })),
+          ...prev,
+        ]);
+        setSelected(new Set());
+        setBulkOpen(false);
+      }, [selected, selectableIds, proposals]);
+
+      const counts = useMemo(() => ({
+        ausstehend: proposals.filter(p => p.status === 'ausstehend').length,
+        in_review:  proposals.filter(p => p.status === 'in_review').length,
+      }), [proposals]);
 
       return html`
         <${ThemeProvider} theme=${theme}>
           <${CssBaseline} />
           <${MockupBar} />
-          <${Container} maxWidth="md" sx=${{ py: 4 }}>
+          <${Container} maxWidth="lg" sx=${{ py:4 }}>
 
-            <!-- Manager view -->
-            <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <${Box} component="span" sx=${{ color: 'primary.main', fontSize: '16px' }}>●<//>
-              Manager-Ansicht
-            <//>
-
-            <${Paper} variant="outlined" sx=${{ mb: 4, overflow: 'hidden' }}>
-              <${Box} sx=${{ px: 2.5, py: 1.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: '#FAFAFA' }}>
+            <!-- Page header -->
+            <${Stack} direction="row" alignItems="center" gap=${2} sx=${{ mb:3 }}>
+              <${Box} sx=${{ flex:1 }}>
+                <${Typography} variant="h6" fontWeight=${700}>Zu bewerten<//>
                 <${Typography} variant="body2" color="text.secondary">
-                  Opportunity: Backend-Projekt Datenmigration &nbsp;·&nbsp;
-                  3 Kandidaten aus deinem Team warten auf Bewertung
+                  Kandidatenvorschläge für Ihre Mitarbeitenden · sortiert: älteste offen zuerst
                 <//>
               <//>
-              <${TableContainer}>
-                <${Table} size="small">
-                  <${TableHead}>
-                    <${TableRow}>
-                      ${['Mitarbeiter', 'Rolle', 'Match-Score', 'Status', 'Bewertung'].map(c => html`
-                        <${TableCell} key=${c} sx=${{ fontWeight: 700, textTransform: 'uppercase', fontSize: '11px', letterSpacing: 0.5, color: 'text.secondary' }}>
-                          ${c}
-                        <//>
-                      `)}
-                    <//>
+              <${Stack} direction="row" gap=${1}>
+                ${counts.ausstehend > 0 && html`
+                  <${Box} sx=${{ bgcolor:'#FAEEDA', color:'#854F0B', px:1.25, py:0.375, borderRadius:'12px', fontSize:'12px', fontWeight:700 }}>
+                    ${counts.ausstehend} ausstehend
                   <//>
-                  <${TableBody}>
-                    ${candidates.map(c => html`
-                      <${TableRow} key=${c.name}>
-                        <${TableCell}>
-                          <${Stack} direction="row" alignItems="center" spacing=${1.25}>
-                            <${Avatar} initials=${c.initials} bgcolor=${c.avatarColor} />
-                            <${Typography} variant="body2" fontWeight=${500}>${c.name}<//>
-                          <//>
-                        <//>
-                        <${TableCell}>${c.role}<//>
-                        <${TableCell}><${ScoreBar} score=${c.score} /><//>
-                        <${TableCell}><${StatusBadge} label=${c.status} /><//>
-                        <${TableCell} sx=${{ minWidth: 280 }}>
-                          ${c.status === 'Genehmigt'
-                            ? html`
-                              <${Box} sx=${{ display: 'inline-flex', alignItems: 'center', gap: 0.75, bgcolor: '#E1F5EE', color: '#0F6E56', px: 1.5, py: 0.5, borderRadius: 1, fontSize: '12px', fontWeight: 700 }}>
-                                ✓ Genehmigt
-                              <//>
-                            `
-                            : html`<${ActionGroup} onDecide=${(s) => decide(c.name, s)} />`
-                          }
-                        <//>
+                `}
+                ${counts.in_review > 0 && html`
+                  <${Box} sx=${{ bgcolor:'#E6F1FB', color:'#0C447C', px:1.25, py:0.375, borderRadius:'12px', fontSize:'12px', fontWeight:700 }}>
+                    ${counts.in_review} in Prüfung
+                  <//>
+                `}
+              <//>
+            <//>
+
+            <!-- Bulk action bar (erscheint bei Auswahl) -->
+            ${selCount > 0 && html`
+              <${Paper} variant="outlined" sx=${{
+                px:2.5, py:1.25, mb:1.5,
+                display:'flex', alignItems:'center', gap:2,
+                bgcolor:'#FFF8E1', borderColor:'#FFC107',
+              }}>
+                <${Typography} variant="body2" fontWeight=${600} sx=${{ flex:1 }}>
+                  ${selCount} ausgewählt
+                <//>
+                <${Button} variant="contained" color="error" size="small" onClick=${() => setBulkOpen(true)}>
+                  Alle ablehnen
+                <//>
+                <${Button} variant="text" color="inherit" size="small" onClick=${() => setSelected(new Set())}>
+                  Auswahl aufheben
+                <//>
+              <//>
+            `}
+
+            <!-- Filter bar -->
+            <${Stack} direction="row" spacing=${1.5} sx=${{ mb:2 }} flexWrap="wrap">
+              <${TextField} label="Status" select size="small" value=${fStatus}
+                onChange=${e => setFStatus(e.target.value)} sx=${{ minWidth:150 }}>
+                <${MenuItem} value="">Status: Alle<//>
+                <${MenuItem} value="ausstehend">Ausstehend<//>
+                <${MenuItem} value="in_review">In Prüfung<//>
+                <${MenuItem} value="approved">Genehmigt<//>
+                <${MenuItem} value="rejected">Abgelehnt<//>
+              <//>
+              <${TextField} label="Opportunity" select size="small" value=${fOpp}
+                onChange=${e => setFOpp(e.target.value)} sx=${{ minWidth:230 }}>
+                <${MenuItem} value="">Opportunity: Alle<//>
+                ${OPPS.map(o => html`<${MenuItem} key=${o} value=${o}>${o}<//>`)}
+              <//>
+              <${TextField} label="Startdatum ab" type="date" size="small"
+                value=${dateFrom} onChange=${e => setDateFrom(e.target.value)}
+                InputLabelProps=${{ shrink:true }} sx=${{ minWidth:165 }} />
+              <${TextField} label="Bis" type="date" size="small"
+                value=${dateTo} onChange=${e => setDateTo(e.target.value)}
+                InputLabelProps=${{ shrink:true }} sx=${{ minWidth:150 }} />
+            <//>
+
+            <!-- Table -->
+            <${TableContainer} component=${Paper} variant="outlined" sx=${{ mb:3 }}>
+              <${Table} size="small">
+                <${TableHead}>
+                  <${TableRow}>
+                    <${TableCell} padding="checkbox">
+                      <${Checkbox} size="small" checked=${allSel} indeterminate=${someSel && !allSel} onChange=${toggleAll} />
+                    <//>
+                    ${['Mitarbeiter','Opportunity / Kunde','Zeitraum','Match','Status','Aktion'].map(c => html`
+                      <${TableCell} key=${c} sx=${{ fontWeight:700, fontSize:'11px', textTransform:'uppercase', letterSpacing:0.5, color:'text.secondary', whiteSpace:'nowrap' }}>
+                        ${c}
                       <//>
                     `)}
                   <//>
                 <//>
-              <//>
-            <//>
+                <${TableBody}>
+                  ${sorted.length === 0 && html`
+                    <${TableRow}>
+                      <${TableCell} colSpan=${7} sx=${{ textAlign:'center', py:5 }}>
+                        <${Typography} variant="body2" color="text.secondary">Keine Einträge für diese Filterauswahl.<//>
+                      <//>
+                    <//>
+                  `}
+                  ${sorted.map(p => {
+                    const selectable = ['ausstehend','in_review'].includes(p.status);
+                    const isDone     = ['approved','rejected'].includes(p.status);
+                    return html`
+                      <${TableRow} key=${p.id} hover selected=${selected.has(p.id)}
+                        sx=${{ opacity: isDone ? 0.72 : 1 }}>
 
-            <!-- Creator view -->
-            <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <${Box} component="span" sx=${{ color: 'primary.main', fontSize: '16px' }}>●<//>
-              Ersteller-Ansicht
-            <//>
+                        <${TableCell} padding="checkbox">
+                          <${Checkbox} size="small" checked=${selected.has(p.id)} disabled=${!selectable} onChange=${() => toggleOne(p.id)} />
+                        <//>
 
-            <${Paper} variant="outlined" sx=${{ overflow: 'hidden' }}>
-              <${Box} sx=${{ px: 2.5, py: 1.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: '#FAFAFA' }}>
-                <${Typography} variant="body2" color="text.secondary">
-                  Opportunity: Backend-Projekt Datenmigration &nbsp;·&nbsp; Letzte Aktivität: heute, 09:14
+                        <${TableCell}>
+                          <${Stack} direction="row" alignItems="center" gap=${1.25}>
+                            <${Avatar} initials=${p.initials} color=${p.color} size=${34} />
+                            <${Box}>
+                              <${Typography} variant="body2" fontWeight=${600}>${p.employee}<//>
+                              <${Typography} variant="caption" color="text.secondary">${p.role}<//>
+                            <//>
+                          <//>
+                        <//>
+
+                        <${TableCell}>
+                          <${Typography} variant="body2" fontWeight=${500}>${p.opportunity}<//>
+                          <${Typography} variant="caption" color="text.secondary">${p.client}<//>
+                        <//>
+
+                        <${TableCell} sx=${{ whiteSpace:'nowrap' }}>
+                          <${Typography} variant="body2">${fmtDate(p.startDate)} –<//>
+                          <${Typography} variant="body2">${fmtDate(p.endDate)}<//>
+                        <//>
+
+                        <${TableCell} sx=${{ minWidth:110 }}>
+                          <${ScoreCell} score=${p.score} pool=${p.pool} />
+                        <//>
+
+                        <${TableCell}>
+                          <${StatusPill} status=${p.status} comment=${p.comment} />
+                        <//>
+
+                        <${TableCell} align="right">
+                          ${!isDone
+                            ? html`<${Button} variant="outlined" size="small" color="inherit" onClick=${() => setDialog(p)} sx=${{ whiteSpace:'nowrap' }}>Bewerten →<//>`
+                            : html`<${Button} variant="text" size="small" color="inherit" onClick=${() => setDialog(p)} sx=${{ fontSize:'12px', color:'text.secondary' }}>Ändern<//>` }
+                        <//>
+
+                      <//>
+                    `;
+                  })}
                 <//>
               <//>
-              <${Box} sx=${{ px: 2.5, pb: 1 }}>
-                ${TIMELINE.map((item, i) => html`
-                  <${Stack} key=${i} direction="row" gap=${2} sx=${{ py: 1.75, borderBottom: i < TIMELINE.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
-                    <${Stack} alignItems="center" sx=${{ flexShrink: 0, width: 32 }}>
-                      <${TimelineDot} icon=${item.icon} dotClass=${item.dotClass} />
-                      ${i < TIMELINE.length - 1 && html`
-                        <${Box} sx=${{ width: '2px', flex: 1, bgcolor: 'divider', mt: 0.75 }} />
-                      `}
+            <//>
+
+            <!-- Audit-Log -->
+            <${Paper} variant="outlined" sx=${{ p:3 }}>
+              <${Typography} variant="overline" color="text.secondary" sx=${{ display:'block', borderBottom:'1px solid', borderColor:'divider', pb:1.25, mb:1.5 }}>
+                Audit-Log — Statusänderungen
+              <//>
+              ${auditLog.length === 0 && html`
+                <${Typography} variant="body2" color="text.secondary" sx=${{ fontStyle:'italic' }}>Noch keine Statusänderungen.<//>
+              `}
+              ${auditLog.map((e, i) => {
+                const fromCfg = STATUS_CFG[e.from] || {};
+                const toCfg   = STATUS_CFG[e.to]   || {};
+                return html`
+                  <${Stack} key=${i} direction="row" gap=${2}
+                    sx=${{ py:1.25, borderBottom: i < auditLog.length-1 ? '1px solid' : 'none', borderColor:'divider' }}>
+                    <${Box} sx=${{ width:32, height:32, borderRadius:'50%', bgcolor:'#E3F0FC', color:'#1976D2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px', flexShrink:0 }}>
+                      ✎
                     <//>
-                    <${Box} sx=${{ flex: 1, minWidth: 0 }}>
-                      <${Typography} variant="body2" fontWeight=${600} sx=${{ mb: 0.25 }}>${item.title}<//>
-                      ${item.desc && html`<${Typography} variant="body2" color="text.secondary" sx=${{ mb: 0.5 }}>${item.desc}<//>` }
-                      ${item.comment && html`
-                        <${Box} sx=${{ bgcolor: '#F5F6F8', borderLeft: '3px solid', borderColor: 'divider', px: 1.5, py: 1, my: 0.75, borderRadius: '0 2px 2px 0' }}>
-                          <${Typography} variant="body2" sx=${{ lineHeight: 1.6 }}>${item.comment}<//>
+                    <${Box} sx=${{ flex:1 }}>
+                      <${Stack} direction="row" flexWrap="wrap" gap=${0.5} alignItems="center" sx=${{ mb:0.25 }}>
+                        <${Typography} variant="body2" fontWeight=${600}>${e.actor}<//>
+                        <${Typography} variant="body2" color="text.secondary">·<//>
+                        <${Typography} variant="body2" fontWeight=${500}>${e.employee}<//>
+                        <${Typography} variant="body2" color="text.secondary">für<//>
+                        <${Typography} variant="body2" sx=${{ fontStyle:'italic' }}>${e.opp}<//>
+                        <${Box} sx=${{ bgcolor: fromCfg.bgcolor||'#F5F5F5', color: fromCfg.color||'#9E9E9E', px:1, py:0.125, borderRadius:'10px', fontSize:'11px', fontWeight:700 }}>
+                          ${fromCfg.label || e.from}
+                        <//>
+                        <${Typography} variant="body2" color="text.disabled">→<//>
+                        <${Box} sx=${{ bgcolor: toCfg.bgcolor||'#F5F5F5', color: toCfg.color||'#9E9E9E', px:1, py:0.125, borderRadius:'10px', fontSize:'11px', fontWeight:700 }}>
+                          ${toCfg.label || e.to}
+                        <//>
+                      <//>
+                      ${e.comment && html`
+                        <${Box} sx=${{ bgcolor:'#F5F6F8', borderLeft:'3px solid', borderColor:'divider', px:1.5, py:0.75, mt:0.5, borderRadius:'0 4px 4px 0' }}>
+                          <${Typography} variant="body2" sx=${{ fontSize:'13px', lineHeight:1.5 }}>${e.comment}<//>
                         <//>
                       `}
-                      <${Typography} variant="caption" color="text.disabled">${item.meta}<//>
+                      <${Typography} variant="caption" color="text.disabled" sx=${{ display:'block', mt:0.25 }}>${e.ts}<//>
                     <//>
                   <//>
-                `)}
-              <//>
+                `;
+              })}
             <//>
 
           <//>
+
+          ${dialog && html`<${StatusDialog} proposal=${dialog} onSave=${saveStatus} onClose=${() => setDialog(null)} />`}
+          ${bulkOpen && html`<${BulkDialog} proposals=${sorted.filter(p => selected.has(p.id))} onConfirm=${saveBulkReject} onClose=${() => setBulkOpen(false)} />`}
+
         <//>
       `;
     }

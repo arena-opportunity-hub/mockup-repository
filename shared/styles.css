@@ -270,8 +270,6 @@ textarea.input-outlined { resize: vertical; min-height: 80px; }
 .drawer-score-badge { display: flex; flex-direction: column; align-items: center; padding: 8px 14px; background: var(--c-bg); border: 1px solid var(--c-border); border-radius: var(--radius); flex-shrink: 0; }
 .drawer-score-badge .score-val { font-size: 26px; font-weight: 700; line-height: 1; color: var(--c-primary); }
 .drawer-score-badge .score-lbl { font-size: 10px; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
-.decidalo-link { font-size: 12px; color: var(--c-primary); font-weight: 500; white-space: nowrap; display: flex; align-items: center; gap: 3px; padding: 4px 8px; border: 1px solid var(--c-primary); border-radius: var(--radius); transition: background 0.12s; flex-shrink: 0; }
-.decidalo-link:hover { background: var(--c-primary-light); }
 .drawer-close { background: none; border: none; font-size: 22px; color: var(--c-text-muted); cursor: pointer; padding: 0; line-height: 1; flex-shrink: 0; margin-top: -2px; }
 .drawer-close:hover { color: var(--c-text); }
 .drawer-body { flex: 1; overflow-y: auto; }

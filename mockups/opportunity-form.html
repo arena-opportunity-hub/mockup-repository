@@ -15,10 +15,11 @@
 <body>
   <div id="root"></div>
   <script>
-    const { createElement: h, useState, useCallback } = React;
+    const { createElement: h, useState, useCallback, useMemo } = React;
     const { createRoot } = ReactDOM;
-    const { Box, Typography, Button, Paper, Container, Stack, Grid, Divider, TextField, MenuItem, ToggleButtonGroup, ToggleButton, IconButton, Autocomplete, ThemeProvider, createTheme, CssBaseline } = MaterialUI;
-    const acFilter = MaterialUI.createFilterOptions();
+    const { Box, Typography, Button, Paper, Container, Stack, Grid, TextField, MenuItem,
+            ToggleButtonGroup, ToggleButton, IconButton, Autocomplete, Tooltip,
+            ThemeProvider, createTheme, CssBaseline } = MaterialUI;
 
     const html = htm.bind(h);
 
@@ -27,6 +28,7 @@
       components: { MuiButton: { defaultProps: { disableElevation: true } } },
     });
 
+    /* ── Helpers ─────────────────────────────────────────────── */
     function MockupBar() {
       return html`
         <${Paper} square elevation=${0} sx=${{
@@ -54,6 +56,15 @@
       `;
     }
 
+    function FieldLabel({ children }) {
+      return html`
+        <${Typography} variant="caption" color="text.secondary" sx=${{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.75 }}>
+          ${children}
+        <//>
+      `;
+    }
+
+    /* ── Stammdaten ──────────────────────────────────────────── */
     const KUNDEN = [
       'Allianz SE', 'Commerzbank AG', 'Deutsche Bank AG', 'Deutsche Telekom AG',
       'Generali Deutschland', 'Munich Re', 'SAP SE', 'Siemens AG',
@@ -67,6 +78,8 @@
       'Nordrhein-Westfalen', 'Rheinland-Pfalz', 'Saarland', 'Sachsen',
       'Sachsen-Anhalt', 'Schleswig-Holstein', 'Thüringen',
     ];
+
+    const acFilter = MaterialUI.createFilterOptions ? MaterialUI.createFilterOptions() : (o, p) => o.filter(x => x.toLowerCase().includes(p.inputValue.toLowerCase()));
 
     function KundeAutocomplete() {
       const [value, setValue] = useState(null);
@@ -98,81 +111,160 @@
             if (opt && opt.inputValue) return opt.inputValue === val;
             return opt === val;
           }}
-          freeSolo
-          selectOnFocus
-          clearOnBlur
-          handleHomeEndKeys
-          fullWidth
-          size="small"
+          freeSolo selectOnFocus clearOnBlur handleHomeEndKeys
+          fullWidth size="small"
           renderInput=${params => html`<${TextField} ...${params} label="Kunde / Projekt" />`}
         />
       `;
     }
 
-    let nextId = 4;
-    const INITIAL_SKILLS = [
-      { id: 1, name: 'AML',        type: 'pflicht' },
-      { id: 2, name: 'Compliance', type: 'pflicht' },
-      { id: 3, name: 'MS Office',  type: 'optional' },
+    /* ── Skill-Katalog & Kategorien ──────────────────────────── */
+    const CATEGORIES = [
+      { key: 'domain',          label: 'Domain' },
+      { key: 'tool',            label: 'Tool' },
+      { key: 'method',          label: 'Methode' },
+      { key: 'soft',            label: 'Soft Skill' },
+      { key: 'language',        label: 'Sprache' },
+      { key: 'industry_system', label: 'Branche / System' },
     ];
 
-    function SkillRow({ skill, onChange, onRemove }) {
+    const SKILL_CATALOG = {
+      domain:          ['AML', 'Asset Management', 'Banking', 'Capital Markets', 'Compliance', 'Credit Risk', 'ESG', 'Insurance', 'Leasing', 'Payments', 'Risk Management', 'Trade Finance', 'Wealth Management'],
+      tool:            ['Confluence', 'Excel', 'JIRA', 'MS Office', 'MS Project', 'Power BI', 'PowerPoint', 'SAP', 'Salesforce', 'Tableau'],
+      method:          ['Agile', 'BPMN', 'Business Analysis', 'Design Thinking', 'DevOps', 'Kanban', 'PMI', 'Prince2', 'Scrum', 'Six Sigma'],
+      soft:            ['Analytisches Denken', 'Eigeninitiative', 'Kommunikation', 'Präsentation', 'Teamfähigkeit'],
+      language:        ['Deutsch', 'Englisch', 'Französisch', 'Spanisch'],
+      industry_system: ['Avaloq', 'Corebanking', 'EU-AML-Paket', 'Finanz Informatik', 'Murex', 'SAP FSCM', 'SWIFT'],
+    };
+
+    let nextId = 6;
+    const INITIAL_SKILLS = {
+      domain:          [{ id: 1, name: 'AML', type: 'pflicht', unmapped: false }, { id: 2, name: 'Compliance', type: 'pflicht', unmapped: false }],
+      tool:            [{ id: 3, name: 'MS Office', type: 'optional', unmapped: false }],
+      method:          [],
+      soft:            [],
+      language:        [],
+      industry_system: [{ id: 4, name: 'EU-AML-Paket', type: 'pflicht', unmapped: false }, { id: 5, name: 'FutureSkill 9000', type: 'optional', unmapped: true }],
+    };
+
+    /* ── SkillRow ────────────────────────────────────────────── */
+    function SkillRow({ skill, catalog, onUpdate, onRemove }) {
       return html`
-        <${Stack} direction="row" spacing=${1.5} alignItems="center" sx=${{
-          border: '1px solid', borderColor: 'divider', borderRadius: 1,
-          px: 1.5, py: 0.75, bgcolor: 'background.paper',
-          '&:focus-within': { borderColor: 'primary.main' },
+        <${Stack} direction="row" spacing=${1} alignItems="center" sx=${{
+          border: '1px solid',
+          borderColor: skill.unmapped ? '#F9A825' : 'divider',
+          borderRadius: 1,
+          px: 1.5, py: 0.625,
+          bgcolor: skill.unmapped ? '#FFFDE7' : 'background.paper',
+          transition: 'border-color 0.15s',
+          '&:focus-within': { borderColor: skill.unmapped ? '#F9A825' : 'primary.main' },
         }}>
-          <${TextField}
-            variant="standard"
-            placeholder="Skill"
-            value=${skill.name}
-            onChange=${e => onChange(skill.id, 'name', e.target.value)}
-            InputProps=${{ disableUnderline: true }}
+
+          <${Autocomplete}
+            freeSolo
+            value=${skill.name || null}
+            inputValue=${skill.name}
+            onInputChange=${(_, val, reason) => {
+              if (reason === 'input') {
+                onUpdate('name', val);
+                onUpdate('unmapped', val !== '' && !catalog.includes(val));
+              }
+            }}
+            onChange=${(_, newVal) => {
+              const name = typeof newVal === 'string' ? newVal : '';
+              onUpdate('name', name);
+              onUpdate('unmapped', false);
+            }}
+            options=${catalog}
+            size="small"
             sx=${{ flex: 1 }}
-            size="small"
+            disableClearable
+            renderInput=${params => html`
+              <${TextField} ...${params} variant="standard"
+                placeholder="Skill eingeben …"
+                InputProps=${{ ...params.InputProps, disableUnderline: true }}
+                sx=${{ '& input': { fontSize: '14px' } }}
+              />
+            `}
           />
+
+          ${skill.unmapped && skill.name && html`
+            <${Tooltip}
+              title="Skill nicht im Katalog — wird als 'unmapped' gespeichert und muss nachträglich zugeordnet werden."
+              arrow placement="top"
+            >
+              <${Box} sx=${{
+                display: 'inline-flex', alignItems: 'center', gap: 0.25,
+                bgcolor: '#FAEEDA', color: '#854F0B',
+                px: 1, py: 0.25, borderRadius: '10px',
+                fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap', cursor: 'help', flexShrink: 0,
+              }}>
+                ⚠ unmapped
+              <//>
+            <//>
+          `}
+
           <${ToggleButtonGroup}
-            value=${skill.type}
-            exclusive
-            size="small"
-            onChange=${(_, v) => v && onChange(skill.id, 'type', v)}
+            value=${skill.type} exclusive size="small"
+            onChange=${(_, v) => v && onUpdate('type', v)}
             sx=${{ flexShrink: 0 }}
           >
             <${ToggleButton} value="pflicht" sx=${{
-              px: 1.5, py: 0.25, fontSize: '11px', fontWeight: 700,
+              px: 1.25, py: 0.25, fontSize: '11px', fontWeight: 700,
               '&.Mui-selected': { bgcolor: 'error.main', color: '#fff', '&:hover': { bgcolor: 'error.dark' } },
-            }}>
-              Pflicht
-            <//>
+            }}>Pflicht<//>
             <${ToggleButton} value="optional" sx=${{
-              px: 1.5, py: 0.25, fontSize: '11px', fontWeight: 700,
+              px: 1.25, py: 0.25, fontSize: '11px', fontWeight: 700,
               '&.Mui-selected': { bgcolor: 'primary.main', color: '#fff', '&:hover': { bgcolor: 'primary.dark' } },
-            }}>
-              Optional
-            <//>
+            }}>Optional<//>
           <//>
-          <${IconButton} size="small" onClick=${() => onRemove(skill.id)} sx=${{ color: 'text.disabled', '&:hover': { color: 'error.main' } }}>
-            ✕
-          <//>
+
+          <${IconButton} size="small" onClick=${onRemove}
+            sx=${{ color: 'text.disabled', '&:hover': { color: 'error.main' } }}>✕<//>
         <//>
       `;
     }
 
+    /* ── App ─────────────────────────────────────────────────── */
     function App() {
-      const [skills, setSkills] = useState(INITIAL_SKILLS);
 
-      const updateSkill = useCallback((id, field, value) => {
-        setSkills(s => s.map(sk => sk.id === id ? { ...sk, [field]: value } : sk));
+      /* Skills */
+      const [skillsByCat, setSkillsByCat] = useState(INITIAL_SKILLS);
+
+      const addSkill = useCallback(cat => {
+        setSkillsByCat(prev => ({ ...prev, [cat]: [...prev[cat], { id: nextId++, name: '', type: 'pflicht', unmapped: false }] }));
       }, []);
 
-      const removeSkill = useCallback((id) => {
-        setSkills(s => s.filter(sk => sk.id !== id));
+      const updateSkill = useCallback((cat, id, field, value) => {
+        setSkillsByCat(prev => ({ ...prev, [cat]: prev[cat].map(sk => sk.id === id ? { ...sk, [field]: value } : sk) }));
       }, []);
 
-      const addSkill = useCallback(() => {
-        setSkills(s => [...s, { id: nextId++, name: '', type: 'pflicht' }]);
+      const removeSkill = useCallback((cat, id) => {
+        setSkillsByCat(prev => ({ ...prev, [cat]: prev[cat].filter(sk => sk.id !== id) }));
       }, []);
+
+      const totalUnmapped = useMemo(() =>
+        Object.values(skillsByCat).flat().filter(sk => sk.unmapped && sk.name).length,
+      [skillsByCat]);
+
+      /* Timeline */
+      const [startMode, setStartMode] = useState('date');   // 'asap' | 'month' | 'date'
+      const [startDate, setStartDate] = useState('2026-07-01');
+      const [startMonth, setStartMonth] = useState('2026-07');
+      const [endMode,   setEndMode]   = useState('date');   // 'date' | 'duration'
+      const [endDate,   setEndDate]   = useState('');
+      const [duration,  setDuration]  = useState('');
+
+      const computedEnd = useMemo(() => {
+        if (endMode !== 'duration' || !duration || isNaN(parseInt(duration, 10))) return null;
+        let base;
+        if      (startMode === 'date')  base = startDate  ? new Date(startDate + 'T00:00:00') : null;
+        else if (startMode === 'month') base = startMonth ? new Date(startMonth + '-01T00:00:00') : null;
+        else                            base = new Date();
+        if (!base) return null;
+        base.setMonth(base.getMonth() + parseInt(duration, 10));
+        return base.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+      }, [startMode, startDate, startMonth, endMode, duration]);
 
       return html`
         <${ThemeProvider} theme=${theme}>
@@ -180,6 +272,7 @@
           <${MockupBar} />
           <${Container} maxWidth="md" sx=${{ py: 4 }}>
 
+            <!-- ── Projekt ── -->
             <${SectionCard} title="Projekt">
               <${Grid} container spacing=${2}>
                 <${Grid} item xs=${12}>
@@ -197,12 +290,13 @@
                 <//>
                 <${Grid} item xs=${6}>
                   <${TextField} label="Vertragsart" select fullWidth size="small" defaultValue="">
-                    ${['Festpreis','T&M','Rahmenvertrag'].map(v => html`<${MenuItem} key=${v} value=${v}>${v}<//>`) }
+                    ${['T&M','Turnkey', 'ANÜ'].map(v => html`<${MenuItem} key=${v} value=${v}>${v}<//>`) }
                   <//>
                 <//>
               <//>
             <//>
 
+            <!-- ── Beschreibung ── -->
             <${SectionCard} title="Beschreibung">
               <${Grid} container spacing=${2}>
                 <${Grid} item xs=${12}>
@@ -214,30 +308,144 @@
               <//>
             <//>
 
+            <!-- ── Skills ── -->
             <${SectionCard} title=${'Geforderte Skills *'}>
-              <${Stack} spacing=${1}>
-                ${skills.map(sk => html`
-                  <${SkillRow} key=${sk.id} skill=${sk} onChange=${updateSkill} onRemove=${removeSkill} />
-                `)}
-                <${Button}
-                  variant="outlined"
-                  color="inherit"
-                  onClick=${addSkill}
-                  sx=${{ borderStyle: 'dashed', justifyContent: 'flex-start', color: 'primary.main' }}
-                >
-                  + Skill hinzufügen
+
+              ${totalUnmapped > 0 && html`
+                <${Box} sx=${{
+                  display: 'flex', alignItems: 'center', gap: 1,
+                  bgcolor: '#FAEEDA', color: '#854F0B',
+                  border: '1px solid #F9A825', borderRadius: 1,
+                  px: 2, py: 1.25, mb: 2.5, fontSize: '13px',
+                }}>
+                  <${Box} component="span" sx=${{ fontSize: '16px' }}>⚠<//>
+                  <${Typography} variant="body2" sx=${{ color: 'inherit' }}>
+                    <strong>${totalUnmapped} Skill${totalUnmapped > 1 ? 's' : ''}</strong> nicht im Katalog — werden als <em>unmapped</em> gespeichert und müssen nachträglich zugeordnet werden.
+                  <//>
                 <//>
-              <//>
+              `}
+
+              ${CATEGORIES.map(({ key, label }) => {
+                const catSkills = skillsByCat[key];
+                const catalog   = SKILL_CATALOG[key];
+                return html`
+                  <${Box} key=${key} sx=${{ mb: 2.5, '&:last-child': { mb: 0 } }}>
+                    <${Box} sx=${{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
+                      <${Typography} variant="caption" color="text.secondary" sx=${{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        ${label}
+                      <//>
+                      ${catSkills.length > 0 && html`
+                        <${Box} sx=${{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#E3F0FC', color: '#1256A0', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          ${catSkills.length}
+                        <//>
+                      `}
+                    <//>
+                    <${Stack} spacing=${0.625}>
+                      ${catSkills.map(sk => html`
+                        <${SkillRow}
+                          key=${sk.id}
+                          skill=${sk}
+                          catalog=${catalog}
+                          onUpdate=${(field, val) => updateSkill(key, sk.id, field, val)}
+                          onRemove=${() => removeSkill(key, sk.id)}
+                        />
+                      `)}
+                      <${Button}
+                        variant="outlined" color="inherit" size="small"
+                        onClick=${() => addSkill(key)}
+                        sx=${{ borderStyle: 'dashed', justifyContent: 'flex-start', color: 'text.secondary', borderColor: 'divider', fontSize: '12px', py: 0.5 }}
+                      >
+                        + ${label} hinzufügen
+                      <//>
+                    <//>
+                  <//>
+                `;
+              })}
             <//>
 
+            <!-- ── Zeitleiste & Auslastung ── -->
             <${SectionCard} title="Zeitleiste & Auslastung">
-              <${Grid} container spacing=${2}>
-                <${Grid} item xs=${4}>
-                  <${TextField} label=${'Startdatum *'} type="date" fullWidth size="small" defaultValue="2026-07-01" InputLabelProps=${{ shrink: true }} />
+              <${Grid} container spacing=${2.5}>
+
+                <!-- Startdatum -->
+                <${Grid} item xs=${12}>
+                  <${FieldLabel}>Startdatum *<//>
+                  <${Stack} direction="row" spacing=${1.5} alignItems="center" flexWrap="wrap">
+                    <${ToggleButtonGroup}
+                      value=${startMode} exclusive size="small"
+                      onChange=${(_, v) => v && setStartMode(v)}
+                    >
+                      <${ToggleButton} value="asap"  sx=${{ px: 2, py: 0.5, fontSize: '12px', fontWeight: 700 }}>ASAP<//>
+                      <${ToggleButton} value="month" sx=${{ px: 2, py: 0.5, fontSize: '12px', fontWeight: 700 }}>Nur Monat<//>
+                      <${ToggleButton} value="date"  sx=${{ px: 2, py: 0.5, fontSize: '12px', fontWeight: 700 }}>Genaues Datum<//>
+                    <//>
+
+                    ${startMode === 'asap' && html`
+                      <${Box} sx=${{ bgcolor: '#E3F0FC', color: '#1256A0', px: 1.5, py: 0.625, borderRadius: 1, fontSize: '13px', fontWeight: 500 }}>
+                        Start so früh wie möglich
+                      <//>
+                    `}
+                    ${startMode === 'month' && html`
+                      <${TextField}
+                        label="Monat / Jahr" type="month" size="small"
+                        value=${startMonth} onChange=${e => setStartMonth(e.target.value)}
+                        InputLabelProps=${{ shrink: true }} sx=${{ minWidth: 180 }}
+                      />
+                    `}
+                    ${startMode === 'date' && html`
+                      <${TextField}
+                        label="Datum" type="date" size="small"
+                        value=${startDate} onChange=${e => setStartDate(e.target.value)}
+                        InputLabelProps=${{ shrink: true }} sx=${{ minWidth: 180 }}
+                      />
+                    `}
+                  <//>
                 <//>
-                <${Grid} item xs=${4}>
-                  <${TextField} label="Enddatum" type="date" fullWidth size="small" InputLabelProps=${{ shrink: true }} />
+
+                <!-- Ende -->
+                <${Grid} item xs=${12}>
+                  <${FieldLabel}>Ende<//>
+                  <${Stack} direction="row" spacing=${1.5} alignItems="center" flexWrap="wrap">
+                    <${ToggleButtonGroup}
+                      value=${endMode} exclusive size="small"
+                      onChange=${(_, v) => v && setEndMode(v)}
+                    >
+                      <${ToggleButton} value="date"     sx=${{ px: 2, py: 0.5, fontSize: '12px', fontWeight: 700 }}>Enddatum<//>
+                      <${ToggleButton} value="duration" sx=${{ px: 2, py: 0.5, fontSize: '12px', fontWeight: 700 }}>Dauer<//>
+                    <//>
+
+                    ${endMode === 'date' && html`
+                      <${TextField}
+                        label="Enddatum" type="date" size="small"
+                        value=${endDate} onChange=${e => setEndDate(e.target.value)}
+                        InputLabelProps=${{ shrink: true }} sx=${{ minWidth: 180 }}
+                      />
+                    `}
+                    ${endMode === 'duration' && html`
+                      <${Stack} direction="row" alignItems="center" spacing=${1.25}>
+                        <${TextField}
+                          label="Dauer (Monate)" type="number" size="small"
+                          value=${duration} onChange=${e => setDuration(e.target.value)}
+                          inputProps=${{ min: 1, max: 60 }} sx=${{ width: 165 }}
+                        />
+                        ${computedEnd
+                          ? html`
+                            <${Box} sx=${{ bgcolor: '#E8F5E9', color: '#2E7D32', px: 1.5, py: 0.625, borderRadius: 1, fontSize: '13px', fontWeight: 500 }}>
+                              → Ende ca. <strong>${computedEnd}</strong>
+                            <//>
+                          `
+                          : html`
+                            <${Typography} variant="caption" color="text.disabled" sx=${{ fontStyle: 'italic' }}>
+                              Enddatum wird automatisch berechnet
+                            <//>
+                          `
+                        }
+                      <//>
+                    `}
+                  <//>
                 <//>
+
+                <!-- Weitere Felder -->
                 <${Grid} item xs=${4}>
                   <${TextField} label="Auslastung" select fullWidth size="small" defaultValue="100">
                     ${['100','75','50','25'].map(v => html`<${MenuItem} key=${v} value=${v}>${v} %<//>`) }
@@ -257,6 +465,7 @@
               <//>
             <//>
 
+            <!-- ── Anforderungen ── -->
             <${SectionCard} title="Anforderungen">
               <${Grid} container spacing=${2}>
                 <${Grid} item xs=${4}>
@@ -275,9 +484,9 @@
                   <//>
                 <//>
               <//>
-            <//>
+            </${SectionCard}>
 
-            <!-- Actions -->
+            <!-- ── Actions ── -->
             <${Paper} variant="outlined" sx=${{ px: 3, py: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <${Typography} variant="caption" color="text.secondary">* Pflichtfelder<//>
               <${Stack} direction="row" spacing=${1}>
