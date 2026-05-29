@@ -37,12 +37,12 @@
     };
 
     const DATA = [
-      { title: 'Backend-Projekt Datenmigration',  creator: 'Jannik Schröder', client: 'Hypoteq AG',          startDate: '2026-07-01', deadline: '2026-05-30', skills: ['Java', 'AWS', 'Docker'],                    extraSkills: 2, matches: 12, status: 'Offen' },
-      { title: 'Container Plattform Initiative',   creator: 'Lars Gehrken',    client: 'Reply GmbH',          startDate: '2026-07-15', deadline: '2026-06-05', skills: ['Docker', 'Kubernetes', 'GitOps'],            extraSkills: 1, matches: 5,  status: 'In Prüfung' },
-      { title: 'Business Analysten IT-Consulting', creator: 'Sandra Koch',     client: 'IPSWAYS / Insurance', startDate: '2026-08-01', deadline: '2026-06-28', skills: ['Business Analysis', 'Scrum', 'BPMN'],        extraSkills: 2, matches: 7,  status: 'Offen' },
-      { title: 'Compliance-Beratung DSGVO',        creator: 'Max Mustermann',  client: 'Finanz Informatik',   startDate: '2026-05-15', deadline: '2026-04-10', skills: ['DSGVO', 'Compliance'],                       extraSkills: 0, matches: 3,  status: 'Genehmigt' },
-      { title: 'KI-Beratung Retail Banking',       creator: 'Jannik Schröder', client: 'Volksbank Rhein-Main',startDate: '2026-08-15', deadline: '2026-06-10', skills: ['GenAI', 'LLM', 'Prompt Engineering'],        extraSkills: 3, matches: 0,  status: 'Offen', noMatch: true },
-      { title: 'Cloud-Migration Sparkasse',        creator: 'Thomas Berger',   client: 'Finanz Informatik',   startDate: '2026-09-01', deadline: '2026-07-15', skills: ['AWS', 'Terraform', 'CI/CD'],                 extraSkills: 1, matches: 0,  status: 'Entwurf' },
+      { title: 'Backend-Projekt Datenmigration',   client: 'Hypoteq AG',          startDate: '2026-07-01', deadline: '2026-05-30', skills: ['Java', 'AWS', 'Docker'],                    extraSkills: 2, matches: 12, status: 'Offen' },
+      { title: 'Container Plattform Initiative',       client: 'Reply GmbH',          startDate: '2026-07-15', deadline: '2026-06-05', skills: ['Docker', 'Kubernetes', 'GitOps'],            extraSkills: 1, matches: 5,  status: 'In Prüfung' },
+      { title: 'Business Analysten IT-Consulting',      client: 'IPSWAYS / Insurance', startDate: '2026-08-01', deadline: '2026-06-28', skills: ['Business Analysis', 'Scrum', 'BPMN'],        extraSkills: 2, matches: 7,  status: 'Offen' },
+      { title: 'Compliance-Beratung DSGVO',          client: 'Finanz Informatik',   startDate: '2026-05-15', deadline: '2026-04-10', skills: ['DSGVO', 'Compliance'],                       extraSkills: 0, matches: 3,  status: 'Genehmigt' },
+      { title: 'KI-Beratung Retail Banking',        client: 'Volksbank Rhein-Main',startDate: '2026-08-15', deadline: '2026-06-10', skills: ['GenAI', 'LLM', 'Prompt Engineering'],        extraSkills: 3, matches: 0,  status: 'Offen', noMatch: true },
+      { title: 'Cloud-Migration Sparkasse',           client: 'Finanz Informatik',   startDate: '2026-09-01', deadline: '2026-07-15', skills: ['AWS', 'Terraform', 'CI/CD'],                 extraSkills: 1, matches: 0,  status: 'Entwurf' },
     ];
 
     function daysBadge(iso) {
@@ -77,7 +77,7 @@
       `;
     }
 
-    const COLS = ['', 'Titel', 'Kunde', 'Startdatum', 'Abzugeben bis', 'Frist', 'Skills', 'Matches', 'Status'];
+    const COLS = ['', 'Titel', 'Kunde', 'Startdatum', 'Abzugeben bis', 'Skills', 'Matches', 'Status'];
 
     function App() {
       const [statusFilter, setStatusFilter]   = useState('');
@@ -166,7 +166,7 @@
                 <${TableBody}>
                   ${visible.length === 0 ? html`
                     <${TableRow}>
-                      <${TableCell} colSpan=${9} sx=${{ textAlign: 'center', py: 6 }}>
+                      <${TableCell} colSpan=${8} sx=${{ textAlign: 'center', py: 6 }}>
                         <${Typography} variant="body2" color="text.secondary">
                           Keine Opportunities gefunden
                         <//>
@@ -188,7 +188,6 @@
 
                         <${TableCell}>
                           <${Typography} variant="body2" fontWeight=${500}>${d.title}<//>
-                          <${Typography} variant="caption" color="text.secondary">${d.creator}<//>
                         <//>
 
                         <${TableCell}>${d.client}<//>
@@ -197,11 +196,12 @@
                           ${new Date(d.startDate + 'T00:00:00').toLocaleDateString('de-DE')}
                         <//>
 
-                        <${TableCell}>
-                          ${new Date(d.deadline + 'T00:00:00').toLocaleDateString('de-DE')}
+                        <${TableCell} sx=${{ whiteSpace: 'nowrap' }}>
+                          <${Typography} variant="body2" sx=${{ mb: 0.375 }}>
+                            ${new Date(d.deadline + 'T00:00:00').toLocaleDateString('de-DE')}
+                          <//>
+                          ${daysBadge(d.deadline)}
                         <//>
-
-                        <${TableCell}>${daysBadge(d.deadline)}<//>
 
                         <${TableCell}>
                           <${Stack} direction="row" flexWrap="wrap" gap=${0.5}>
