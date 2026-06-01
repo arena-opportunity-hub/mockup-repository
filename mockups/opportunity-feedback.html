@@ -22,6 +22,7 @@
             TextField, MenuItem, Menu, Divider, IconButton, Tooltip, Checkbox,
             Dialog, DialogTitle, DialogContent, DialogActions,
             ToggleButtonGroup, ToggleButton,
+            Drawer,
             ThemeProvider, createTheme, CssBaseline } = MaterialUI;
 
     const html = htm.bind(h);
@@ -52,6 +53,36 @@
     ];
 
     /* ── Data ────────────────────────────────────────────────── */
+    const BD = {
+      // skill: { name, m: matched }
+      // domain: { matched, reason }
+      // avail: { status label, factor }
+      1: { ms:[{n:'Java',m:true},{n:'Spring Boot',m:true},{n:'PostgreSQL',m:true},{n:'Apache Kafka',m:false},{n:'Docker',m:true}],
+           os:[{n:'Kubernetes',m:true},{n:'Terraform',m:true},{n:'CI/CD',m:false}],
+           domain:{matched:true,  reason:'Banking-Erfahrung (Commerzbank AG)'}, avail:{label:'Bench — sofort verfügbar', f:1.0} },
+      3: { ms:[{n:'Java',m:true},{n:'Spring Boot',m:true},{n:'PostgreSQL',m:true},{n:'Apache Kafka',m:true},{n:'Docker',m:true}],
+           os:[{n:'Kubernetes',m:false},{n:'Terraform',m:false},{n:'CI/CD',m:true}],
+           domain:{matched:false, reason:'Keine passende Branchenerfahrung im Profil'}, avail:{label:'Bench — sofort verfügbar', f:1.0} },
+      5: { ms:[{n:'Kubernetes',m:true},{n:'Helm',m:true},{n:'Terraform',m:false},{n:'Docker',m:true}],
+           os:[{n:'AWS',m:true},{n:'Prometheus',m:false}],
+           domain:{matched:true,  reason:'IT-Consulting-Erfahrung vorhanden'}, avail:{label:'Prolongation möglich (ab 15.07.)', f:0.97} },
+      7: { ms:[{n:'Business Analysis',m:true},{n:'BPMN',m:true},{n:'Jira',m:false},{n:'SQL',m:false}],
+           os:[{n:'Confluence',m:true},{n:'MS Excel',m:true}],
+           domain:{matched:true,  reason:'Insurance-Erfahrung (Allianz SE)'}, avail:{label:'Bench — sofort verfügbar', f:1.0} },
+      8: { ms:[{n:'Business Analysis',m:true},{n:'BPMN',m:true},{n:'Jira',m:true},{n:'SQL',m:false}],
+           os:[{n:'Confluence',m:false},{n:'MS Excel',m:true}],
+           domain:{matched:true,  reason:'Insurance-Erfahrung vorhanden'}, avail:{label:'Bench — sofort verfügbar', f:1.0} },
+      2: { ms:[{n:'Java',m:true},{n:'Spring Boot',m:true},{n:'PostgreSQL',m:true},{n:'Apache Kafka',m:true},{n:'Docker',m:true}],
+           os:[{n:'Kubernetes',m:true},{n:'Terraform',m:false},{n:'CI/CD',m:true}],
+           domain:{matched:true,  reason:'Banking-Erfahrung (Commerzbank AG)'}, avail:{label:'Bench — sofort verfügbar', f:1.0} },
+      6: { ms:[{n:'Kubernetes',m:true},{n:'Helm',m:false},{n:'Terraform',m:true},{n:'Docker',m:true}],
+           os:[{n:'AWS',m:false},{n:'Prometheus',m:true}],
+           domain:{matched:false, reason:'Keine passende Branchenerfahrung'}, avail:{label:'Teilzeit (60 %)', f:0.75} },
+      4: { ms:[{n:'Java',m:true},{n:'Spring Boot',m:false},{n:'PostgreSQL',m:true},{n:'Apache Kafka',m:true},{n:'Docker',m:true}],
+           os:[{n:'Kubernetes',m:false},{n:'Terraform',m:false},{n:'CI/CD',m:true}],
+           domain:{matched:false, reason:'Keine passende Branchenerfahrung'}, avail:{label:'Bench — sofort verfügbar', f:1.0} },
+    };
+
     const INITIAL_PROPOSALS = [
       { id:1, employee:'Max Mustermann',  initials:'MM',  color:'#1976D2', role:'Senior Consultant',    opportunity:'Backend-Projekt Datenmigration',   client:'Hypoteq AG',          deadline:'2026-05-30', startDate:'2026-07-01', endDate:'2026-12-31', score:80, pool:'direct',  status:'ausstehend', comment:null,                                createdAt:'2026-04-15' },
       { id:3, employee:'David Klein',     initials:'DK',  color:'#37474F', role:'Backend Developer',    opportunity:'Backend-Projekt Datenmigration',   client:'Hypoteq AG',          deadline:'2026-05-30', startDate:'2026-07-01', endDate:'2026-12-31', score:83, pool:'direct',  status:'ausstehend', comment:null,                                createdAt:'2026-04-15' },
@@ -407,12 +438,143 @@
       `;
     }
 
+    /* ── ScoreDrawer ─────────────────────────────────────────── */
+    function ScoreDrawer({ proposal, onClose, onBewerten }) {
+      const b  = BD[proposal.id];
+      const mM = b.ms.filter(s => s.m).length;
+      const mT = b.ms.length;
+      const oM = b.os.filter(s => s.m).length;
+      const oT = b.os.length;
+      const mPts = Math.round((mM / mT) * 65);
+      const oPts = oT > 0 ? Math.round((oM / oT) * 20) : 20;
+      const dPts = b.domain.matched ? 15 : 0;
+      const scoreColor = proposal.score >= 80 ? '#2E7D32' : proposal.score >= 65 ? '#1976D2' : '#E65100';
+      const pc = POOL_CFG[proposal.pool];
+
+      function SkillRow({ name, matched, type }) {
+        const fg = matched ? (type === 'm' ? '#C62828' : '#1256A0') : '#9E9E9E';
+        const bg = matched ? (type === 'm' ? '#FCEBEB' : '#E3F0FC') : '#F5F5F5';
+        return html`
+          <${Stack} direction="row" alignItems="center" gap=${0.875}>
+            <${Box} sx=${{ color: matched ? fg : '#BDBDBD', fontSize:'13px', width:14, textAlign:'center', flexShrink:0, fontWeight:700 }}>
+              ${matched ? '✓' : '✗'}
+            <//>
+            <${Box} sx=${{ bgcolor:bg, color:fg, px:1, py:0.125, borderRadius:'8px', fontSize:'12px', fontWeight: matched ? 600 : 400 }}>
+              ${name}
+            <//>
+          <//>
+        `;
+      }
+
+      return html`
+        <${Drawer} anchor="right" open=${true} onClose=${onClose}
+          sx=${{ zIndex:1200 }}
+          PaperProps=${{ sx:{ width:500, display:'flex', flexDirection:'column' } }}>
+
+          <!-- Header -->
+          <${Box} sx=${{ px:3, py:2, borderBottom:'1px solid', borderColor:'divider', display:'flex', alignItems:'center', gap:1.5, flexShrink:0 }}>
+            <${Avatar} initials=${proposal.initials} color=${proposal.color} size=${40} />
+            <${Box} sx=${{ flex:1 }}>
+              <${Typography} variant="subtitle1" fontWeight=${700}>${proposal.employee}<//>
+              <${Typography} variant="caption" color="text.secondary">${proposal.role} · ${proposal.opportunity}<//>
+            <//>
+            <${Button} size="small" color="inherit" onClick=${onClose} sx=${{ minWidth:0, px:1 }}>✕<//>
+          <//>
+
+          <!-- Score-Zusammenfassung -->
+          <${Box} sx=${{ px:3, py:2, bgcolor:'#F5F6F8', borderBottom:'1px solid', borderColor:'divider', flexShrink:0 }}>
+            <${Stack} direction="row" alignItems="center" gap=${2.5}>
+              <${Box} sx=${{ textAlign:'center', minWidth:48 }}>
+                <${Typography} variant="h4" fontWeight=${700} sx=${{ color:scoreColor, lineHeight:1 }}>${proposal.score}<//>
+                <${Typography} variant="caption" color="text.secondary">/ 100<//>
+              <//>
+              <${Box} sx=${{ flex:1 }}>
+                <${Box} sx=${{ height:8, bgcolor:'#E0E0E0', borderRadius:'4px', overflow:'hidden', mb:0.75 }}>
+                  <${Box} sx=${{ width:proposal.score+'%', height:'100%', bgcolor:scoreColor, borderRadius:'4px' }} />
+                <//>
+                <${Stack} direction="row" alignItems="center" gap=${0.5}>
+                  <${Box} sx=${{ width:8, height:8, borderRadius:'50%', bgcolor:pc.dot, flexShrink:0 }} />
+                  <${Typography} variant="caption" color="text.secondary">${pc.label}<//>
+                <//>
+              <//>
+            <//>
+          <//>
+
+          <!-- Scrollbarer Inhalt -->
+          <${Box} sx=${{ flex:1, overflowY:'auto', px:3, py:2.5 }}>
+
+            <!-- Pflichtskills -->
+            <${Typography} variant="overline" sx=${{ color:'text.secondary', fontWeight:700, fontSize:'11px', letterSpacing:0.8, display:'block', mb:0.875 }}>
+              Pflichtskills · 65 % · ${mPts} Pkt (${mM}/${mT})
+            <//>
+            <${Stack} spacing=${0.625} sx=${{ mb:2.5 }}>
+              ${b.ms.map(s => html`<${SkillRow} key=${s.n} name=${s.n} matched=${s.m} type="m" />`)}
+            <//>
+
+            <!-- Optionale Skills -->
+            <${Typography} variant="overline" sx=${{ color:'text.secondary', fontWeight:700, fontSize:'11px', letterSpacing:0.8, display:'block', mb:0.875 }}>
+              Optionale Skills · 20 % · ${oPts} Pkt (${oM}/${oT})
+            <//>
+            <${Stack} spacing=${0.625} sx=${{ mb:2.5 }}>
+              ${b.os.map(s => html`<${SkillRow} key=${s.n} name=${s.n} matched=${s.m} type="o" />`)}
+            <//>
+
+            <!-- Domain-Fit -->
+            <${Typography} variant="overline" sx=${{ color:'text.secondary', fontWeight:700, fontSize:'11px', letterSpacing:0.8, display:'block', mb:0.875 }}>
+              Domain-Fit · 15 % · ${dPts} Pkt
+            <//>
+            <${Box} sx=${{ mb:2.5, px:1.5, py:1, borderRadius:1, border:'1px solid', borderColor:'divider', bgcolor: b.domain.matched ? '#F0FBF5' : '#FAFAFA' }}>
+              <${Stack} direction="row" alignItems="center" gap=${1}>
+                <${Box} sx=${{ color: b.domain.matched ? '#2E7D32' : '#BDBDBD', fontSize:'16px', lineHeight:1, fontWeight:700 }}>
+                  ${b.domain.matched ? '✓' : '—'}
+                <//>
+                <${Typography} variant="body2" color=${b.domain.matched ? 'text.primary' : 'text.secondary'}>
+                  ${b.domain.reason}
+                <//>
+              <//>
+            <//>
+
+            <!-- Verfügbarkeitsfaktor -->
+            <${Typography} variant="overline" sx=${{ color:'text.secondary', fontWeight:700, fontSize:'11px', letterSpacing:0.8, display:'block', mb:0.875 }}>
+              Verfügbarkeitsfaktor
+            <//>
+            <${Box} sx=${{ mb:2.5, px:1.5, py:1, borderRadius:1, border:'1px solid', borderColor:'divider' }}>
+              <${Stack} direction="row" alignItems="center" justifyContent="space-between">
+                <${Typography} variant="body2" color="text.secondary">${b.avail.label}<//>
+                <${Typography} variant="body2" fontWeight=${700}
+                  sx=${{ color: b.avail.f >= 1 ? '#2E7D32' : b.avail.f >= 0.8 ? '#1976D2' : '#E65100' }}>
+                  × ${b.avail.f.toFixed(2)}
+                <//>
+              <//>
+            <//>
+
+            <!-- Formel -->
+            <${Divider} sx=${{ mb:2 }} />
+            <${Box} sx=${{ bgcolor:'#F5F6F8', borderRadius:1, px:1.5, py:1.25 }}>
+              <${Typography} variant="caption" sx=${{ fontFamily:'monospace', display:'block', color:'text.secondary' }}>
+                (${mPts} + ${oPts} + ${dPts}) × ${b.avail.f.toFixed(2)} ≈ ${proposal.score}
+              <//>
+            <//>
+
+          <//>
+
+          <!-- Footer -->
+          <${Box} sx=${{ px:3, py:2, borderTop:'1px solid', borderColor:'divider', flexShrink:0, bgcolor:'#FAFAFA' }}>
+            <${Button} variant="contained" fullWidth onClick=${onBewerten}>
+              Kandidaten bewerten
+            <//>
+          <//>
+        <//>
+      `;
+    }
+
     /* ── App ─────────────────────────────────────────────────── */
     function App() {
-      const [proposals, setProposals] = useState(INITIAL_PROPOSALS);
-      const [selected,  setSelected]  = useState(() => new Set());
-      const [dialog,    setDialog]    = useState(null);
-      const [bulkOpen,  setBulkOpen]  = useState(false);
+      const [proposals,    setProposals]    = useState(INITIAL_PROPOSALS);
+      const [selected,     setSelected]     = useState(() => new Set());
+      const [dialog,       setDialog]       = useState(null);
+      const [bulkOpen,     setBulkOpen]     = useState(false);
+      const [scoreDrawer,  setScoreDrawer]  = useState(null);
 
       const selectableIds = useMemo(() => proposals.filter(p => ['ausstehend','in_review'].includes(p.status)).map(p => p.id), [proposals]);
       const allSel   = selectableIds.length > 0 && selectableIds.every(id => selected.has(id));
@@ -462,7 +624,7 @@
               <${Box} sx=${{ flex:1 }}>
                 <${Typography} variant="h6" fontWeight=${700}>Zu bewerten<//>
                 <${Typography} variant="body2" color="text.secondary">
-                  Kandidatenvorschläge für Ihre Mitarbeitenden · Standard: nach Reaktionsfrist ↑
+                  Kandidatenvorschläge für Ihre Mitarbeitenden
                 <//>
               <//>
               <${Stack} direction="row" gap=${1}>
@@ -523,19 +685,36 @@
                     <${TableCell} padding="checkbox" onClick=${e => e.stopPropagation()}>
                       <${Checkbox} size="small" checked=${selected.has(p.id)} disabled=${!selectable} onChange=${() => toggleOne(p.id)} />
                     <//>
-                    <${TableCell}>
-                      <${Stack} direction="row" alignItems="center" gap=${1.25}>
-                        <${Avatar} initials=${p.initials} color=${p.color} size=${34} />
-                        <${Box}>
-                          <${Typography} variant="body2" fontWeight=${600}>${p.employee}<//>
-                          <${Typography} variant="caption" color="text.secondary">${p.role}<//>
+
+                    <!-- Mitarbeiter → Decidalo (neues Tab) -->
+                    <${TableCell} onClick=${e => { e.stopPropagation(); window.open('https://app.decidalo.com/profile/' + p.id, '_blank'); }}>
+                      <${Tooltip} title="Decidalo-Profil öffnen ↗" placement="top">
+                        <${Stack} direction="row" alignItems="center" gap=${1.25} sx=${{ cursor:'pointer' }}>
+                          <${Avatar} initials=${p.initials} color=${p.color} size=${34} />
+                          <${Box}>
+                            <${Typography} variant="body2" fontWeight=${600}
+                              sx=${{ color:'primary.main', '&:hover':{ textDecoration:'underline' } }}>
+                              ${p.employee}
+                            <//>
+                            <${Typography} variant="caption" color="text.secondary">${p.role}<//>
+                          <//>
                         <//>
                       <//>
                     <//>
-                    <${TableCell}>
-                      <${Typography} variant="body2" fontWeight=${500}>${p.opportunity}<//>
-                      <${Typography} variant="caption" color="text.secondary">${p.client}<//>
+
+                    <!-- Opportunity → opportunity-details.html -->
+                    <${TableCell} onClick=${e => { e.stopPropagation(); window.location.href = 'opportunity-details-management.html'; }}>
+                      <${Tooltip} title="Opportunity-Details öffnen" placement="top">
+                        <${Box} sx=${{ cursor:'pointer' }}>
+                          <${Typography} variant="body2" fontWeight=${500}
+                            sx=${{ color:'primary.main', '&:hover':{ textDecoration:'underline' } }}>
+                            ${p.opportunity}
+                          <//>
+                          <${Typography} variant="caption" color="text.secondary">${p.client}<//>
+                        <//>
+                      <//>
                     <//>
+
                     <${TableCell} sx=${{ whiteSpace:'nowrap' }}>
                       <${Typography} variant="body2" sx=${{ mb:0.375 }}>${fmtDate(p.deadline)}<//>
                       <${FristBadge} iso=${p.deadline} />
@@ -544,9 +723,16 @@
                       <${Typography} variant="body2">${fmtDate(p.startDate)} –<//>
                       <${Typography} variant="body2">${fmtDate(p.endDate)}<//>
                     <//>
-                    <${TableCell} sx=${{ minWidth:110 }}>
-                      <${ScoreCell} score=${p.score} pool=${p.pool} />
+
+                    <!-- Match-Score → ScoreDrawer -->
+                    <${TableCell} sx=${{ minWidth:110 }} onClick=${e => { e.stopPropagation(); setScoreDrawer(p); }}>
+                      <${Tooltip} title="Score-Aufschlüsselung anzeigen" placement="top">
+                        <${Box} sx=${{ cursor:'pointer' }}>
+                          <${ScoreCell} score=${p.score} pool=${p.pool} />
+                        <//>
+                      <//>
                     <//>
+
                     <${TableCell}>
                       <${StatusPill} status=${p.status} comment=${p.comment} />
                     <//>
@@ -559,6 +745,13 @@
 
           ${dialog && html`<${StatusDialog} proposal=${dialog} onSave=${saveStatus} onClose=${() => setDialog(null)} />`}
           ${bulkOpen && html`<${BulkDialog} proposals=${proposals.filter(p => selected.has(p.id))} onConfirm=${saveBulkReject} onClose=${() => setBulkOpen(false)} />`}
+          ${scoreDrawer && html`
+            <${ScoreDrawer}
+              proposal=${scoreDrawer}
+              onClose=${() => setScoreDrawer(null)}
+              onBewerten=${() => { setScoreDrawer(null); setDialog(scoreDrawer); }}
+            />
+          `}
 
         <//>
       `;

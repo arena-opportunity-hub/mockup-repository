@@ -27,7 +27,7 @@
 <body>
   <div id="root"></div>
   <script>
-    const { createElement: h, useState } = React;
+    const { createElement: h, useState, useMemo } = React;
     const { createRoot } = ReactDOM;
     const { Box, Typography, Button, Paper, Container, Stack, Grid, Divider, Table, TableHead, TableBody, TableRow, TableCell, TableContainer, TextField, MenuItem, Tabs, Tab, ThemeProvider, createTheme, CssBaseline } = MaterialUI;
 
@@ -38,55 +38,33 @@
       components: { MuiButton: { defaultProps: { disableElevation: true } } },
     });
 
-    // Dispoliste exact hex values
-    const AV_COLORS = {
-      bench:       '#FF0000',
-      billable:    '#00B050',
-      prolongation:'#B4F1B1',
-      reserved:    '#C4BD97',
-      absence:     '#0070C0',
-      junior:      '#7030A0',
-      parttime:    '#FFC000',
-      left:        '#455A64',
+    // Dispoliste-Farben (Originalwerte aus Excel-Vorlage)
+    const AV_STATUS = {
+      bench:                { color: '#FF0000', label: 'Bench' },
+      billable:             { color: '#00B050', label: 'Billable' },
+      prolongation_possible:{ color: '#B4F1B1', label: 'Prolongation möglich' },
+      reserved:             { color: '#C4BD97', label: 'Reserviert' },
+      offered:              { color: '#1976D2', label: 'Angeboten' },
+      parttime:             { color: '#FFC000', label: 'Teilzeit' },
+      absence:              { color: '#0070C0', label: 'Abwesenheit' },
+      left_company:         { color: '#455A64', label: 'Ausgeschieden' },
     };
 
-    const LEGEND = [
-      { color: AV_COLORS.bench,        label: 'Bench' },
-      { color: AV_COLORS.billable,     label: 'Billable' },
-      { color: AV_COLORS.prolongation, label: 'Prolongation möglich' },
-      { color: AV_COLORS.reserved,     label: 'Reserviert' },
-      { color: AV_COLORS.absence,      label: 'Urlaub / Abwesenheit' },
-      { color: AV_COLORS.junior,       label: 'Junior' },
-      { color: AV_COLORS.parttime,     label: 'Teilzeit' },
-      { color: AV_COLORS.left,         label: 'Ausgeschieden' },
+    const CONSULTANTS = [
+      { name: 'Max Mustermann',  initials: 'MM', avatarColor: '#1976D2', level: 'Senior Consultant',    avKey: 'bench',                 customer: null,               offeredTo: null,              partTime: null, region: 'Bayern',            mobility: 'National',      comments: 'Sucht aktiv nach neuem Projekt.' },
+      { name: 'Sandra Koch',     initials: 'SK', avatarColor: '#388E3C', level: 'Consultant',           avKey: 'billable',              customer: 'Commerzbank AG',   offeredTo: null,              partTime: null, region: 'NRW',               mobility: 'Regional',      comments: null },
+      { name: 'Felix Weber',     initials: 'FW', avatarColor: '#F57C00', level: 'Consultant',           avKey: 'reserved',              customer: null,               offeredTo: null,              partTime: null, region: 'Berlin',            mobility: 'National',      comments: null },
+      { name: 'Thomas Berger',   initials: 'TB', avatarColor: '#7B1FA2', level: 'Senior Consultant',    avKey: 'prolongation_possible', customer: 'Reply GmbH',       offeredTo: null,              partTime: null, region: 'Hamburg',           mobility: 'National',      comments: 'Verlängerung wahrscheinlich bis Q3 2026.' },
+      { name: 'Jana Richter',    initials: 'JR', avatarColor: '#0097A7', level: 'Consultant',           avKey: 'bench',                 customer: null,               offeredTo: null,              partTime: null, region: 'Bayern',            mobility: 'Regional',      comments: null },
+      { name: 'Lisa Müller',     initials: 'LM', avatarColor: '#AD1457', level: 'Principal Consultant', avKey: 'billable',              customer: 'Allianz SE',       offeredTo: null,              partTime: null, region: 'Baden-Württemberg', mobility: 'International', comments: null },
+      { name: 'Klaus Becker',    initials: 'KB', avatarColor: '#455A64', level: 'Consultant',           avKey: 'offered',               customer: null,               offeredTo: 'Deutsche Bank AG', partTime: null, region: 'NRW',              mobility: 'Regional',      comments: 'Rückmeldung bis KW 23 erwartet.' },
+      { name: 'Maria Schulz',    initials: 'MS', avatarColor: '#7B1FA2', level: 'Senior Consultant',    avKey: 'parttime',              customer: 'Munich Re',        offeredTo: null,              partTime: 60,   region: 'Bayern',            mobility: 'National',      comments: null },
+      { name: 'Peter Hoffmann',  initials: 'PH', avatarColor: '#00838F', level: 'Principal Consultant', avKey: 'billable',              customer: 'Hypoteq AG',       offeredTo: null,              partTime: null, region: 'Hessen',            mobility: 'International', comments: null },
+      { name: 'Anna Weber',      initials: 'AW', avatarColor: '#C62828', level: 'Consultant',           avKey: 'absence',               customer: null,               offeredTo: null,              partTime: null, region: 'NRW',               mobility: 'Regional',      comments: 'Elternzeit bis September 2026.' },
     ];
 
-    // [color, title]
-    const B  = [AV_COLORS.bench,        'Bench'];
-    const BI = [AV_COLORS.billable,      'Billable'];
-    const PR = [AV_COLORS.prolongation,  'Prolongation möglich'];
-    const RE = [AV_COLORS.reserved,      'Reserviert'];
-    const AB = [AV_COLORS.absence,       'Urlaub / Abwesenheit'];
-    const JU = [AV_COLORS.junior,        'Junior'];
-
-    const EMPLOYEES = [
-      { name: 'Max Mustermann',  role: 'Senior Consultant', cells: [B, B, B, B, BI, BI, BI, BI, BI, BI, BI, BI] },
-      { name: 'Sandra Koch',     role: 'Consultant',        cells: [BI,BI,BI,BI,BI,BI,BI,BI,BI,BI,BI,BI] },
-      { name: 'Felix Weber',     role: 'Consultant',        cells: [B, B, RE,RE,RE,RE,BI,BI,BI,BI,BI,BI] },
-      { name: 'Thomas Berger',   role: 'Sr. Consultant',   cells: [PR,PR,PR,BI,BI,BI,BI,BI,BI,BI,BI,BI] },
-      { name: 'Jana Richter',    role: 'Consultant',        cells: [B, B, B, B, B, JU,JU,JU,JU,JU,JU,JU] },
-      { name: 'Lisa Müller',     role: 'Principal',         cells: [BI,BI,BI,BI,BI,BI,BI,AB,AB,BI,BI,BI] },
-    ];
-
-    const KWS = ['KW 22','KW 23','KW 24','KW 25','KW 26','KW 27','KW 28','KW 29','KW 30','KW 31','KW 32','KW 33'];
-
-    const ENTRIES = [
-      { name: 'Max Mustermann',  color: AV_COLORS.billable,     status: 'Billable',             von: '01.06.2026', bis: '31.12.2026', pct: 100 },
-      { name: 'Sandra Koch',     color: AV_COLORS.billable,     status: 'Billable',             von: '01.04.2026', bis: '30.09.2026', pct: 100 },
-      { name: 'Felix Weber',     color: AV_COLORS.bench,        status: 'Bench',               von: '01.05.2026', bis: '30.06.2026', pct: 100 },
-      { name: 'Thomas Berger',   color: AV_COLORS.prolongation, status: 'Prolongation möglich', von: '01.06.2026', bis: '30.06.2026', pct: 100 },
-      { name: 'Jana Richter',    color: AV_COLORS.bench,        status: 'Bench',               von: '01.05.2026', bis: '15.07.2026', pct: 100 },
-    ];
+    const REGIONS   = [...new Set(CONSULTANTS.map(c => c.region))].sort();
+    const MOBILITIES = ['Lokal', 'Regional', 'National', 'International'];
 
     const HISTORY = [
       { filename: 'Dispoliste_2026_KW01-52.xlsx', date: '05.05.2026, 14:21', status: 'Fertig',    link: true },
@@ -112,59 +90,160 @@
 
     /* ── Tab 1: Übersicht ── */
     function TabUebersicht() {
+      const [search,    setSearch]    = useState('');
+      const [fStatus,   setFStatus]   = useState('');
+      const [fRegion,   setFRegion]   = useState('');
+      const [fMobility, setFMobility] = useState('');
+
+      const visible = useMemo(() => CONSULTANTS.filter(c =>
+        (!search    || c.name.toLowerCase().includes(search.toLowerCase())) &&
+        (!fStatus   || c.avKey === fStatus) &&
+        (!fRegion   || c.region === fRegion) &&
+        (!fMobility || c.mobility === fMobility)
+      ), [search, fStatus, fRegion, fMobility]);
+
+      const COLS = ['Name', 'Level', 'Customer', 'Offered to', 'Comments', 'Part-Time', 'Region', 'Mobility'];
+
       return html`
         <${Box}>
-          <${Stack} direction="row" spacing=${1.5} alignItems="center" sx=${{ mb: 2 }} flexWrap="wrap">
-            <${TextField} select size="small" defaultValue="alle" sx=${{ minWidth: 130 }}>
-              <${MenuItem} value="alle">Alle Teams<//>
-              <${MenuItem} value="alpha">Team Alpha<//>
-              <${MenuItem} value="beta">Team Beta<//>
+          <!-- Filter bar -->
+          <${Stack} direction="row" spacing=${1.5} sx=${{ mb: 2.5 }} flexWrap="wrap" alignItems="flex-end">
+            <${TextField} size="small" placeholder="Name suchen"
+              value=${search} onChange=${e => setSearch(e.target.value)} sx=${{ minWidth: 200 }} />
+            <${TextField} label="Status" select size="small" value=${fStatus}
+              onChange=${e => setFStatus(e.target.value)} sx=${{ minWidth: 190 }}>
+              <${MenuItem} value="">Alle Status<//>
+              ${Object.entries(AV_STATUS).map(([k, v]) => html`
+                <${MenuItem} key=${k} value=${k}>
+                  <${Stack} direction="row" alignItems="center" gap=${1}>
+                    <${Box} sx=${{ width: 10, height: 10, borderRadius: '50%', bgcolor: v.color, flexShrink: 0 }} />
+                    ${v.label}
+                  <//>
+                <//>
+              `)}
             <//>
-            <${TextField} select size="small" defaultValue="2026" sx=${{ minWidth: 80 }}>
-              <${MenuItem} value="2026">2026<//>
-              <${MenuItem} value="2025">2025<//>
+            <${TextField} label="Region" select size="small" value=${fRegion}
+              onChange=${e => setFRegion(e.target.value)} sx=${{ minWidth: 190 }}>
+              <${MenuItem} value="">Alle Regionen<//>
+              ${REGIONS.map(r => html`<${MenuItem} key=${r} value=${r}>${r}<//>`) }
             <//>
-            <${Button} variant="outlined" color="inherit" size="small">Heute<//>
-            <${TextField} size="small" placeholder="Mitarbeiter suchen" sx=${{ minWidth: 200 }} />
+            <${TextField} label="Mobility" select size="small" value=${fMobility}
+              onChange=${e => setFMobility(e.target.value)} sx=${{ minWidth: 160 }}>
+              <${MenuItem} value="">Alle<//>
+              ${MOBILITIES.map(m => html`<${MenuItem} key=${m} value=${m}>${m}<//>`) }
+            <//>
+            <${Box} sx=${{ flex: 1 }} />
+            <${Typography} variant="caption" color="text.secondary" sx=${{ alignSelf: 'center' }}>
+              ${visible.length} von ${CONSULTANTS.length} Mitarbeitenden
+            <//>
           <//>
 
-          <${Stack} direction="row" flexWrap="wrap" gap=${2.5} sx=${{ mb: 2 }}>
-            ${LEGEND.map(l => html`
-              <${Stack} key=${l.label} direction="row" alignItems="center" spacing=${0.75}>
-                <${Box} sx=${{ width: 12, height: 12, borderRadius: '2px', bgcolor: l.color, flexShrink: 0 }} />
-                <${Typography} variant="caption">${l.label}<//>
+          <!-- Legend -->
+          <${Stack} direction="row" flexWrap="wrap" gap=${2} sx=${{ mb: 2 }}>
+            ${Object.entries(AV_STATUS).map(([k, v]) => html`
+              <${Stack} key=${k} direction="row" alignItems="center" spacing=${0.75}>
+                <${Box} sx=${{ width: 12, height: 12, borderRadius: '2px', bgcolor: v.color, flexShrink: 0 }} />
+                <${Typography} variant="caption">${v.label}<//>
               <//>
             `)}
           <//>
 
-          <${Box} sx=${{ overflowX: 'auto' }}>
-            <table className="cal-table">
-              <thead>
-                <tr>
-                  <th className="cal-th-name" rowSpan=${2} style=${{ verticalAlign: 'bottom' }}>Mitarbeiter</th>
-                  <th className="cal-th-month" colSpan=${1}>Mai 2026</th>
-                  <th className="cal-th-month" colSpan=${4}>Juni 2026</th>
-                  <th className="cal-th-month" colSpan=${4}>Juli 2026</th>
-                  <th className="cal-th-month" colSpan=${3}>August 2026</th>
-                </tr>
-                <tr>
-                  ${KWS.map(kw => html`<th key=${kw} className="cal-th-kw">${kw}</th>`)}
-                </tr>
-              </thead>
-              <tbody>
-                ${EMPLOYEES.map(emp => html`
-                  <tr key=${emp.name}>
-                    <td className="cal-td-name">
-                      <div style=${{ fontWeight: 500, fontSize: '13px', color: '#212121', whiteSpace: 'nowrap' }}>${emp.name}</div>
-                      <div style=${{ fontSize: '11px', color: '#757575', whiteSpace: 'nowrap' }}>${emp.role}</div>
-                    </td>
-                    ${emp.cells.map(([color, title], i) => html`
-                      <td key=${i} className="cal-td-av" style=${{ background: color }} title=${title}></td>
-                    `)}
-                  </tr>
-                `)}
-              </tbody>
-            </table>
+          <!-- Table -->
+          <${TableContainer} component=${Paper} variant="outlined">
+            <${Table} size="small">
+              <${TableHead}>
+                <${TableRow} sx=${{ bgcolor: '#FAFAFA' }}>
+                  ${COLS.map(c => html`
+                    <${TableCell} key=${c} sx=${{ fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary', whiteSpace: 'nowrap' }}>
+                      ${c}
+                    <//>
+                  `)}
+                <//>
+              <//>
+              <${TableBody}>
+                ${visible.length === 0 ? html`
+                  <${TableRow}>
+                    <${TableCell} colSpan=${8} sx=${{ textAlign: 'center', py: 5 }}>
+                      <${Typography} variant="body2" color="text.secondary">Keine Mitarbeitenden für diese Filterauswahl.<//>
+                    <//>
+                  <//>
+                ` : visible.map(c => {
+                  const av  = AV_STATUS[c.avKey] || AV_STATUS.bench;
+                  return html`
+                    <${TableRow} key=${c.name} hover>
+
+                      <!-- Name + Status-Dot -->
+                      <${TableCell}>
+                        <${Stack} direction="row" alignItems="center" gap=${1.25}>
+                          <${Box} sx=${{
+                            width: 34, height: 34, borderRadius: '50%', bgcolor: c.avatarColor, color: '#fff',
+                            fontWeight: 700, fontSize: '12px', flexShrink: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>${c.initials}<//>
+                          <${Box}>
+                            <${Stack} direction="row" alignItems="center" gap=${0.75}>
+                              <${Typography} variant="body2" fontWeight=${600}>${c.name}<//>
+                              <${Box} sx=${{ width: 8, height: 8, borderRadius: '50%', bgcolor: av.color, flexShrink: 0 }} title=${av.label} />
+                            <//>
+                            <${Typography} variant="caption" color="text.secondary">${av.label}<//>
+                          <//>
+                        <//>
+                      <//>
+
+                      <!-- Level -->
+                      <${TableCell}>
+                        <${Typography} variant="body2">${c.level}<//>
+                      <//>
+
+                      <!-- Customer -->
+                      <${TableCell}>
+                        <${Typography} variant="body2" color=${c.customer ? 'text.primary' : 'text.disabled'}>
+                          ${c.customer || '—'}
+                        <//>
+                      <//>
+
+                      <!-- Offered to -->
+                      <${TableCell}>
+                        ${c.offeredTo ? html`
+                          <${Box} sx=${{ display: 'inline-flex', alignItems: 'center', gap: 0.5, bgcolor: '#E3F0FC', color: '#1256A0', px: 1, py: 0.25, borderRadius: '10px', fontSize: '12px', fontWeight: 500 }}>
+                            ${c.offeredTo}
+                          <//>
+                        ` : html`<${Typography} variant="body2" color="text.disabled">—<//>` }
+                      <//>
+
+                      <!-- Comments -->
+                      <${TableCell} sx=${{ maxWidth: 220 }}>
+                        <${Typography} variant="body2" color=${c.comments ? 'text.secondary' : 'text.disabled'}
+                          sx=${{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}
+                          title=${c.comments || ''}>
+                          ${c.comments || '—'}
+                        <//>
+                      <//>
+
+                      <!-- Part-Time -->
+                      <${TableCell}>
+                        ${c.partTime ? html`
+                          <${Box} sx=${{ display: 'inline-block', bgcolor: '#FFF8E1', color: '#8a6000', px: 1, py: 0.25, borderRadius: '10px', fontSize: '12px', fontWeight: 700 }}>
+                            ${c.partTime}%
+                          <//>
+                        ` : html`<${Typography} variant="body2" color="text.disabled">—<//>` }
+                      <//>
+
+                      <!-- Region -->
+                      <${TableCell}>
+                        <${Typography} variant="body2">${c.region}<//>
+                      <//>
+
+                      <!-- Mobility -->
+                      <${TableCell}>
+                        <${Typography} variant="body2">${c.mobility}<//>
+                      <//>
+
+                    <//>
+                  `;
+                })}
+              <//>
+            <//>
           <//>
         <//>
       `;

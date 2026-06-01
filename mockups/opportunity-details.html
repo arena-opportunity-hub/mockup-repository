@@ -417,9 +417,6 @@
                   <//>
                 `)}
               <//>
-              <${Typography} variant="caption" color="text.disabled" sx=${{ fontStyle: 'italic' }}>
-                Fließt als customer_specific_systems in die Domain-Fit-Berechnung ein
-              <//>
             <//>
           <//>
 
@@ -508,6 +505,196 @@
               }
             <//>
           <//>
+        <//>
+      `;
+    }
+
+    /* ── Unmapped-Skills-Daten ──────────────────────────────── */
+    const DECIDALO_CATALOG = [
+      { id:'d1',  name:'AML / Anti-Money-Laundering',   cat:'domain'          },
+      { id:'d2',  name:'Compliance Management',          cat:'domain'          },
+      { id:'d3',  name:'KYC (Know Your Customer)',       cat:'domain'          },
+      { id:'d4',  name:'EU-AML-Paket (6. Direktive)',    cat:'domain'          },
+      { id:'d5',  name:'Risikomanagement',               cat:'domain'          },
+      { id:'d6',  name:'Basel III / IV Regulatorik',     cat:'domain'          },
+      { id:'d7',  name:'MiFID II',                       cat:'domain'          },
+      { id:'d8',  name:'Dow Jones Risk & Compliance',    cat:'tool'            },
+      { id:'d9',  name:'Refinitiv World-Check',          cat:'tool'            },
+      { id:'d10', name:'MS Office Suite',                cat:'tool'            },
+      { id:'d11', name:'Avaloq Banking Platform',        cat:'industry_system' },
+      { id:'d12', name:'SAP FSCM',                       cat:'industry_system' },
+    ];
+
+    const CAT_LABEL = { domain:'Domain', tool:'Tool', method:'Methode', soft:'Soft Skill', language:'Sprache', industry_system:'Branche/System' };
+
+    const UNMAPPED_SKILLS = [
+      { id:'u1', name:'KYC-Software Dow Jones', type:'pflicht',  note:'Aus Briefing übernommen — genaue Tool-Version unklar' },
+      { id:'u2', name:'Basel-IV-Readiness',     type:'pflicht',  note:null },
+      { id:'u3', name:'Avaloq CBS',             type:'optional', note:'Möglicherweise identisch mit Avaloq Banking Platform' },
+    ];
+
+    /* ── Tab: Unmapped Skills ────────────────────────────────── */
+    function TabUnmapped() {
+      const [sel,   setSel]   = useState({}); // skillId → catalogId | '__none__'
+      const [saved, setSaved] = useState(new Set());
+
+      const resolve = useCallback((skillId) => {
+        if (!sel[skillId]) return;
+        setSaved(prev => new Set([...prev, skillId]));
+      }, [sel]);
+
+      const unresolvedCount = UNMAPPED_SKILLS.length - saved.size;
+      const allDone = unresolvedCount === 0;
+
+      return html`
+        <${Box}>
+          <!-- Infobanner -->
+          <${Box} sx=${{
+            bgcolor:'#FFF3E0', border:'1px solid #FFCC80', borderRadius:1,
+            px:2, py:1.5, mb:2.5,
+            display:'flex', alignItems:'flex-start', gap:1.25,
+          }}>
+            <${Box} sx=${{ color:'#E65100', fontSize:'20px', lineHeight:1.2, flexShrink:0 }}>⚠<//>
+            <${Box}>
+              <${Typography} variant="body2" fontWeight=${700} sx=${{ color:'#BF360C', mb:0.25 }}>
+                ${UNMAPPED_SKILLS.length} Skills konnten beim Erfassen nicht im Decidalo-Katalog gefunden werden
+              <//>
+              <${Typography} variant="body2" color="text.secondary">
+                Ordnen Sie jeden Skill einem vorhandenen Decidalo-Skill zu oder veranlassen Sie die Neuanlage.
+                Nicht zugeordnete Skills fließen nicht ins Matching ein.
+              <//>
+            <//>
+          <//>
+
+          <!-- Skill-Karten -->
+          <${Stack} spacing=${1.5} sx=${{ mb:3 }}>
+            ${UNMAPPED_SKILLS.map(skill => {
+              const isSaved    = saved.has(skill.id);
+              const chosen     = sel[skill.id];
+              const chosenItem = DECIDALO_CATALOG.find(d => d.id === chosen);
+              const canSave    = !!chosen;
+
+              return html`
+                <${Paper} key=${skill.id} variant="outlined" sx=${{
+                  p:2.5,
+                  bgcolor: isSaved ? (chosen === '__none__' ? '#FAFAFA' : '#F0FBF5') : '#fff',
+                  borderColor: isSaved ? (chosen === '__none__' ? 'divider' : '#81C784') : 'divider',
+                }}>
+                  <${Stack} direction="row" alignItems="flex-start" gap=${2}>
+
+                    <!-- Skill-Info links -->
+                    <${Box} sx=${{ flex:1, minWidth:0 }}>
+                      <${Stack} direction="row" alignItems="center" gap=${1} flexWrap="wrap" sx=${{ mb:0.5 }}>
+                        <${Typography} variant="body2" fontWeight=${700}>${skill.name}<//>
+                        <${Box} sx=${{
+                          fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:0.4,
+                          px:1, py:0.125, borderRadius:'8px',
+                          bgcolor: skill.type === 'pflicht' ? '#FCEBEB' : '#E3F0FC',
+                          color:   skill.type === 'pflicht' ? '#791F1F' : '#1256A0',
+                        }}>${skill.type === 'pflicht' ? 'Pflicht' : 'Optional'}<//>
+                        ${!isSaved && html`
+                          <${Box} sx=${{ fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:0.4, px:1, py:0.125, borderRadius:'8px', bgcolor:'#FFF3E0', color:'#E65100' }}>
+                            Nicht gemappt
+                          <//>
+                        `}
+                      <//>
+                      ${skill.note && html`
+                        <${Typography} variant="caption" color="text.secondary" sx=${{ fontStyle:'italic' }}>
+                          Hinweis: ${skill.note}
+                        <//>
+                      `}
+                    <//>
+
+                    <!-- Mapping-UI rechts -->
+                    <${Box} sx=${{ flexShrink:0, minWidth:300 }}>
+                      ${isSaved ? html`
+                        <!-- Gespeichert -->
+                        ${chosen === '__none__'
+                          ? html`
+                            <${Box} sx=${{ display:'flex', alignItems:'center', gap:1, color:'text.secondary' }}>
+                              <${Box} sx=${{ fontSize:'16px' }}>📋<//>
+                              <${Typography} variant="body2" color="text.secondary">
+                                Kein Mapping — wird als neuer Skill im Admin vorgemerkt
+                              <//>
+                            <//>
+                          `
+                          : html`
+                            <${Box} sx=${{ display:'flex', alignItems:'center', gap:1 }}>
+                              <${Box} sx=${{ color:'#2E7D32', fontSize:'16px', fontWeight:700 }}>✓<//>
+                              <${Box}>
+                                <${Typography} variant="body2" fontWeight=${600} sx=${{ color:'#0F6E56' }}>
+                                  ${chosenItem.name}
+                                <//>
+                                <${Typography} variant="caption" color="text.secondary">
+                                  ${CAT_LABEL[chosenItem.cat] || chosenItem.cat}
+                                <//>
+                              <//>
+                            <//>
+                          `
+                        }
+                      ` : html`
+                        <!-- Noch nicht gespeichert -->
+                        <${Stack} spacing=${1}>
+                          <${TextField}
+                            label="Decidalo-Skill auswählen"
+                            size="small" select fullWidth
+                            value=${chosen || ''}
+                            onChange=${e => setSel(prev => ({ ...prev, [skill.id]: e.target.value }))}
+                          >
+                            <${MenuItem} value="" disabled><em>— bitte wählen —</em><//>
+                            ${DECIDALO_CATALOG.map(d => html`
+                              <${MenuItem} key=${d.id} value=${d.id}>
+                                ${d.name}
+                                <${Box} component="span" sx=${{ ml:1, fontSize:'11px', color:'text.disabled' }}>
+                                  (${CAT_LABEL[d.cat] || d.cat})
+                                <//>
+                              <//>
+                            `)}
+                            <${MenuItem} value="__none__">
+                              <${Box} sx=${{ color:'text.secondary', fontStyle:'italic' }}>
+                                Kein Treffer — neuen Skill anlegen
+                              <//>
+                            <//>
+                          <//>
+                          <${Button}
+                            variant="outlined" size="small"
+                            disabled=${!canSave}
+                            onClick=${() => resolve(skill.id)}
+                          >
+                            Übernehmen
+                          <//>
+                        <//>
+                      `}
+                    <//>
+
+                  <//>
+                <//>
+              `;
+            })}
+          <//>
+
+          <!-- Abschluss-Banner -->
+          ${allDone
+            ? html`
+              <${Box} sx=${{ bgcolor:'#E1F5EE', border:'1px solid #81C784', borderRadius:1, px:2, py:1.5, display:'flex', alignItems:'center', gap:2 }}>
+                <${Box} sx=${{ color:'#2E7D32', fontSize:'20px', flexShrink:0 }}>✓<//>
+                <${Box} sx=${{ flex:1 }}>
+                  <${Typography} variant="body2" fontWeight=${700} sx=${{ color:'#0F6E56', mb:0.25 }}>Alle Skills zugeordnet<//>
+                  <${Typography} variant="body2" color="text.secondary">
+                    Matches neu berechnen, damit die Zuordnungen ins Scoring einfließen.
+                  <//>
+                <//>
+                <${Button} variant="contained" size="small" sx=${{ flexShrink:0 }}>
+                  Matches neu berechnen
+                <//>
+              <//>
+            `
+            : html`
+              <${Typography} variant="caption" color="text.secondary">
+                ${unresolvedCount} von ${UNMAPPED_SKILLS.length} Skills noch nicht zugeordnet.
+              <//>
+            `
+          }
         <//>
       `;
     }
@@ -663,12 +850,14 @@
 
     /* ── App ─────────────────────────────────────────────────── */
     function App() {
-      const [tab,       setTab]       = useState(0);
-      const [drawerOpen, setDrawerOpen] = useState(false);
-      const [drawerCandidate, setDrawerCandidate] = useState(null);
+      const [tab,            setTab]            = useState(0);
+      const [drawerOpen,     setDrawerOpen]     = useState(false);
+      const [drawerCandidate,setDrawerCandidate] = useState(null);
 
       const openDrawer  = useCallback(c => { setDrawerCandidate(c); setDrawerOpen(true); }, []);
       const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+
+      const hasUnmapped = UNMAPPED_SKILLS.length > 0;
 
       return html`
         <${ThemeProvider} theme=${theme}>
@@ -711,14 +900,32 @@
 
             <!-- Tabs -->
             <${Tabs} value=${tab} onChange=${(_, v) => setTab(v)} sx=${{ mb: 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-              <${Tab} label=${html`<${Stack} direction="row" alignItems="center" gap=${0.75}>Matches <${Box} sx=${{ bgcolor: '#E3F0FC', color: '#1256A0', borderRadius: '10px', px: 0.875, fontSize: '11px', fontWeight: 700 }}>${CANDIDATES.length}<//>  <//>` } />
+              <${Tab} label=${html`
+                <${Stack} direction="row" alignItems="center" gap=${0.75}>
+                  Matches
+                  <${Box} sx=${{ bgcolor:'#E3F0FC', color:'#1256A0', borderRadius:'10px', px:0.875, fontSize:'11px', fontWeight:700 }}>
+                    ${CANDIDATES.length}
+                  <//>
+                <//>
+              `} />
               <${Tab} label="Status & Historie" />
               <${Tab} label="Details" />
+              ${hasUnmapped && html`
+                <${Tab} label=${html`
+                  <${Stack} direction="row" alignItems="center" gap=${0.75}>
+                    Skill-Mapping
+                    <${Box} sx=${{ bgcolor:'#FFF3E0', color:'#E65100', borderRadius:'10px', px:0.875, fontSize:'11px', fontWeight:700 }}>
+                      ${UNMAPPED_SKILLS.length}
+                    <//>
+                  <//>
+                `} />
+              `}
             <//>
 
             ${tab === 0 && html`<${TabMatches} onOpenDrawer=${openDrawer} />`}
             ${tab === 1 && html`<${TabHistory} />`}
             ${tab === 2 && html`<${TabDetails} />`}
+            ${tab === 3 && hasUnmapped && html`<${TabUnmapped} />`}
 
           <//>
 
