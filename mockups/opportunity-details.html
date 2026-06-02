@@ -699,151 +699,34 @@
       `;
     }
 
-    /* ── Score Drawer ────────────────────────────────────────── */
-    function ScoreDrawer({ candidate, onClose }) {
+    /* ── ScorePlaceholder ───────────────────────────────────────────── */
+    function ScorePlaceholder({ candidate, onClose }) {
       if (!candidate) return null;
-      const cfg        = POOL_CONFIG[candidate.pool] || POOL_CONFIG.soon;
-      const score      = candidate.score;
-      const scoreColor = score >= 85 ? '#2E7D32' : score >= 70 ? '#1976D2' : '#E65100';
-
-      function ScoreComponent({ name, level, barPct, barColor, points, pointsColor }) {
-        return html`
-          <${Stack} direction="row" alignItems="center" gap=${1.25} sx=${{ py: 1.125, borderBottom: '1px solid', borderColor: 'divider', '&:last-child': { borderBottom: 'none' } }}>
-            <${Typography} variant="body2" fontWeight=${500} sx=${{ flex: 1 }}>${name}<//>
-            <${Typography} variant="caption" color="text.secondary" sx=${{ minWidth: 130, textAlign: 'right' }}>${level}<//>
-            <${Box} sx=${{ width: 80 }}>
-              <${Box} sx=${{ height: 5, bgcolor: '#E0E0E0', borderRadius: '3px', overflow: 'hidden' }}>
-                <${Box} sx=${{ width: barPct + '%', height: '100%', bgcolor: barColor, borderRadius: '3px' }} />
-              <//>
-            <//>
-            <${Typography} variant="body2" fontWeight=${700} sx=${{ minWidth: 48, textAlign: 'right', color: pointsColor }}>${points}<//>
-          <//>
-        `;
-      }
-
-      function SectionLabel({ children }) {
-        return html`
-          <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'block', borderBottom: '1px solid', borderColor: 'divider', pb: 1, mb: 1.25, lineHeight: 1.6 }}>
-            ${children}
-          <//>
-        `;
-      }
-
       return html`
         <${Box} sx=${{ width: 520, maxWidth: '95vw', height: '100%', display: 'flex', flexDirection: 'column' }}>
-
-          <!-- Header -->
           <${Box} sx=${{ borderBottom: '1px solid', borderColor: 'divider', px: 2.5, py: 1.75, flexShrink: 0 }}>
             <${Stack} direction="row" alignItems="center" gap=${1.5}>
               <${Avatar} initials=${candidate.initials} bgcolor=${candidate.avatarColor} />
               <${Box} sx=${{ flex: 1, minWidth: 0 }}>
                 <${Stack} direction="row" alignItems="center" gap=${1} flexWrap="wrap" sx=${{ mb: 0.25 }}>
-                  <${Typography} variant="subtitle1" fontWeight=${700}>${candidate.name}<//>
+                  <${Typography} variant="subtitle1" fontWeight=${700}>${candidate.name}<//> 
                   <${StatusPill} label=${candidate.status} />
                 <//>
                 <${Typography} variant="caption" color="text.secondary">
                   ${candidate.role} · ${candidate.manager}
                 <//>
               <//>
-              <${IconButton} onClick=${onClose} size="small" sx=${{ color: 'text.disabled', '&:hover': { color: 'text.primary' }, flexShrink: 0 }}>✕<//>
+              <${Button} size="small" color="inherit" onClick=${onClose} sx=${{ minWidth: 0, px: 1 }}>✕<//>
             <//>
           <//>
-
-          <!-- Scrollable content -->
-          <${Box} sx=${{ flex: 1, overflowY: 'auto', px: 2.5, py: 2.5 }}>
-
-            <!-- Score summary -->
-            <${Box} sx=${{ mb: 2.5 }}>
-              <${SectionLabel}>Gesamt-Match-Score<//>
-              <${Stack} direction="row" alignItems="center" gap=${2.5}>
-                <${Box} sx=${{
-                  width: 72, height: 72, borderRadius: '50%', flexShrink: 0,
-                  border: '4px solid ' + scoreColor,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <${Typography} sx=${{ fontSize: '26px', fontWeight: 700, lineHeight: 1, color: scoreColor }}>
-                    ${score}
-                  <//>
-                <//>
-                <${Box} sx=${{ flex: 1 }}>
-                  <${Box} sx=${{ height: 8, bgcolor: '#E0E0E0', borderRadius: '4px', overflow: 'hidden', mb: 1 }}>
-                    <${Box} sx=${{ width: score + '%', height: '100%', bgcolor: scoreColor, borderRadius: '4px' }} />
-                  <//>
-                  <${Stack} direction="row" justifyContent="space-between">
-                    <${Typography} variant="caption" color="text.secondary">0<//>
-                    <${Typography} variant="caption" color="text.secondary">Rohwert × Verfügbarkeitsfaktor<//>
-                    <${Typography} variant="caption" color="text.secondary">100<//>
-                  <//>
-                <//>
-              <//>
+          <${Box} sx=${{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, px: 4, textAlign: 'center' }}>
+            <${Typography} variant="body2" color="text.secondary">
+              Score-Aufschlüsselung im dedizierten Mockup abgebildet.
             <//>
-
-            <!-- Pflichtskills -->
-            <${Box} sx=${{ mb: 2 }}>
-              <${SectionLabel}>
-                Pflichtskills <${Box} component="span" sx=${{ fontStyle: 'italic', fontWeight: 400, textTransform: 'none', fontSize: '11px' }}>— Gewicht 65 %<//>
-              <//>
-              <${ScoreComponent} name="AML"          level="Nachgewiesen"     barPct=${100} barColor="#E53935" points="+21,7" pointsColor="#C62828" />
-              <${ScoreComponent} name="Compliance"   level="Nachgewiesen"     barPct=${100} barColor="#E53935" points="+21,7" pointsColor="#C62828" />
-              <${ScoreComponent} name="EU-Regulatorik (ODER)" level="EU-AML-Paket nachgewiesen" barPct=${100} barColor="#E53935" points="+21,7" pointsColor="#C62828" />
-              <${Typography} variant="caption" color="text.secondary" sx=${{ display: 'block', textAlign: 'right', mt: 0.75 }}>
-                Zwischensumme: <strong>65 / 65 Punkte</strong>
-              <//>
+            <${Button} variant="contained" component="a" href="score-drawer.html">
+              Score-Drawer öffnen →
             <//>
-
-            <!-- Optionale Skills -->
-            <${Box} sx=${{ mb: 2 }}>
-              <${SectionLabel}>
-                Optionale Skills <${Box} component="span" sx=${{ fontStyle: 'italic', fontWeight: 400, textTransform: 'none', fontSize: '11px' }}>— Gewicht 20 %<//>
-              <//>
-              <${ScoreComponent} name="MS Office" level="Nicht nachgewiesen" barPct=${0} barColor="#1976D2" points="+0" pointsColor="#9E9E9E" />
-              <${Typography} variant="caption" color="text.secondary" sx=${{ display: 'block', textAlign: 'right', mt: 0.75 }}>
-                Zwischensumme: <strong>0 / 20 Punkte</strong>
-              <//>
-            <//>
-
-            <!-- Domain Fit -->
-            <${Box} sx=${{ mb: 2 }}>
-              <${SectionLabel}>
-                Domain Fit <${Box} component="span" sx=${{ fontStyle: 'italic', fontWeight: 400, textTransform: 'none', fontSize: '11px' }}>— Gewicht 15 %<//>
-              <//>
-              <${ScoreComponent} name="Branche: Banking"        level="Erfahrung vorhanden"  barPct=${100} barColor="#2E7D32" points="1,0" pointsColor="#2E7D32" />
-              <${ScoreComponent} name="Kunde: Hypoteq AG"       level="Keine Vorerfahrung"   barPct=${0}   barColor="#2E7D32" points="—"   pointsColor="#9E9E9E" />
-              <${ScoreComponent} name="System: Avaloq"          level="Nachgewiesen"         barPct=${100} barColor="#2E7D32" points="1,0" pointsColor="#2E7D32" />
-              <${Typography} variant="caption" color="text.secondary" sx=${{ display: 'block', textAlign: 'right', mt: 0.75 }}>
-                Zwischensumme: <strong> 15 / 15 Punkte</strong>
-              <//>
-            <//>
-
-            <!-- Verfügbarkeitsfaktor & Berechnung -->
-            <${Box} sx=${{ mb: candidate.comment ? 2 : 0 }}>
-              <${SectionLabel}>Verfügbarkeitsfaktor<//>
-              <${Box} sx=${{ border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 2, py: 1.25, display: 'flex', alignItems: 'center', gap: 1.75, mb: 1.25 }}>
-                <${Box} sx=${{ width: 12, height: 12, borderRadius: '50%', bgcolor: cfg.dotColor, flexShrink: 0 }} />
-                <${Box} sx=${{ flex: 1 }}>
-                  <${Typography} variant="body2" fontWeight=${700}>${cfg.status}<//>
-                  <${Typography} variant="caption" color="text.secondary">${cfg.sub}<//>
-                <//>
-                <${Typography} sx=${{ fontSize: '18px', fontWeight: 700, color: cfg.dotColor }}>${cfg.factor}<//>
-              <//>
-              <${Box} sx=${{ bgcolor: '#F5F6F8', borderRadius: 1, px: 2, py: 1.25, lineHeight: 1.8, fontSize: '13px' }}>
-                Rohwert = 65 + 0 + 15 = <strong style=${{ color: '#1976D2' }}>80 Punkte</strong><br/>
-                Score = 80 × <strong style=${{ color: '#1976D2' }}>${cfg.factor.replace('×', '').trim()}</strong> = <strong style=${{ color: scoreColor }}>${score}</strong>
-              <//>
-            <//>
-
-            <!-- Führungskraft-Kommentar (read-only) -->
-            ${candidate.comment && html`
-              <${Box}>
-                <${SectionLabel}>Führungskraft-Kommentar<//>
-                <${Box} sx=${{ bgcolor: '#F5F6F8', borderLeft: '3px solid #1976D2', px: 1.5, py: 1.25, borderRadius: '0 4px 4px 0' }}>
-                  <${Typography} variant="body2" sx=${{ fontSize: '13px', lineHeight: 1.7 }}>${candidate.comment}<//>
-                <//>
-              <//>
-            `}
-
           <//>
-
         <//>
       `;
     }
@@ -936,7 +819,7 @@
             onClose=${closeDrawer}
             PaperProps=${{ sx: { width: 520, maxWidth: '95vw' } }}
           >
-            <${ScoreDrawer} candidate=${drawerCandidate} onClose=${closeDrawer} />
+            <${ScorePlaceholder} candidate=${drawerCandidate} onClose=${closeDrawer} />
           <//>
 
         <//>

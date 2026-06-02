@@ -65,6 +65,7 @@
       Box, Typography, Button, Paper, Container, Stack, Divider,
       Table, TableHead, TableBody, TableRow, TableCell, TableContainer,
       TextField, MenuItem, Tabs, Tab, Chip,
+      Drawer,
       ThemeProvider, createTheme, CssBaseline,
     } = MaterialUI;
 
@@ -221,7 +222,7 @@
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <${Typography} variant="overline" color="text.secondary">
-            Mockup · <${Box} component="span" sx=${{ color: 'primary.main' }}>Verfügbarkeit & Export<//>
+            Mockup · <${Box} component="span" sx=${{ color: 'primary.main' }}>Mitarbeiterverwaltung<//>
           <//>
           <${Button} component="a" href="../index.html" size="small">← Katalog<//>
         <//>
@@ -234,6 +235,7 @@
       const [fStatus,   setFStatus]   = useState('');
       const [fRegion,   setFRegion]   = useState('');
       const [fMobility, setFMobility] = useState('');
+      const [drawerEmployee, setDrawerEmployee] = useState(null);
 
       const visible = useMemo(() => CONSULTANTS.filter(c =>
         (!search    || c.name.toLowerCase().includes(search.toLowerCase())) &&
@@ -307,7 +309,7 @@
                 ` : visible.map(c => {
                   const av = AV_STATUS[c.avKey] || AV_STATUS.bench;
                   return html`
-                    <${TableRow} key=${c.name} hover>
+                    <${TableRow} key=${c.name} hover sx=${{ cursor:'pointer' }} onClick=${() => setDrawerEmployee(c)}>
                       <${TableCell}>
                         <${Stack} direction="row" alignItems="center" gap=${1.25}>
                           <${Box} sx=${{
@@ -362,6 +364,29 @@
               <//>
             <//>
           <//>
+
+          ${drawerEmployee && html`
+            <${Drawer} anchor="right" open=${true} onClose=${() => setDrawerEmployee(null)}
+              sx=${{ zIndex:1200 }}
+              PaperProps=${{ sx:{ width:360, display:'flex', flexDirection:'column' } }}>
+              <${Box} sx=${{ px:3, py:2, borderBottom:'1px solid', borderColor:'divider', display:'flex', alignItems:'center', gap:1.5, flexShrink:0 }}>
+                <${Box} sx=${{ width:40, height:40, borderRadius:'50%', bgcolor:drawerEmployee.avatarColor, color:'#fff', fontWeight:700, fontSize:'15px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>${drawerEmployee.initials}<//>
+                <${Box} sx=${{ flex:1 }}>
+                  <${Typography} variant="subtitle1" fontWeight=${700}>${drawerEmployee.name}<//>
+                  <${Typography} variant="caption" color="text.secondary">${drawerEmployee.level}<//>
+                <//>
+                <${Button} size="small" color="inherit" onClick=${() => setDrawerEmployee(null)} sx=${{ minWidth:0, px:1 }}>✕<//>
+              <//>
+              <${Box} sx=${{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, px:4, textAlign:'center' }}>
+                <${Typography} variant="body2" color="text.secondary">
+                  Die vollständige Mitarbeiter-Ansicht ist im dedizierten Mockup abgebildet.
+                <//>
+                <${Button} variant="contained" component="a" href="mitarbeiter-drawer.html">
+                  Mitarbeiter-Drawer öffnen →
+                <//>
+              <//>
+            <//>
+          `}
         <//>
       `;
     }
@@ -372,6 +397,7 @@
       const [monthIdx, setMonthIdx] = useState(() => kwToMonthIdx(CURRENT_KW));
       const [showYear, setShowYear] = useState(false);
       const [search,   setSearch]   = useState('');
+      const [drawerEmployee, setDrawerEmployee] = useState(null);
 
       const startKW = showYear ? 1  : MONTH_RANGES[monthIdx].from;
       const endKW   = showYear ? 52 : MONTH_RANGES[monthIdx].to;
@@ -499,7 +525,8 @@
                       position: 'sticky', left: 0, bgcolor: '#fff', zIndex: 1,
                       width: 220, minWidth: 220, py: 0.75, px: 2,
                       borderBottom: '1px solid #EEEEEE',
-                    }}>
+                      cursor: 'pointer',
+                    }} onClick=${() => setDrawerEmployee(c)}>
                       <${Stack} direction="row" alignItems="center" gap=${1}>
                         <${Box} sx=${{
                           width: 28, height: 28, borderRadius: '50%',
@@ -509,7 +536,7 @@
                         }}>${c.initials}<//>
                         <${Box}>
                           <${Typography} variant="body2" fontWeight=${600}
-                            sx=${{ lineHeight: 1.25, fontSize: '13px' }}>
+                            sx=${{ lineHeight: 1.25, fontSize: '13px', color: 'primary.main' }}>
                             ${c.name}
                           <//>
                           <${Typography} variant="caption" color="text.secondary">
@@ -551,6 +578,29 @@
           ${isCurrentYear && html`
             <${Typography} variant="caption" color="text.secondary" sx=${{ display: 'block', mt: 1.5 }}>
               Heutiger Tag: KW ${CURRENT_KW} · ${MONTH_RANGES[kwToMonthIdx(CURRENT_KW)].label} ${CURRENT_YEAR} (blau markiert)
+            <//>
+          `}
+
+          ${drawerEmployee && html`
+            <${Drawer} anchor="right" open=${true} onClose=${() => setDrawerEmployee(null)}
+              sx=${{ zIndex:1200 }}
+              PaperProps=${{ sx:{ width:360, display:'flex', flexDirection:'column' } }}>
+              <${Box} sx=${{ px:3, py:2, borderBottom:'1px solid', borderColor:'divider', display:'flex', alignItems:'center', gap:1.5, flexShrink:0 }}>
+                <${Box} sx=${{ width:40, height:40, borderRadius:'50%', bgcolor:drawerEmployee.avatarColor, color:'#fff', fontWeight:700, fontSize:'15px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>${drawerEmployee.initials}<//>
+                <${Box} sx=${{ flex:1 }}>
+                  <${Typography} variant="subtitle1" fontWeight=${700}>${drawerEmployee.name}<//>
+                  <${Typography} variant="caption" color="text.secondary">${drawerEmployee.level}<//>
+                <//>
+                <${Button} size="small" color="inherit" onClick=${() => setDrawerEmployee(null)} sx=${{ minWidth:0, px:1 }}>✕<//>
+              <//>
+              <${Box} sx=${{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, px:4, textAlign:'center' }}>
+                <${Typography} variant="body2" color="text.secondary">
+                  Die vollständige Mitarbeiter-Ansicht ist im dedizierten Mockup abgebildet.
+                <//>
+                <${Button} variant="contained" component="a" href="mitarbeiter-drawer.html">
+                  Mitarbeiter-Drawer öffnen →
+                <//>
+              <//>
             <//>
           `}
 
@@ -670,7 +720,7 @@
             <${Tabs} value=${tab} onChange=${(_, v) => setTab(v)}
               sx=${{ mb: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
               <${Tab} label="Übersicht" />
-              <${Tab} label="Gantt-Ansicht" />
+              <${Tab} label="Kalenderansicht" />
               <${Tab} label="Dispolisten-Export" />
             <//>
 
