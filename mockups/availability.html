@@ -9,15 +9,47 @@
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; }
-    /* Calendar table: keep native table for the compact colored grid */
-    .cal-table { border-collapse: collapse; min-width: 600px; }
+    /* Calendar / Gantt table */
+    .cal-table { border-collapse: collapse; }
     .cal-table th, .cal-table td { border: none; padding: 0; }
-    .cal-th-name { font-size: 11px; font-weight: 700; color: #757575; text-transform: uppercase; letter-spacing: 0.3px; background: #fff; padding: 6px 4px; text-align: left; padding-left: 14px; min-width: 160px; }
-    .cal-th-month { border-left: 1px solid #E0E0E0; font-size: 11px; font-weight: 700; color: #757575; background: #FAFAFA; padding: 4px 6px; text-align: center; }
-    .cal-th-kw { width: 28px; min-width: 28px; max-width: 28px; font-size: 10px; font-weight: 400; color: #757575; border-left: 1px solid rgba(224,224,224,0.5); padding: 4px 2px; text-align: center; background: #fff; }
-    .cal-td-name { position: sticky; left: 0; background: #fff; min-width: 160px; padding: 6px 14px; border-bottom: 1px solid #E0E0E0; z-index: 1; }
-    .cal-td-av { width: 28px; min-width: 28px; max-width: 28px; height: 24px; border-right: 1px solid rgba(224,224,224,0.5); border-bottom: 1px solid rgba(224,224,224,0.3); cursor: pointer; }
-    .cal-td-av:hover { opacity: 0.75; }
+    .cal-th-name {
+      font-size: 11px; font-weight: 700; color: #757575;
+      text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
+      background: #FAFAFA; padding: 6px 16px;
+      text-align: left; width: 220px; min-width: 220px;
+      position: sticky; left: 0; z-index: 2;
+      border-bottom: 1px solid #E0E0E0;
+    }
+    .cal-th-month {
+      border-left: 1px solid #E0E0E0;
+      font-size: 11px; font-weight: 700; color: #757575;
+      text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
+      background: #FAFAFA; padding: 6px 8px;
+      text-align: center;
+      border-bottom: 1px solid #E0E0E0;
+    }
+    .cal-th-kw {
+      width: 30px; min-width: 30px; max-width: 30px;
+      font-size: 11px; font-weight: 700; color: #757575;
+      border-left: 1px solid rgba(224,224,224,0.6);
+      padding: 6px 2px; text-align: center;
+      background: #FAFAFA;
+      border-bottom: 1px solid #E0E0E0;
+    }
+    .cal-td-name {
+      position: sticky; left: 0; background: #fff;
+      width: 220px; min-width: 220px; padding: 6px 16px;
+      border-bottom: 1px solid #EEEEEE; z-index: 1;
+    }
+    .cal-td-av {
+      width: 30px; min-width: 30px; max-width: 30px; height: 32px;
+      border-right: 1px solid rgba(255,255,255,0.25);
+      border-bottom: 1px solid rgba(224,224,224,0.35);
+      cursor: default;
+      transition: opacity 0.12s;
+    }
+    .cal-td-av:hover { opacity: 0.65 !important; }
+    .cal-tr-hover:hover .cal-td-name { background: #F5F9FF; }
   </style>
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -29,7 +61,12 @@
   <script>
     const { createElement: h, useState, useMemo } = React;
     const { createRoot } = ReactDOM;
-    const { Box, Typography, Button, Paper, Container, Stack, Grid, Divider, Table, TableHead, TableBody, TableRow, TableCell, TableContainer, TextField, MenuItem, Tabs, Tab, ThemeProvider, createTheme, CssBaseline } = MaterialUI;
+    const {
+      Box, Typography, Button, Paper, Container, Stack, Divider,
+      Table, TableHead, TableBody, TableRow, TableCell, TableContainer,
+      TextField, MenuItem, Tabs, Tab, Chip,
+      ThemeProvider, createTheme, CssBaseline,
+    } = MaterialUI;
 
     const html = htm.bind(h);
 
@@ -38,32 +75,134 @@
       components: { MuiButton: { defaultProps: { disableElevation: true } } },
     });
 
-    // Dispoliste-Farben (Originalwerte aus Excel-Vorlage)
+    /* ── Verfügbarkeitsstatus (Dispoliste-Farben) ── */
     const AV_STATUS = {
-      bench:                { color: '#FF0000', label: 'Bench' },
-      billable:             { color: '#00B050', label: 'Billable' },
-      prolongation_possible:{ color: '#B4F1B1', label: 'Prolongation möglich' },
-      reserved:             { color: '#C4BD97', label: 'Reserviert' },
-      offered:              { color: '#1976D2', label: 'Angeboten' },
-      parttime:             { color: '#FFC000', label: 'Teilzeit' },
-      absence:              { color: '#0070C0', label: 'Abwesenheit' },
-      left_company:         { color: '#455A64', label: 'Ausgeschieden' },
+      bench:                 { color: '#FF0000', label: 'Bench' },
+      billable:              { color: '#00B050', label: 'Billable' },
+      prolongation_possible: { color: '#B4F1B1', label: 'Prolongation möglich' },
+      reserved:              { color: '#C4BD97', label: 'Reserviert' },
+      offered:               { color: '#1976D2', label: 'Angeboten' },
+      parttime:              { color: '#FFC000', label: 'Teilzeit' },
+      absence:               { color: '#0070C0', label: 'Abwesenheit' },
+      left_company:          { color: '#455A64', label: 'Ausgeschieden' },
     };
 
+    /* ── Stammdaten ── */
     const CONSULTANTS = [
-      { name: 'Max Mustermann',  initials: 'MM', avatarColor: '#1976D2', level: 'Senior Consultant',    avKey: 'bench',                 customer: null,               offeredTo: null,              partTime: null, region: 'Bayern',            mobility: 'National',      comments: 'Sucht aktiv nach neuem Projekt.' },
-      { name: 'Sandra Koch',     initials: 'SK', avatarColor: '#388E3C', level: 'Consultant',           avKey: 'billable',              customer: 'Commerzbank AG',   offeredTo: null,              partTime: null, region: 'NRW',               mobility: 'Regional',      comments: null },
-      { name: 'Felix Weber',     initials: 'FW', avatarColor: '#F57C00', level: 'Consultant',           avKey: 'reserved',              customer: null,               offeredTo: null,              partTime: null, region: 'Berlin',            mobility: 'National',      comments: null },
-      { name: 'Thomas Berger',   initials: 'TB', avatarColor: '#7B1FA2', level: 'Senior Consultant',    avKey: 'prolongation_possible', customer: 'Reply GmbH',       offeredTo: null,              partTime: null, region: 'Hamburg',           mobility: 'National',      comments: 'Verlängerung wahrscheinlich bis Q3 2026.' },
-      { name: 'Jana Richter',    initials: 'JR', avatarColor: '#0097A7', level: 'Consultant',           avKey: 'bench',                 customer: null,               offeredTo: null,              partTime: null, region: 'Bayern',            mobility: 'Regional',      comments: null },
-      { name: 'Lisa Müller',     initials: 'LM', avatarColor: '#AD1457', level: 'Principal Consultant', avKey: 'billable',              customer: 'Allianz SE',       offeredTo: null,              partTime: null, region: 'Baden-Württemberg', mobility: 'International', comments: null },
-      { name: 'Klaus Becker',    initials: 'KB', avatarColor: '#455A64', level: 'Consultant',           avKey: 'offered',               customer: null,               offeredTo: 'Deutsche Bank AG', partTime: null, region: 'NRW',              mobility: 'Regional',      comments: 'Rückmeldung bis KW 23 erwartet.' },
-      { name: 'Maria Schulz',    initials: 'MS', avatarColor: '#7B1FA2', level: 'Senior Consultant',    avKey: 'parttime',              customer: 'Munich Re',        offeredTo: null,              partTime: 60,   region: 'Bayern',            mobility: 'National',      comments: null },
-      { name: 'Peter Hoffmann',  initials: 'PH', avatarColor: '#00838F', level: 'Principal Consultant', avKey: 'billable',              customer: 'Hypoteq AG',       offeredTo: null,              partTime: null, region: 'Hessen',            mobility: 'International', comments: null },
-      { name: 'Anna Weber',      initials: 'AW', avatarColor: '#C62828', level: 'Consultant',           avKey: 'absence',               customer: null,               offeredTo: null,              partTime: null, region: 'NRW',               mobility: 'Regional',      comments: 'Elternzeit bis September 2026.' },
+      { name: 'Max Mustermann',  initials: 'MM', avatarColor: '#1976D2', level: 'Senior Consultant',    avKey: 'bench',                 customer: null,               offeredTo: null,               partTime: null, region: 'Bayern',            mobility: 'National',      comments: 'Sucht aktiv nach neuem Projekt.' },
+      { name: 'Sandra Koch',     initials: 'SK', avatarColor: '#388E3C', level: 'Consultant',           avKey: 'billable',              customer: 'Commerzbank AG',   offeredTo: null,               partTime: null, region: 'NRW',               mobility: 'Regional',      comments: null },
+      { name: 'Felix Weber',     initials: 'FW', avatarColor: '#F57C00', level: 'Consultant',           avKey: 'reserved',              customer: null,               offeredTo: null,               partTime: null, region: 'Berlin',            mobility: 'National',      comments: null },
+      { name: 'Thomas Berger',   initials: 'TB', avatarColor: '#7B1FA2', level: 'Senior Consultant',    avKey: 'prolongation_possible', customer: 'Reply GmbH',       offeredTo: null,               partTime: null, region: 'Hamburg',           mobility: 'National',      comments: 'Verlängerung wahrscheinlich bis Q3 2026.' },
+      { name: 'Jana Richter',    initials: 'JR', avatarColor: '#0097A7', level: 'Consultant',           avKey: 'bench',                 customer: null,               offeredTo: null,               partTime: null, region: 'Bayern',            mobility: 'Regional',      comments: null },
+      { name: 'Lisa Müller',     initials: 'LM', avatarColor: '#AD1457', level: 'Principal Consultant', avKey: 'billable',              customer: 'Allianz SE',       offeredTo: null,               partTime: null, region: 'Baden-Württemberg', mobility: 'International', comments: null },
+      { name: 'Klaus Becker',    initials: 'KB', avatarColor: '#455A64', level: 'Consultant',           avKey: 'offered',               customer: null,               offeredTo: 'Deutsche Bank AG', partTime: null, region: 'NRW',               mobility: 'Regional',      comments: 'Rückmeldung bis KW 23 erwartet.' },
+      { name: 'Maria Schulz',    initials: 'MS', avatarColor: '#7B1FA2', level: 'Senior Consultant',    avKey: 'parttime',              customer: 'Munich Re',        offeredTo: null,               partTime: 60,   region: 'Bayern',            mobility: 'National',      comments: null },
+      { name: 'Peter Hoffmann',  initials: 'PH', avatarColor: '#00838F', level: 'Principal Consultant', avKey: 'billable',              customer: 'Hypoteq AG',       offeredTo: null,               partTime: null, region: 'Hessen',            mobility: 'International', comments: null },
+      { name: 'Anna Weber',      initials: 'AW', avatarColor: '#C62828', level: 'Consultant',           avKey: 'absence',               customer: null,               offeredTo: null,               partTime: null, region: 'NRW',               mobility: 'Regional',      comments: 'Elternzeit bis September 2026.' },
     ];
 
-    const REGIONS   = [...new Set(CONSULTANTS.map(c => c.region))].sort();
+    /* ── Gantt-Segmente: welcher Consultant ist wann in welchem Status ── */
+    const GANTT_ENTRIES = [
+      { name: 'Max Mustermann', segments: [
+          { fromKW:  1, toKW: 14, status: 'billable' },
+          { fromKW: 15, toKW: 52, status: 'bench' },
+      ]},
+      { name: 'Sandra Koch', segments: [
+          { fromKW:  1, toKW: 52, status: 'billable' },
+      ]},
+      { name: 'Felix Weber', segments: [
+          { fromKW:  1, toKW: 15, status: 'billable' },
+          { fromKW: 16, toKW: 25, status: 'reserved' },
+          { fromKW: 26, toKW: 52, status: 'billable' },
+      ]},
+      { name: 'Thomas Berger', segments: [
+          { fromKW:  1, toKW: 27, status: 'billable' },
+          { fromKW: 28, toKW: 30, status: 'prolongation_possible' },
+          { fromKW: 31, toKW: 52, status: 'bench' },
+      ]},
+      { name: 'Jana Richter', segments: [
+          { fromKW:  1, toKW: 25, status: 'bench' },
+          { fromKW: 26, toKW: 52, status: 'billable' },
+      ]},
+      { name: 'Lisa Müller', segments: [
+          { fromKW:  1, toKW: 52, status: 'billable' },
+      ]},
+      { name: 'Klaus Becker', segments: [
+          { fromKW:  1, toKW: 22, status: 'bench' },
+          { fromKW: 23, toKW: 24, status: 'offered' },
+          { fromKW: 25, toKW: 52, status: 'billable' },
+      ]},
+      { name: 'Maria Schulz', segments: [
+          { fromKW:  1, toKW: 52, status: 'parttime' },
+      ]},
+      { name: 'Peter Hoffmann', segments: [
+          { fromKW:  1, toKW: 52, status: 'billable' },
+      ]},
+      { name: 'Anna Weber', segments: [
+          { fromKW:  1, toKW: 38, status: 'absence' },
+          { fromKW: 39, toKW: 52, status: 'bench' },
+      ]},
+    ];
+
+    /* ── Hilfsfunktionen ── */
+    const CURRENT_KW   = 23; // 2026-06-01
+    const CURRENT_YEAR = 2026;
+
+    const MONTH_RANGES = [
+      { label: 'Januar',    from:  1, to:  4 },
+      { label: 'Februar',   from:  5, to:  8 },
+      { label: 'März',      from:  9, to: 13 },
+      { label: 'April',     from: 14, to: 17 },
+      { label: 'Mai',       from: 18, to: 21 },
+      { label: 'Juni',      from: 22, to: 25 },
+      { label: 'Juli',      from: 26, to: 30 },
+      { label: 'August',    from: 31, to: 35 },
+      { label: 'September', from: 36, to: 39 },
+      { label: 'Oktober',   from: 40, to: 44 },
+      { label: 'November',  from: 45, to: 48 },
+      { label: 'Dezember',  from: 49, to: 52 },
+    ];
+
+    function kwToMonthIdx(kw) {
+      return Math.max(0, MONTH_RANGES.findIndex(m => kw >= m.from && kw <= m.to));
+    }
+
+    function getSegmentStatus(name, kw) {
+      const entry = GANTT_ENTRIES.find(e => e.name === name);
+      if (!entry) return null;
+      const seg = entry.segments.find(s => kw >= s.fromKW && kw <= s.toKW);
+      return seg ? seg.status : null;
+    }
+
+    function kwToMonthLabel(kw) {
+      if (kw <=  4) return 'Januar';
+      if (kw <=  8) return 'Februar';
+      if (kw <= 13) return 'März';
+      if (kw <= 17) return 'April';
+      if (kw <= 21) return 'Mai';
+      if (kw <= 25) return 'Juni';
+      if (kw <= 30) return 'Juli';
+      if (kw <= 35) return 'August';
+      if (kw <= 39) return 'September';
+      if (kw <= 44) return 'Oktober';
+      if (kw <= 48) return 'November';
+      return 'Dezember';
+    }
+
+    function buildMonthGroups(weeks) {
+      const groups = [];
+      for (const kw of weeks) {
+        const m = kwToMonthLabel(kw);
+        if (groups.length > 0 && groups[groups.length - 1].label === m) {
+          groups[groups.length - 1].count++;
+        } else {
+          groups.push({ label: m, count: 1 });
+        }
+      }
+      return groups;
+    }
+
+    const REGIONS    = [...new Set(CONSULTANTS.map(c => c.region))].sort();
     const MOBILITIES = ['Lokal', 'Regional', 'National', 'International'];
 
     const HISTORY = [
@@ -72,6 +211,7 @@
       { filename: 'Dispoliste_2025_KW01-52.xlsx', date: '10.01.2026, 11:40', status: 'Abgelaufen',link: false },
     ];
 
+    /* ══════════════════════════════════════════════════════════ */
     function MockupBar() {
       return html`
         <${Paper} square elevation=${0} sx=${{
@@ -88,7 +228,7 @@
       `;
     }
 
-    /* ── Tab 1: Übersicht ── */
+    /* ── Tab 1: Übersicht (Tabelle) ── */
     function TabUebersicht() {
       const [search,    setSearch]    = useState('');
       const [fStatus,   setFStatus]   = useState('');
@@ -106,7 +246,6 @@
 
       return html`
         <${Box}>
-          <!-- Filter bar -->
           <${Stack} direction="row" spacing=${1.5} sx=${{ mb: 2.5 }} flexWrap="wrap" alignItems="flex-end">
             <${TextField} size="small" placeholder="Name suchen"
               value=${search} onChange=${e => setSearch(e.target.value)} sx=${{ minWidth: 200 }} />
@@ -138,7 +277,6 @@
             <//>
           <//>
 
-          <!-- Legend -->
           <${Stack} direction="row" flexWrap="wrap" gap=${2} sx=${{ mb: 2 }}>
             ${Object.entries(AV_STATUS).map(([k, v]) => html`
               <${Stack} key=${k} direction="row" alignItems="center" spacing=${0.75}>
@@ -148,7 +286,6 @@
             `)}
           <//>
 
-          <!-- Table -->
           <${TableContainer} component=${Paper} variant="outlined">
             <${Table} size="small">
               <${TableHead}>
@@ -168,11 +305,9 @@
                     <//>
                   <//>
                 ` : visible.map(c => {
-                  const av  = AV_STATUS[c.avKey] || AV_STATUS.bench;
+                  const av = AV_STATUS[c.avKey] || AV_STATUS.bench;
                   return html`
                     <${TableRow} key=${c.name} hover>
-
-                      <!-- Name + Status-Dot -->
                       <${TableCell}>
                         <${Stack} direction="row" alignItems="center" gap=${1.25}>
                           <${Box} sx=${{
@@ -189,20 +324,13 @@
                           <//>
                         <//>
                       <//>
-
-                      <!-- Level -->
-                      <${TableCell}>
-                        <${Typography} variant="body2">${c.level}<//>
+                      <${TableCell}><${Typography} variant="body2">${c.level}<//>
                       <//>
-
-                      <!-- Customer -->
                       <${TableCell}>
                         <${Typography} variant="body2" color=${c.customer ? 'text.primary' : 'text.disabled'}>
                           ${c.customer || '—'}
                         <//>
                       <//>
-
-                      <!-- Offered to -->
                       <${TableCell}>
                         ${c.offeredTo ? html`
                           <${Box} sx=${{ display: 'inline-flex', alignItems: 'center', gap: 0.5, bgcolor: '#E3F0FC', color: '#1256A0', px: 1, py: 0.25, borderRadius: '10px', fontSize: '12px', fontWeight: 500 }}>
@@ -210,8 +338,6 @@
                           <//>
                         ` : html`<${Typography} variant="body2" color="text.disabled">—<//>` }
                       <//>
-
-                      <!-- Comments -->
                       <${TableCell} sx=${{ maxWidth: 220 }}>
                         <${Typography} variant="body2" color=${c.comments ? 'text.secondary' : 'text.disabled'}
                           sx=${{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}
@@ -219,8 +345,6 @@
                           ${c.comments || '—'}
                         <//>
                       <//>
-
-                      <!-- Part-Time -->
                       <${TableCell}>
                         ${c.partTime ? html`
                           <${Box} sx=${{ display: 'inline-block', bgcolor: '#FFF8E1', color: '#8a6000', px: 1, py: 0.25, borderRadius: '10px', fontSize: '12px', fontWeight: 700 }}>
@@ -228,17 +352,10 @@
                           <//>
                         ` : html`<${Typography} variant="body2" color="text.disabled">—<//>` }
                       <//>
-
-                      <!-- Region -->
-                      <${TableCell}>
-                        <${Typography} variant="body2">${c.region}<//>
+                      <${TableCell}><${Typography} variant="body2">${c.region}<//>
                       <//>
-
-                      <!-- Mobility -->
-                      <${TableCell}>
-                        <${Typography} variant="body2">${c.mobility}<//>
+                      <${TableCell}><${Typography} variant="body2">${c.mobility}<//>
                       <//>
-
                     <//>
                   `;
                 })}
@@ -249,7 +366,199 @@
       `;
     }
 
-    /* ── Tab 2: Export ── */
+    /* ── Tab 2: Gantt-Ansicht ── */
+    function TabGantt() {
+      const [year,     setYear]     = useState(CURRENT_YEAR);
+      const [monthIdx, setMonthIdx] = useState(() => kwToMonthIdx(CURRENT_KW));
+      const [showYear, setShowYear] = useState(false);
+      const [search,   setSearch]   = useState('');
+
+      const startKW = showYear ? 1  : MONTH_RANGES[monthIdx].from;
+      const endKW   = showYear ? 52 : MONTH_RANGES[monthIdx].to;
+      const weeks   = Array.from({ length: endKW - startKW + 1 }, (_, i) => startKW + i);
+      const mGroups = buildMonthGroups(weeks);
+
+      const visible = useMemo(() =>
+        CONSULTANTS.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase())),
+        [search]
+      );
+
+      const isCurrentYear = year === CURRENT_YEAR;
+      const canPrev = !showYear && monthIdx > 0;
+      const canNext = !showYear && monthIdx < 11;
+
+      const goToToday = () => { setYear(CURRENT_YEAR); setMonthIdx(kwToMonthIdx(CURRENT_KW)); setShowYear(false); };
+
+      return html`
+        <${Box}>
+
+          <!-- Steuerzeile -->
+          <${Stack} direction="row" spacing=${1} alignItems="center" sx=${{ mb: 2.5 }} flexWrap="wrap" gap=${1}>
+            <${TextField}
+              size="small" placeholder="Name suchen"
+              value=${search} onChange=${e => setSearch(e.target.value)}
+              sx=${{ minWidth: 200 }}
+            />
+            <${Box} sx=${{ flex: 1 }} />
+            <${Button} size="small" variant="outlined" onClick=${goToToday}>Heute<//>
+            <${TextField} size="small" select label="Jahr"
+              value=${year} onChange=${e => setYear(Number(e.target.value))}
+              sx=${{ minWidth: 88 }}>
+              <${MenuItem} value=${2026}>2026<//>
+              <${MenuItem} value=${2027}>2027<//>
+            <//>
+            <${Button} size="small" variant="outlined" disabled=${!canPrev}
+              onClick=${() => setMonthIdx(i => i - 1)}>
+              ◀
+            <//>
+            <${Typography} variant="body2" fontWeight=${600}
+              sx=${{ minWidth: 90, textAlign: 'center', whiteSpace: 'nowrap' }}>
+              ${showYear ? String(year) : MONTH_RANGES[monthIdx].label}
+            <//>
+            <${Button} size="small" variant="outlined" disabled=${!canNext}
+              onClick=${() => setMonthIdx(i => i + 1)}>
+              ▶
+            <//>
+            <${Button} size="small"
+              variant=${showYear ? 'contained' : 'outlined'}
+              onClick=${() => setShowYear(v => !v)}>
+              Ganzes Jahr
+            <//>
+          <//>
+
+          <${Stack} direction="row" flexWrap="wrap" gap=${2} sx=${{ mb: 2 }}>
+            ${Object.entries(AV_STATUS).map(([k, v]) => html`
+              <${Stack} key=${k} direction="row" alignItems="center" spacing=${0.75}>
+                <${Box} sx=${{ width: 12, height: 12, borderRadius: '2px', bgcolor: v.color, flexShrink: 0 }} />
+                <${Typography} variant="caption">${v.label}<//>
+              <//>
+            `)}
+            <${Stack} direction="row" alignItems="center" spacing=${0.75}>
+              <${Box} sx=${{ width: 12, height: 12, borderRadius: '2px', bgcolor: '#F0F0F0', border: '1px solid #E0E0E0', flexShrink: 0 }} />
+              <${Typography} variant="caption" color="text.secondary">Keine Daten<//>
+            <//>
+          <//>
+
+          <${TableContainer} component=${Paper} variant="outlined">
+            <${Table} size="small" sx=${{ borderCollapse: 'collapse' }}>
+              <${TableHead}>
+                <!-- Monats-Header -->
+                <${TableRow} sx=${{ bgcolor: '#FAFAFA' }}>
+                  <${TableCell} sx=${{
+                    fontWeight: 700, fontSize: '11px', textTransform: 'uppercase',
+                    letterSpacing: 0.5, color: 'text.secondary', whiteSpace: 'nowrap',
+                    width: 220, minWidth: 220, py: 0.75, px: 2,
+                    position: 'sticky', left: 0, zIndex: 3, bgcolor: '#FAFAFA',
+                    borderBottom: '1px solid #E0E0E0',
+                  }}>Name / Level<//>
+                  ${mGroups.map((mg, i) => html`
+                    <${TableCell} key=${i} colSpan=${mg.count} sx=${{
+                      fontWeight: 700, fontSize: '11px', textTransform: 'uppercase',
+                      letterSpacing: 0.5, color: 'text.secondary', whiteSpace: 'nowrap',
+                      bgcolor: '#FAFAFA', textAlign: 'center', py: 0.75, px: 1,
+                      borderLeft: '1px solid #E0E0E0',
+                      borderBottom: '1px solid #E0E0E0',
+                    }}>${mg.label}<//>
+                  `)}
+                <//>
+                <!-- KW-Header -->
+                <${TableRow} sx=${{ bgcolor: '#FAFAFA' }}>
+                  <${TableCell} sx=${{
+                    width: 220, minWidth: 220, py: 0.75, px: 2,
+                    position: 'sticky', left: 0, zIndex: 3, bgcolor: '#FAFAFA',
+                    borderBottom: '2px solid #E0E0E0',
+                  }} />
+                  ${weeks.map(kw => {
+                    const isToday = isCurrentYear && kw === CURRENT_KW;
+                    return html`
+                      <${TableCell} key=${kw} sx=${{
+                        width: 30, minWidth: 30, maxWidth: 30, p: 0,
+                        fontSize: '11px', textAlign: 'center', py: 0.75,
+                        fontWeight: isToday ? 700 : 400,
+                        color: isToday ? '#1565C0' : 'text.secondary',
+                        bgcolor: isToday ? '#E3F2FD' : '#FAFAFA',
+                        borderLeft: isToday ? '2px solid #1976D2' : '1px solid rgba(224,224,224,0.6)',
+                        borderBottom: isToday ? '2px solid #1976D2' : '2px solid #E0E0E0',
+                      }}>${kw}<//>
+                    `;
+                  })}
+                <//>
+              <//>
+              <${TableBody}>
+                ${visible.length === 0 ? html`
+                  <${TableRow}>
+                    <${TableCell} colSpan=${weeks.length + 1}
+                      sx=${{ textAlign: 'center', py: 5, color: 'text.secondary', fontSize: '13px' }}>
+                      Keine Mitarbeitenden für diese Suche.
+                    <//>
+                  <//>
+                ` : visible.map(c => html`
+                  <${TableRow} key=${c.name}
+                    sx=${{ '&:hover .MuiTableCell-root:first-of-type': { bgcolor: '#F5F9FF' } }}>
+                    <${TableCell} sx=${{
+                      position: 'sticky', left: 0, bgcolor: '#fff', zIndex: 1,
+                      width: 220, minWidth: 220, py: 0.75, px: 2,
+                      borderBottom: '1px solid #EEEEEE',
+                    }}>
+                      <${Stack} direction="row" alignItems="center" gap=${1}>
+                        <${Box} sx=${{
+                          width: 28, height: 28, borderRadius: '50%',
+                          bgcolor: c.avatarColor, color: '#fff',
+                          fontWeight: 700, fontSize: '11px', flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>${c.initials}<//>
+                        <${Box}>
+                          <${Typography} variant="body2" fontWeight=${600}
+                            sx=${{ lineHeight: 1.25, fontSize: '13px' }}>
+                            ${c.name}
+                          <//>
+                          <${Typography} variant="caption" color="text.secondary">
+                            ${c.level}
+                          <//>
+                        <//>
+                      <//>
+                    <//>
+                    ${weeks.map(kw => {
+                      const status  = getSegmentStatus(c.name, kw);
+                      const av      = status ? AV_STATUS[status] : null;
+                      const isToday = isCurrentYear && kw === CURRENT_KW;
+                      return html`
+                        <${TableCell} key=${kw}
+                          title=${av
+                            ? 'KW ' + kw + ': ' + av.label + (c.customer ? ' · ' + c.customer : '')
+                            : 'KW ' + kw + ': Keine Daten'}
+                          sx=${{
+                            width: 30, minWidth: 30, maxWidth: 30, p: 0, height: 32,
+                            bgcolor: av ? av.color : '#F5F5F5',
+                            opacity: av ? 0.82 : 1,
+                            borderRight: '1px solid rgba(255,255,255,0.25)',
+                            borderBottom: '1px solid rgba(224,224,224,0.35)',
+                            borderLeft: isToday ? '2px solid rgba(25,118,210,0.5)' : undefined,
+                            cursor: 'default',
+                            transition: 'opacity 0.12s',
+                            '&:hover': { opacity: 0.65 },
+                          }}
+                        />
+                      `;
+                    })}
+                  <//>
+                `)}
+              <//>
+            <//>
+          <//>
+
+
+          ${isCurrentYear && html`
+            <${Typography} variant="caption" color="text.secondary" sx=${{ display: 'block', mt: 1.5 }}>
+              Heutiger Tag: KW ${CURRENT_KW} · ${MONTH_RANGES[kwToMonthIdx(CURRENT_KW)].label} ${CURRENT_YEAR} (blau markiert)
+            <//>
+          `}
+
+        <//>
+      `;
+    }
+
+    /* ── Tab 3: Dispolisten-Export ── */
     function TabExport() {
       return html`
         <${Box} sx=${{ maxWidth: 680 }}>
@@ -322,22 +631,22 @@
 
           <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'block', mb: 1 }}>Frühere Exporte<//>
           <${Stack} spacing=${0.75}>
-            ${HISTORY.map(h => html`
-              <${Paper} key=${h.filename} variant="outlined" sx=${{ px: 2, py: 1.25, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            ${HISTORY.map(item => html`
+              <${Paper} key=${item.filename} variant="outlined" sx=${{ px: 2, py: 1.25, display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <${Typography} sx=${{ fontSize: '16px', flexShrink: 0 }}>◻<//>
                 <${Typography} variant="body2" fontWeight=${500} sx=${{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  ${h.filename}
+                  ${item.filename}
                 <//>
-                <${Typography} variant="caption" color="text.secondary" sx=${{ whiteSpace: 'nowrap' }}>${h.date}<//>
+                <${Typography} variant="caption" color="text.secondary" sx=${{ whiteSpace: 'nowrap' }}>${item.date}<//>
                 <${Box} sx=${{
                   display: 'inline-block', px: 1, py: 0.25, borderRadius: '10px',
-                  bgcolor: h.status === 'Fertig' ? '#E1F5EE' : '#F1EFE8',
-                  color:   h.status === 'Fertig' ? '#0F6E56' : '#5F5E5A',
+                  bgcolor: item.status === 'Fertig' ? '#E1F5EE' : '#F1EFE8',
+                  color:   item.status === 'Fertig' ? '#0F6E56' : '#5F5E5A',
                   fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap',
                 }}>
-                  ${h.status}
+                  ${item.status}
                 <//>
-                ${h.link
+                ${item.link
                   ? html`<${Typography} variant="caption" color="primary.main" sx=${{ cursor: 'pointer', whiteSpace: 'nowrap', '&:hover': { textDecoration: 'underline' } }}>Herunterladen<//>`
                   : html`<${Typography} variant="caption" color="text.disabled">—<//>` }
               <//>
@@ -348,6 +657,7 @@
       `;
     }
 
+    /* ── App Shell ── */
     function App() {
       const [tab, setTab] = useState(0);
 
@@ -357,13 +667,16 @@
           <${MockupBar} />
           <${Container} maxWidth="lg" sx=${{ py: 4 }}>
 
-            <${Tabs} value=${tab} onChange=${(_, v) => setTab(v)} sx=${{ mb: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
+            <${Tabs} value=${tab} onChange=${(_, v) => setTab(v)}
+              sx=${{ mb: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
               <${Tab} label="Übersicht" />
+              <${Tab} label="Gantt-Ansicht" />
               <${Tab} label="Dispolisten-Export" />
             <//>
 
             ${tab === 0 && html`<${TabUebersicht} />`}
-            ${tab === 1 && html`<${TabExport} />`}
+            ${tab === 1 && html`<${TabGantt} />`}
+            ${tab === 2 && html`<${TabExport} />`}
 
           <//>
         <//>
