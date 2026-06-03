@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Score-Drawer — Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style>* { box-sizing: border-box; } body { margin: 0; }</style>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@mui/material@5/umd/material-ui.development.js"></script>
+  <script src="https://unpkg.com/htm/dist/htm.umd.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const { createElement: h, useState } = React;
+    const { createRoot } = ReactDOM;
+    const {
+      Box, Typography, Button, Paper, Stack, Divider,
+      Drawer, Tooltip,
+      ThemeProvider, createTheme, CssBaseline,
+    } = MaterialUI;
+
+    const html = htm.bind(h);
+
+    const theme = createTheme({
+      palette: { primary: { main: '#1976D2' }, error: { main: '#E53935' } },
+      components: { MuiButton: { defaultProps: { disableElevation: true } } },
+    });
+
+    /* ── Mock-Daten ──────────────────────────────────────────────────── */
+    const CANDIDATE = {
+      name: 'Max Mustermann', initials: 'MM', avatarColor: '#1976D2',
+      role: 'Senior Consultant', manager: 'Klaus Becker',
+      score: 80, pool: 'direct', status: 'Ausstehend', comment: null,
+    };
+
+    const POOL_CONFIG = {
+      direct:  { dotColor: '#2E7D32', status: 'Bench / Sofort verfügbar',  sub: 'Kein aktiver Einsatz',                      factor: '× 1,0' },
+      soon:    { dotColor: '#E65100', status: 'Verlängerung möglich',       sub: 'Voraussichtlich frei ab 15.07.2026',         factor: '× 0,97' },
+      partial: { dotColor: '#B71C1C', status: 'Teilzeit (60 %)',            sub: 'Eingeschränkte Kapazität',                   factor: '× 0,75' },
+    };
+
+    const STATUS_COLORS = {
+      'Ausstehend': { bg: '#FAEEDA', color: '#854F0B' },
+      'Genehmigt':  { bg: '#E1F5EE', color: '#0F6E56' },
+      'In Prüfung': { bg: '#E6F1FB', color: '#0C447C' },
+      'Abgelehnt':  { bg: '#FCEBEB', color: '#791F1F' },
+    };
+
+    /* ── Subkomponenten ──────────────────────────────────────────────── */
+    function Avatar({ initials, color, size = 36 }) {
+      return html`
+        <${Box} sx=${{
+          width: size, height: size, borderRadius: '50%',
+          bgcolor: color, color: '#fff', fontWeight: 700,
+          fontSize: (size * 0.38) + 'px', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>${initials}<//>
+      `;
+    }
+
+    function StatusPill({ label }) {
+      const s = STATUS_COLORS[label] || { bg: '#F1EFE8', color: '#5F5E5A' };
+      return html`
+        <${Box} sx=${{
+          display: 'inline-flex', bgcolor: s.bg, color: s.color,
+          px: 1, py: 0.25, borderRadius: '10px',
+          fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap',
+        }}>${label}<//>
+      `;
+    }
+
+    function SectionLabel({ children }) {
+      return html`
+        <${Typography} variant="overline" color="text.secondary" sx=${{
+          display: 'block', borderBottom: '1px solid', borderColor: 'divider',
+          pb: 1, mb: 1.25, lineHeight: 1.6,
+        }}>${children}<//>
+      `;
+    }
+
+    function ScoreRow({ name, level, barPct, barColor, points, pointsColor }) {
+      return html`
+        <${Stack} direction="row" alignItems="center" gap=${1.25} sx=${{
+          py: 1.125, borderBottom: '1px solid', borderColor: 'divider',
+          '&:last-child': { borderBottom: 'none' },
+        }}>
+          <${Typography} variant="body2" fontWeight=${500} sx=${{ flex: 1 }}>${name}<//>
+          <${Typography} variant="caption" color="text.secondary"
+            sx=${{ minWidth: 130, textAlign: 'right' }}>${level}<//>
+          <${Box} sx=${{ width: 80 }}>
+            <${Box} sx=${{ height: 5, bgcolor: '#E0E0E0', borderRadius: '3px', overflow: 'hidden' }}>
+              <${Box} sx=${{ width: barPct + '%', height: '100%', bgcolor: barColor, borderRadius: '3px' }} />
+            <//>
+          <//>
+          <${Typography} variant="body2" fontWeight=${700}
+            sx=${{ minWidth: 48, textAlign: 'right', color: pointsColor }}>${points}<//>
+        <//>
+      `;
+    }
+
+    /* ── MockupBar ───────────────────────────────────────────────────── */
+    function MockupBar() {
+      return html`
+        <${Paper} square elevation=${0} sx=${{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1600,
+          borderBottom: '1px solid', borderColor: 'divider',
+          px: 4, py: 1.25, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          bgcolor: '#fff',
+        }}>
+          <${Typography} variant="overline" color="text.secondary">
+            Mockup · <${Box} component="span" sx=${{ color: 'primary.main' }}>Score-Drawer<//>
+          <//>
+          <${Button} component="a" href="../index.html" size="small">← Katalog<//>
+        <//>
+      `;
+    }
+
+    /* ── FakeBackground ──────────────────────────────────────────────── */
+    function FakeBackground() {
+      const candidates = [
+        { name: 'Max Mustermann', score: 80, color: '#1976D2', pool: 'Sofort' },
+        { name: 'Sandra Koch',    score: 84, color: '#388E3C', pool: 'Sofort' },
+        { name: 'Thomas Berger',  score: 78, color: '#7B1FA2', pool: 'Bald' },
+      ];
+      return html`
+        <${Box} sx=${{ px: 4, pt: 3, opacity: 0.3, pointerEvents: 'none', userSelect: 'none' }}>
+          <${Typography} variant="h6" fontWeight=${700} sx=${{ mb: 0.5 }}>
+            Backend-Projekt Datenmigration
+          <//>
+          <${Typography} variant="body2" color="text.secondary" sx=${{ mb: 3 }}>
+            Matches · 6 Kandidaten vorgeschlagen
+          <//>
+          <${Stack} spacing=${1}>
+            ${candidates.map((c, i) => html`
+              <${Box} key=${c.name} sx=${{
+                border: '1px solid', borderColor: i === 0 ? '#1976D2' : '#E0E0E0',
+                borderRadius: 1, p: 2, display: 'flex', alignItems: 'center', gap: 2,
+                bgcolor: i === 0 ? '#F0F7FF' : '#fff',
+              }}>
+                <${Box} sx=${{ width: 36, height: 36, borderRadius: '50%', bgcolor: c.color, flexShrink: 0 }} />
+                <${Box} sx=${{ flex: 1 }}>
+                  <${Box} sx=${{ width: 140, height: 14, bgcolor: '#E0E0E0', borderRadius: 1, mb: 0.75 }} />
+                  <${Box} sx=${{ width: 100, height: 11, bgcolor: '#EEEEEE', borderRadius: 1 }} />
+                <//>
+                <${Box} sx=${{ textAlign: 'right' }}>
+                  <${Typography} variant="body2" fontWeight=${700} color="primary">${c.score}<//>
+                  <${Typography} variant="caption" color="text.secondary">${c.pool}<//>
+                <//>
+              <//>
+            `)}
+          <//>
+        <//>
+      `;
+    }
+
+    /* ── ScoreDrawer ─────────────────────────────────────────────────── */
+    function ScoreDrawer({ onClose }) {
+      const c   = CANDIDATE;
+      const cfg = POOL_CONFIG[c.pool];
+      const scoreColor = c.score >= 85 ? '#2E7D32' : c.score >= 70 ? '#1976D2' : '#E65100';
+
+      return html`
+        <${Drawer} anchor="right" open=${true} onClose=${onClose}
+          sx=${{ zIndex: 1500 }}
+          PaperProps=${{ sx: { width: 520, maxWidth: '95vw', display: 'flex', flexDirection: 'column',
+                               top: '48px', height: 'calc(100% - 48px)' } }}>
+
+          <!-- Header -->
+          <${Box} sx=${{ borderBottom: '1px solid', borderColor: 'divider', px: 2.5, py: 1.75, flexShrink: 0 }}>
+            <${Stack} direction="row" alignItems="center" gap=${1.5}>
+              <${Avatar} initials=${c.initials} color=${c.avatarColor} size=${40} />
+              <${Box} sx=${{ flex: 1, minWidth: 0 }}>
+                <${Stack} direction="row" alignItems="center" gap=${1} flexWrap="wrap" sx=${{ mb: 0.25 }}>
+                  <${Typography} variant="subtitle1" fontWeight=${700}>${c.name}<//>
+                  <${StatusPill} label=${c.status} />
+                <//>
+                <${Typography} variant="caption" color="text.secondary">
+                  ${c.role} · ${c.manager}
+                <//>
+              <//>
+              <${Button} size="small" color="inherit" onClick=${onClose} sx=${{ minWidth: 0, px: 1 }}>✕<//>
+            <//>
+          <//>
+
+          <!-- Scrollbarer Inhalt -->
+          <${Box} sx=${{ flex: 1, overflowY: 'auto', px: 2.5, py: 2.5 }}>
+
+            <!-- Gesamt-Score -->
+            <${Box} sx=${{ mb: 2.5 }}>
+              <${SectionLabel}>Gesamt-Match-Score<//>
+              <${Stack} direction="row" alignItems="center" gap=${2.5}>
+                <${Box} sx=${{
+                  width: 72, height: 72, borderRadius: '50%', flexShrink: 0,
+                  border: '4px solid ' + scoreColor,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <${Typography} sx=${{ fontSize: '26px', fontWeight: 700, lineHeight: 1, color: scoreColor }}>
+                    ${c.score}
+                  <//>
+                <//>
+                <${Box} sx=${{ flex: 1 }}>
+                  <${Box} sx=${{ height: 8, bgcolor: '#E0E0E0', borderRadius: '4px', overflow: 'hidden', mb: 1 }}>
+                    <${Box} sx=${{ width: c.score + '%', height: '100%', bgcolor: scoreColor, borderRadius: '4px' }} />
+                  <//>
+                  <${Stack} direction="row" justifyContent="space-between">
+                    <${Typography} variant="caption" color="text.secondary">0<//>
+                    <${Typography} variant="caption" color="text.secondary">Rohwert × Verfügbarkeitsfaktor<//>
+                    <${Typography} variant="caption" color="text.secondary">100<//>
+                  <//>
+                <//>
+              <//>
+            <//>
+
+            <!-- Pflichtskills -->
+            <${Box} sx=${{ mb: 2 }}>
+              <${SectionLabel}>
+                Pflichtskills
+                <${Box} component="span" sx=${{ fontStyle: 'italic', fontWeight: 400, textTransform: 'none', fontSize: '11px' }}>
+                  — Gewicht 65 %
+                <//>
+              <//>
+              <${ScoreRow} name="AML"                    level="Nachgewiesen"                  barPct=${100} barColor="#E53935" points="+21,7" pointsColor="#C62828" />
+              <${ScoreRow} name="Compliance"             level="Nachgewiesen"                  barPct=${100} barColor="#E53935" points="+21,7" pointsColor="#C62828" />
+              <${ScoreRow} name="EU-Regulatorik (ODER)"  level="EU-AML-Paket nachgewiesen"     barPct=${100} barColor="#E53935" points="+21,7" pointsColor="#C62828" />
+              <${Typography} variant="caption" color="text.secondary"
+                sx=${{ display: 'block', textAlign: 'right', mt: 0.75 }}>
+                Zwischensumme: <strong>65 / 65 Punkte</strong>
+              <//>
+            <//>
+
+            <!-- Optionale Skills -->
+            <${Box} sx=${{ mb: 2 }}>
+              <${SectionLabel}>
+                Optionale Skills
+                <${Box} component="span" sx=${{ fontStyle: 'italic', fontWeight: 400, textTransform: 'none', fontSize: '11px' }}>
+                  — Gewicht 20 %
+                <//>
+              <//>
+              <${ScoreRow} name="MS Office" level="Nicht nachgewiesen" barPct=${0} barColor="#1976D2" points="+0" pointsColor="#9E9E9E" />
+              <${Typography} variant="caption" color="text.secondary"
+                sx=${{ display: 'block', textAlign: 'right', mt: 0.75 }}>
+                Zwischensumme: <strong>0 / 20 Punkte</strong>
+              <//>
+            <//>
+
+            <!-- Domain Fit -->
+            <${Box} sx=${{ mb: 2 }}>
+              <${SectionLabel}>
+                Domain Fit
+                <${Box} component="span" sx=${{ fontStyle: 'italic', fontWeight: 400, textTransform: 'none', fontSize: '11px' }}>
+                  — Gewicht 15 %
+                <//>
+              <//>
+              <${ScoreRow} name="Branche: Banking"   level="Erfahrung vorhanden" barPct=${100} barColor="#2E7D32" points="1,0" pointsColor="#2E7D32" />
+              <${ScoreRow} name="Kunde: Hypoteq AG"  level="Keine Vorerfahrung"  barPct=${0}   barColor="#2E7D32" points="—"   pointsColor="#9E9E9E" />
+              <${ScoreRow} name="System: Avaloq"     level="Nachgewiesen"        barPct=${100} barColor="#2E7D32" points="1,0" pointsColor="#2E7D32" />
+              <${Typography} variant="caption" color="text.secondary"
+                sx=${{ display: 'block', textAlign: 'right', mt: 0.75 }}>
+                Zwischensumme: <strong>15 / 15 Punkte</strong>
+              <//>
+            <//>
+
+            <!-- Verfügbarkeitsfaktor -->
+            <${Box}>
+              <${SectionLabel}>Verfügbarkeitsfaktor<//>
+              <${Box} sx=${{
+                border: '1px solid', borderColor: 'divider', borderRadius: 1,
+                px: 2, py: 1.25, display: 'flex', alignItems: 'center', gap: 1.75, mb: 1.25,
+              }}>
+                <${Box} sx=${{ width: 12, height: 12, borderRadius: '50%', bgcolor: cfg.dotColor, flexShrink: 0 }} />
+                <${Box} sx=${{ flex: 1 }}>
+                  <${Typography} variant="body2" fontWeight=${700}>${cfg.status}<//>
+                  <${Typography} variant="caption" color="text.secondary">${cfg.sub}<//>
+                <//>
+                <${Typography} sx=${{ fontSize: '18px', fontWeight: 700, color: cfg.dotColor }}>${cfg.factor}<//>
+              <//>
+              <${Box} sx=${{ bgcolor: '#F5F6F8', borderRadius: 1, px: 2, py: 1.25, lineHeight: 1.8, fontSize: '13px' }}>
+                Rohwert = 65 + 0 + 15 = <strong style=${{ color: '#1976D2' }}>80 Punkte</strong><br/>
+                Score = 80 × <strong style=${{ color: '#1976D2' }}>1,0</strong> = <strong style=${{ color: scoreColor }}>${c.score}</strong>
+              <//>
+            <//>
+
+          <//>
+        <//>
+      `;
+    }
+
+    /* ── App ─────────────────────────────────────────────────────────── */
+    function App() {
+      const [open, setOpen] = useState(true);
+
+      return html`
+        <${ThemeProvider} theme=${theme}>
+          <${CssBaseline} />
+          <${MockupBar} />
+          <${Box} sx=${{ minHeight: '100vh', bgcolor: '#F5F6F8', pt: '48px' }}>
+            <${FakeBackground} />
+            ${open && html`<${ScoreDrawer} onClose=${() => setOpen(false)} />`}
+            ${!open && html`
+              <${Box} sx=${{ position: 'fixed', bottom: 40, left: '50%', transform: 'translateX(-50%)' }}>
+                <${Button} variant="contained" onClick=${() => setOpen(true)}>
+                  Drawer wieder öffnen
+                <//>
+              <//>
+            `}
+          <//>
+        <//>
+      `;
+    }
+
+    createRoot(document.getElementById('root')).render(html`<${App} />`);
+  </script>
+</body>
+</html>
