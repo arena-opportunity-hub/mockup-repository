@@ -64,6 +64,7 @@
 
     /* ── Einfache Auswahllisten (Sprint 1: feste Optionen) ───────── */
     const CONTRACT_TYPES = ['T&M', 'Turnkey', 'ANÜ'];
+    const INDUSTRIES = ['Banking', 'Insurance', 'Public Sector', 'Healthcare', 'Retail', 'Energy', 'Telco', 'Sonstige'];
     const LEVELS = ['Junior', 'Consultant', 'Senior Consultant', 'Principal', 'Manager'];
     const REGIONS = [
       'Baden-Württemberg', 'Bayern', 'Berlin', 'Brandenburg', 'Bremen', 'Hamburg',
@@ -75,6 +76,7 @@
 
     function App() {
       const [skills, setSkills] = useState(['AML', 'Compliance']);
+      const [industry, setIndustry] = useState('');
       const [contract, setContract] = useState('');
       const [level, setLevel] = useState('');
       const [region, setRegion] = useState('');
@@ -104,6 +106,12 @@
                 <//>
                 <${Grid} item xs=${12}>
                   <${TextField} label="Kunde / Projekt" fullWidth size="small" />
+                <//>
+                <${Grid} item xs=${6}>
+                  <${TextField} select label="Branche" fullWidth size="small"
+                    value=${industry} onChange=${e => setIndustry(e.target.value)}>
+                    ${INDUSTRIES.map(b => html`<${MenuItem} key=${b} value=${b}>${b}<//>`)}
+                  <//>
                 <//>
                 <${Grid} item xs=${6}>
                   <${TextField} select label="Vertragsart" fullWidth size="small"
