@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opportunity erfassen (Sprint 1) — Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style> * { box-sizing: border-box; } body { margin: 0; } </style>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@mui/material@5/umd/material-ui.development.js"></script>
+  <script src="https://unpkg.com/htm/dist/htm.umd.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const { createElement: h, useState } = React;
+    const { createRoot } = ReactDOM;
+    const { Box, Typography, Button, Paper, Container, Stack, Grid, TextField,
+            Autocomplete, Chip, ThemeProvider, createTheme, CssBaseline } = MaterialUI;
+
+    const html = htm.bind(h);
+
+    const theme = createTheme({
+      palette: { primary: { main: '#1976D2' }, error: { main: '#E53935' } },
+      components: { MuiButton: { defaultProps: { disableElevation: true } } },
+    });
+
+    function MockupBar() {
+      return html`
+        <${Paper} square elevation=${0} sx=${{
+          position: 'sticky', top: 0, zIndex: 1100,
+          borderBottom: '1px solid', borderColor: 'divider',
+          px: 4, py: 1.25,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <${Typography} variant="overline" color="text.secondary">
+            Mockup · <${Box} component="span" sx=${{ color: 'primary.main' }}>Opportunity erfassen — Sprint 1<//>
+          <//>
+          <${Button} component="a" href="../index.html" size="small">← Katalog<//>
+        <//>
+      `;
+    }
+
+    function SectionCard({ title, children }) {
+      return html`
+        <${Paper} variant="outlined" sx=${{ p: 3, mb: 1.5 }}>
+          <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'block', mb: 2.5, borderBottom: '1px solid', borderColor: 'divider', pb: 1.5 }}>
+            ${title}
+          <//>
+          ${children}
+        <//>
+      `;
+    }
+
+    /* ── Flacher Skill-Katalog (Sprint 1: keine Kategorien) ──────── */
+    const SKILL_CATALOG = [
+      'AML', 'AWS', 'Agile', 'Banking', 'BPMN', 'Business Analysis', 'Compliance',
+      'Confluence', 'Docker', 'DSGVO', 'Deutsch', 'Englisch', 'Excel', 'GitOps',
+      'Java', 'JIRA', 'Kanban', 'Kubernetes', 'MS Office', 'Power BI', 'Prince2',
+      'Scrum', 'SAP', 'Terraform',
+    ];
+
+    function App() {
+      const [skills, setSkills] = useState(['AML', 'Compliance']);
+
+      return html`
+        <${ThemeProvider} theme=${theme}>
+          <${CssBaseline} />
+          <${MockupBar} />
+          <${Container} maxWidth="sm" sx=${{ py: 4 }}>
+
+            <${Box} sx=${{
+              bgcolor: '#E3F0FC', color: '#1256A0',
+              border: '1px solid #b3d2f0', borderRadius: 1,
+              px: 2, py: 1, mb: 2.5, fontSize: '13px',
+            }}>
+              <strong>Sprint-1-Umfang:</strong> nur die Pflichtfelder. Kategorien, Pflicht/Optional,
+              ODER-Gruppen, Zeitleisten-Logik und Anforderungen folgen in späteren Sprints.
+            <//>
+
+            <!-- ── Eckdaten ── -->
+            <${SectionCard} title="Eckdaten">
+              <${Grid} container spacing=${2}>
+                <${Grid} item xs=${12}>
+                  <${TextField} label=${'Titel *'} fullWidth size="small" />
+                <//>
+                <${Grid} item xs=${12}>
+                  <${TextField} label="Kunde / Projekt" fullWidth size="small" />
+                <//>
+                <${Grid} item xs=${12}>
+                  <${TextField} label=${'Startdatum *'} type="date" fullWidth size="small"
+                    defaultValue="2026-07-01" InputLabelProps=${{ shrink: true }} />
+                <//>
+              <//>
+            <//>
+
+            <!-- ── Projektziel ── -->
+            <${SectionCard} title=${'Projektziel *'}>
+              <${TextField} label="Was soll im Projekt erreicht werden?" fullWidth multiline minRows=${3} size="small" />
+            <//>
+
+            <!-- ── Skills ── -->
+            <${SectionCard} title=${'Geforderte Skills *'}>
+              <${Autocomplete}
+                multiple freeSolo
+                value=${skills}
+                onChange=${(_, val) => setSkills(val)}
+                options=${SKILL_CATALOG}
+                size="small"
+                fullWidth
+                renderTags=${(val, getTagProps) => val.map((option, i) => html`
+                  <${Chip} key=${option} label=${option} size="small" ...${getTagProps({ index: i })} />
+                `)}
+                renderInput=${params => html`
+                  <${TextField} ...${params}
+                    label="Skills auswählen oder eingeben"
+                    helperText="Mindestens ein Skill. Auswahl aus dem Decidalo-Katalog (Autocomplete) — freie Eingabe vorerst erlaubt."
+                  />
+                `}
+              />
+            <//>
+
+            <!-- ── Actions ── -->
+            <${Paper} variant="outlined" sx=${{ px: 3, py: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <${Typography} variant="caption" color="text.secondary">* Pflichtfelder<//>
+              <${Stack} direction="row" spacing=${1}>
+                <${Button} variant="text" color="inherit">Entwurf speichern<//>
+                <${Button} variant="contained">Opportunity anlegen<//>
+              <//>
+            <//>
+
+          <//>
+        <//>
+      `;
+    }
+
+    createRoot(document.getElementById('root')).render(html`<${App} />`);
+  </script>
+</body>
+</html>
