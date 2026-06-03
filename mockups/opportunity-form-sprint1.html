@@ -123,8 +123,13 @@
             <//>
 
             <!-- ── Beschreibung ── -->
-            <${SectionCard} title=${'Projektziel *'}>
-              <${TextField} label="Was soll im Projekt erreicht werden?" fullWidth multiline minRows=${3} size="small" />
+            <${SectionCard} title="Beschreibung">
+              <${Stack} spacing=${2}>
+                <${TextField} label=${'Projektziel *'} placeholder="Was soll im Projekt erreicht werden?"
+                  fullWidth multiline minRows=${3} size="small" />
+                <${TextField} label="Aufgaben & Verantwortlichkeiten" placeholder="Optional"
+                  fullWidth multiline minRows=${3} size="small" />
+              <//>
             <//>
 
             <!-- ── Skills ── -->
@@ -148,8 +153,8 @@
               />
             <//>
 
-            <!-- ── Zeitleiste ── -->
-            <${SectionCard} title="Zeitleiste">
+            <!-- ── Zeitleiste & Auslastung ── -->
+            <${SectionCard} title="Zeitleiste & Auslastung">
               <${Grid} container spacing=${2}>
                 <${Grid} item xs=${6}>
                   <${TextField} label=${'Startdatum *'} type="date" fullWidth size="small"
@@ -159,6 +164,24 @@
                   <${TextField} label="Enddatum" type="date" fullWidth size="small"
                     InputLabelProps=${{ shrink: true }} />
                 <//>
+                <${Grid} item xs=${6}>
+                  <${TextField} label="Reaktionsdeadline" type="date" fullWidth size="small"
+                    InputLabelProps=${{ shrink: true }} />
+                <//>
+                <${Grid} item xs=${3}>
+                  <${TextField} label="Auslastung (%)" type="number" fullWidth size="small"
+                    defaultValue=${100} inputProps=${{ min: 0, max: 100 }} />
+                <//>
+                <${Grid} item xs=${3}>
+                  <${TextField} label="Positionen" type="number" fullWidth size="small"
+                    defaultValue=${1} inputProps=${{ min: 1 }} />
+                <//>
+                <${Grid} item xs=${6}>
+                  <${TextField} select label="Level" fullWidth size="small"
+                    value=${level} onChange=${e => setLevel(e.target.value)}>
+                    ${LEVELS.map(l => html`<${MenuItem} key=${l} value=${l}>${l}<//>`)}
+                  <//>
+                <//>
               <//>
             <//>
 
@@ -166,21 +189,15 @@
             <${SectionCard} title="Anforderungen">
               <${Grid} container spacing=${2}>
                 <${Grid} item xs=${6}>
-                  <${TextField} select label="Level" fullWidth size="small"
-                    value=${level} onChange=${e => setLevel(e.target.value)}>
-                    ${LEVELS.map(l => html`<${MenuItem} key=${l} value=${l}>${l}<//>`)}
+                  <${TextField} select label="Region" fullWidth size="small"
+                    value=${region} onChange=${e => setRegion(e.target.value)}>
+                    ${REGIONS.map(r => html`<${MenuItem} key=${r} value=${r}>${r}<//>`)}
                   <//>
                 <//>
                 <${Grid} item xs=${6}>
                   <${TextField} select label="Remote-Anteil" fullWidth size="small"
                     value=${remote} onChange=${e => setRemote(e.target.value)}>
                     ${REMOTE_SHARES.map(r => html`<${MenuItem} key=${r} value=${r}>${r}<//>`)}
-                  <//>
-                <//>
-                <${Grid} item xs=${12}>
-                  <${TextField} select label="Region" fullWidth size="small"
-                    value=${region} onChange=${e => setRegion(e.target.value)}>
-                    ${REGIONS.map(r => html`<${MenuItem} key=${r} value=${r}>${r}<//>`)}
                   <//>
                 <//>
               <//>
