@@ -17,7 +17,7 @@
   <script>
     const { createElement: h, useState } = React;
     const { createRoot } = ReactDOM;
-    const { Box, Typography, Button, Paper, Container, Stack, Grid, TextField,
+    const { Box, Typography, Button, Paper, Container, Stack, Grid, TextField, MenuItem,
             Autocomplete, Chip, ThemeProvider, createTheme, CssBaseline } = MaterialUI;
 
     const html = htm.bind(h);
@@ -62,8 +62,23 @@
       'Scrum', 'SAP', 'Terraform',
     ];
 
+    /* ── Einfache Auswahllisten (Sprint 1: feste Optionen) ───────── */
+    const CONTRACT_TYPES = ['T&M', 'Turnkey', 'ANÜ'];
+    const LEVELS = ['Junior', 'Consultant', 'Senior Consultant', 'Principal', 'Manager'];
+    const REGIONS = [
+      'Baden-Württemberg', 'Bayern', 'Berlin', 'Brandenburg', 'Bremen', 'Hamburg',
+      'Hessen', 'Mecklenburg-Vorpommern', 'Niedersachsen', 'Nordrhein-Westfalen',
+      'Rheinland-Pfalz', 'Saarland', 'Sachsen', 'Sachsen-Anhalt', 'Schleswig-Holstein',
+      'Thüringen', 'Deutschland (bundesweit)', 'Remote',
+    ];
+    const REMOTE_SHARES = ['0 %', '25 %', '50 %', '75 %', '100 %'];
+
     function App() {
       const [skills, setSkills] = useState(['AML', 'Compliance']);
+      const [contract, setContract] = useState('');
+      const [level, setLevel] = useState('');
+      const [region, setRegion] = useState('');
+      const [remote, setRemote] = useState('');
 
       return html`
         <${ThemeProvider} theme=${theme}>
@@ -76,12 +91,13 @@
               border: '1px solid #b3d2f0', borderRadius: 1,
               px: 2, py: 1, mb: 2.5, fontSize: '13px',
             }}>
-              <strong>Sprint-1-Umfang:</strong> nur die Pflichtfelder. Kategorien, Pflicht/Optional,
-              ODER-Gruppen, Zeitleisten-Logik und Anforderungen folgen in späteren Sprints.
+              <strong>Sprint-1-Umfang (Schlank+):</strong> die Pflichtfelder plus einfache Zusatzfelder.
+              Skill-Kategorien, Pflicht/Optional, ODER-Gruppen, flexible Zeitleisten-Logik (ASAP/Monat,
+              Dauer) und der Matching-Trigger folgen in späteren Sprints.
             <//>
 
-            <!-- ── Eckdaten ── -->
-            <${SectionCard} title="Eckdaten">
+            <!-- ── Projekt ── -->
+            <${SectionCard} title="Projekt">
               <${Grid} container spacing=${2}>
                 <${Grid} item xs=${12}>
                   <${TextField} label=${'Titel *'} fullWidth size="small" />
@@ -89,14 +105,16 @@
                 <${Grid} item xs=${12}>
                   <${TextField} label="Kunde / Projekt" fullWidth size="small" />
                 <//>
-                <${Grid} item xs=${12}>
-                  <${TextField} label=${'Startdatum *'} type="date" fullWidth size="small"
-                    defaultValue="2026-07-01" InputLabelProps=${{ shrink: true }} />
+                <${Grid} item xs=${6}>
+                  <${TextField} select label="Vertragsart" fullWidth size="small"
+                    value=${contract} onChange=${e => setContract(e.target.value)}>
+                    ${CONTRACT_TYPES.map(c => html`<${MenuItem} key=${c} value=${c}>${c}<//>`)}
+                  <//>
                 <//>
               <//>
             <//>
 
-            <!-- ── Projektziel ── -->
+            <!-- ── Beschreibung ── -->
             <${SectionCard} title=${'Projektziel *'}>
               <${TextField} label="Was soll im Projekt erreicht werden?" fullWidth multiline minRows=${3} size="small" />
             <//>
@@ -120,6 +138,44 @@
                   />
                 `}
               />
+            <//>
+
+            <!-- ── Zeitleiste ── -->
+            <${SectionCard} title="Zeitleiste">
+              <${Grid} container spacing=${2}>
+                <${Grid} item xs=${6}>
+                  <${TextField} label=${'Startdatum *'} type="date" fullWidth size="small"
+                    defaultValue="2026-07-01" InputLabelProps=${{ shrink: true }} />
+                <//>
+                <${Grid} item xs=${6}>
+                  <${TextField} label="Enddatum" type="date" fullWidth size="small"
+                    InputLabelProps=${{ shrink: true }} />
+                <//>
+              <//>
+            <//>
+
+            <!-- ── Anforderungen ── -->
+            <${SectionCard} title="Anforderungen">
+              <${Grid} container spacing=${2}>
+                <${Grid} item xs=${6}>
+                  <${TextField} select label="Level" fullWidth size="small"
+                    value=${level} onChange=${e => setLevel(e.target.value)}>
+                    ${LEVELS.map(l => html`<${MenuItem} key=${l} value=${l}>${l}<//>`)}
+                  <//>
+                <//>
+                <${Grid} item xs=${6}>
+                  <${TextField} select label="Remote-Anteil" fullWidth size="small"
+                    value=${remote} onChange=${e => setRemote(e.target.value)}>
+                    ${REMOTE_SHARES.map(r => html`<${MenuItem} key=${r} value=${r}>${r}<//>`)}
+                  <//>
+                <//>
+                <${Grid} item xs=${12}>
+                  <${TextField} select label="Region" fullWidth size="small"
+                    value=${region} onChange=${e => setRegion(e.target.value)}>
+                    ${REGIONS.map(r => html`<${MenuItem} key=${r} value=${r}>${r}<//>`)}
+                  <//>
+                <//>
+              <//>
             <//>
 
             <!-- ── Actions ── -->
