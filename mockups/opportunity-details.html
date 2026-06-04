@@ -17,7 +17,7 @@
   <script>
     const { createElement: h, useState, useCallback, useMemo } = React;
     const { createRoot } = ReactDOM;
-    const { Box, Typography, Button, Paper, Container, Stack, Grid, Divider, Table, TableHead, TableBody, TableRow, TableCell, TableContainer, TextField, MenuItem, Tabs, Tab, Drawer, IconButton, Tooltip, ThemeProvider, createTheme, CssBaseline } = MaterialUI;
+    const { Box, Typography, Button, Paper, Container, Stack, Grid, Divider, Table, TableHead, TableBody, TableRow, TableCell, TableContainer, TextField, MenuItem, Tabs, Tab, Drawer, IconButton, Tooltip, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, ThemeProvider, createTheme, CssBaseline } = MaterialUI;
 
     const html = htm.bind(h);
 
@@ -736,9 +736,12 @@
       const [tab,            setTab]            = useState(0);
       const [drawerOpen,     setDrawerOpen]     = useState(false);
       const [drawerCandidate,setDrawerCandidate] = useState(null);
+      const [confirmOpen,    setConfirm]        = useState(false);
+      const [archived,       setArchived]       = useState(false);
 
-      const openDrawer  = useCallback(c => { setDrawerCandidate(c); setDrawerOpen(true); }, []);
-      const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+      const openDrawer   = useCallback(c => { setDrawerCandidate(c); setDrawerOpen(true); }, []);
+      const closeDrawer  = useCallback(() => setDrawerOpen(false), []);
+      const handleArchive = () => { setArchived(true); setConfirm(false); };
 
       const hasUnmapped = UNMAPPED_SKILLS.length > 0;
 
@@ -747,7 +750,8 @@
           <${CssBaseline} />
           <${MockupBar} />
 
-          <${Container} maxWidth="md" sx=${{ py: 4 }}>
+          <${Box} sx=${{ bgcolor: '#F5F6F8', minHeight: '100vh', pb: 6 }}>
+          <${Container} maxWidth="md" sx=${{ pt: 3 }}>
 
             <!-- Page header -->
             <${Paper} variant="outlined" sx=${{ p: 3, mb: 2 }}>
@@ -774,9 +778,9 @@
                   <//>
                 <//>
                 <${Stack} direction="row" spacing=${1} sx=${{ flexShrink: 0, pt: 0.25 }}>
-                  <${Button} variant="outlined" color="inherit" size="small">Archivieren<//>
-                  <${Button} variant="outlined" size="small">Bearbeiten<//>
-                  <${Button} variant="contained" size="small">Matches neu berechnen<//>
+                  <${Button} variant="outlined" color="error" size="small" disabled=${archived} onClick=${() => setConfirm(true)}>Archivieren<//>
+                  <${Button} variant="outlined" size="small" disabled=${archived}>Bearbeiten<//>
+                  <${Button} variant="contained" size="small" disabled=${archived}>Matches neu berechnen<//>
                 <//>
               <//>
             <//>
@@ -810,6 +814,21 @@
             ${tab === 2 && html`<${TabDetails} />`}
             ${tab === 3 && hasUnmapped && html`<${TabUnmapped} />`}
 
+          <//>
+          <//>
+
+          <!-- Archivieren-Dialog -->
+          <${Dialog} open=${confirmOpen} onClose=${() => setConfirm(false)}>
+            <${DialogTitle}>Opportunity archivieren?<//>
+            <${DialogContent}>
+              <${DialogContentText}>
+                Die Opportunity wird archiviert und kann nicht mehr bearbeitet werden.
+              <//>
+            <//>
+            <${DialogActions}>
+              <${Button} onClick=${() => setConfirm(false)}>Abbrechen<//>
+              <${Button} onClick=${handleArchive} color="error" variant="contained">Archivieren<//>
+            <//>
           <//>
 
           <!-- Score Drawer -->

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opportunity-Details (Sprint 1) — Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style> * { box-sizing: border-box; } body { margin: 0; } </style>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@mui/material@5/umd/material-ui.development.js"></script>
+  <script src="https://unpkg.com/htm/dist/htm.umd.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const { createElement: h, useState } = React;
+    const { createRoot } = ReactDOM;
+    const { Box, Typography, Button, Paper, Container, Stack, Chip, Tabs, Tab, Grid,
+            Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
+            ThemeProvider, createTheme, CssBaseline } = MaterialUI;
+
+    const html = htm.bind(h);
+
+    const theme = createTheme({
+      palette: { primary: { main: '#1976D2' }, error: { main: '#E53935' } },
+      components: { MuiButton: { defaultProps: { disableElevation: true } } },
+    });
+
+    const OPP = {
+      titel: 'AML-Regulatorik Banking-Projekt 2026',
+      status: 'OPEN',
+      erstelltVon: 'Jannik Schröder',
+      erstelltAm: '03.06.2026',
+      kunde: 'Hypoteq AG',
+      branche: 'Banking',
+      vertragsart: 'T&M',
+      projektziel: 'Begleitung der Umsetzung neuer AML-Anforderungen gemäß EU-Richtlinie 2024/1624 im Bereich Transaction Monitoring und Customer Due Diligence.',
+      aufgaben: 'Analyse bestehender KYC-Prozesse · Konzeption und Dokumentation neuer Kontrollmechanismen · Begleitung der technischen Umsetzung · Abstimmung mit Compliance und IT.',
+      skills: ['AML', 'Compliance', 'Banking', 'DSGVO'],
+      startdatum: '01.08.2026',
+      enddatum: '31.01.2027',
+      reaktionsdeadline: '20.06.2026',
+      reaktionstage: 17,
+      auslastung: 100,
+      positionen: 2,
+      level: 'Senior Consultant',
+      region: 'Nordrhein-Westfalen',
+      remoteAnteil: '50 %',
+    };
+
+    const STATUS_COLORS = {
+      OPEN:      { bgcolor: '#E3F0FC', color: '#1256A0', label: 'Offen' },
+      DRAFT:     { bgcolor: '#F1EFE8', color: '#5F5E5A', label: 'Entwurf' },
+      WITHDRAWN: { bgcolor: '#F1EFE8', color: '#5F5E5A', label: 'Zurückgezogen' },
+    };
+
+    function MockupBar() {
+      return html`
+        <${Paper} square elevation=${0} sx=${{
+          position: 'sticky', top: 0, zIndex: 1100,
+          borderBottom: '1px solid', borderColor: 'divider',
+          px: 4, py: 1.25,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <${Typography} variant="overline" color="text.secondary">
+            Mockup · <${Box} component="span" sx=${{ color: 'primary.main' }}>Opportunity-Details — Sprint 1<//>
+          <//>
+          <${Button} component="a" href="../index.html" size="small">← Katalog<//>
+        <//>
+      `;
+    }
+
+    function StatusPill({ status }) {
+      const s = STATUS_COLORS[status] || STATUS_COLORS.DRAFT;
+      return html`
+        <${Box} sx=${{
+          display: 'inline-block', bgcolor: s.bgcolor, color: s.color,
+          px: 1.25, py: 0.25, borderRadius: '12px',
+          fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4,
+        }}>${s.label}<//>
+      `;
+    }
+
+    function DaysBadge({ days }) {
+      let bgcolor, color;
+      if (days <= 7)       { bgcolor = '#FFEBEE'; color = '#C62828'; }
+      else if (days <= 14) { bgcolor = '#FFF3E0'; color = '#E65100'; }
+      else                 { bgcolor = '#E8F5E9'; color = '#2E7D32'; }
+      return html`
+        <${Box} sx=${{ display: 'inline-block', bgcolor, color, px: 1, py: 0.25, borderRadius: '10px', fontSize: '12px', fontWeight: 600 }}>
+          ${days} Tage
+        <//>
+      `;
+    }
+
+    function SectionCard({ title, children }) {
+      return html`
+        <${Paper} variant="outlined" sx=${{ p: 3, mb: 1.5 }}>
+          <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'block', mb: 2, borderBottom: '1px solid', borderColor: 'divider', pb: 1.5 }}>
+            ${title}
+          <//>
+          ${children}
+        <//>
+      `;
+    }
+
+    function LabelValue({ label, value }) {
+      return html`
+        <${Box}>
+          <${Typography} variant="caption" color="text.secondary" sx=${{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.25 }}>${label}<//>
+          <${Typography} variant="body2" fontWeight=${500}>${value || '—'}<//>
+        <//>
+      `;
+    }
+
+    function TabDetails() {
+      const PROJECT = [
+        ['Kunde', OPP.kunde], ['Branche', OPP.branche], ['Vertragsart', OPP.vertragsart],
+        ['Startdatum', OPP.startdatum], ['Enddatum', OPP.enddatum], ['Auslastung', OPP.auslastung + ' %'],
+        ['Level', OPP.level], ['Region', OPP.region], ['Remote-Anteil', OPP.remoteAnteil],
+        ['Abzugeben bis', OPP.reaktionsdeadline],
+      ];
+      return html`
+        <${Stack} spacing=${1.5}>
+
+          <!-- Projektdaten -->
+          <${Paper} variant="outlined" sx=${{ p: 3 }}>
+            <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'block', borderBottom: '1px solid', borderColor: 'divider', pb: 1.25, mb: 2 }}>
+              Projektdaten
+            <//>
+            <${Grid} container spacing=${2.25}>
+              ${PROJECT.map(([label, val]) => html`
+                <${Grid} key=${label} item xs=${4}>
+                  <${Typography} variant="caption" color="text.secondary" sx=${{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.25 }}>
+                    ${label}
+                  <//>
+                  <${Typography} variant="body2" fontWeight=${500}>${val}<//>
+                <//>
+              `)}
+            <//>
+          <//>
+
+          <!-- Beschreibung -->
+          <${Paper} variant="outlined" sx=${{ p: 3 }}>
+            <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'block', borderBottom: '1px solid', borderColor: 'divider', pb: 1.25, mb: 2 }}>
+              Beschreibung
+            <//>
+            <${Grid} container spacing=${2.5}>
+              <${Grid} item xs=${6}>
+                <${Typography} variant="body2" fontWeight=${700} sx=${{ mb: 0.75 }}>Projektziel<//>
+                <${Typography} variant="body2" color="text.secondary" sx=${{ lineHeight: 1.65 }}>${OPP.projektziel}<//>
+              <//>
+              <${Grid} item xs=${6}>
+                <${Typography} variant="body2" fontWeight=${700} sx=${{ mb: 0.75 }}>Aufgaben & Verantwortlichkeiten<//>
+                <${Typography} variant="body2" color="text.secondary" sx=${{ lineHeight: 1.65 }}>${OPP.aufgaben}<//>
+              <//>
+            <//>
+          <//>
+
+          <!-- Geforderte Skills (Sprint 1: flache Liste, keine Kategorien) -->
+          <${Paper} variant="outlined" sx=${{ p: 3 }}>
+            <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'block', borderBottom: '1px solid', borderColor: 'divider', pb: 1.25, mb: 2 }}>
+              Geforderte Skills
+            <//>
+            <${Stack} spacing=${0.625}>
+              ${OPP.skills.map(s => html`
+                <${Box} key=${s} sx=${{
+                  display: 'flex', alignItems: 'center', gap: 1.5,
+                  border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 1.75, py: 1,
+                }}>
+                  <${Typography} variant="body2" fontWeight=${500} sx=${{ flex: 1 }}>${s}<//>
+                  <${Box} sx=${{
+                    display: 'inline-block', bgcolor: '#FCEBEB', color: '#791F1F',
+                    px: 1.25, py: 0.25, borderRadius: '12px',
+                    fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4,
+                  }}>Pflicht<//>
+                <//>
+              `)}
+            <//>
+          <//>
+
+        <//>
+      `;
+    }
+
+    function TabTodo({ label }) {
+      return html`
+        <${Box} sx=${{
+          border: '1px dashed', borderColor: 'divider', borderRadius: 1,
+          py: 6, textAlign: 'center',
+        }}>
+          <${Typography} variant="body2" color="text.secondary">TODO — ${label}<//>
+        <//>
+      `;
+    }
+
+    function App() {
+      const [tab,         setTab]    = useState(0);
+      const [status,      setStatus] = useState(OPP.status);
+      const [confirmOpen, setConfirm] = useState(false);
+
+      const handleWithdraw = () => { setStatus('WITHDRAWN'); setConfirm(false); };
+      const isWithdrawn = status === 'WITHDRAWN';
+
+      return html`
+        <${ThemeProvider} theme=${theme}>
+          <${CssBaseline} />
+          <${MockupBar} />
+
+          <${Box} sx=${{ bgcolor: '#F5F6F8', minHeight: '100vh', pb: 6 }}>
+            <${Container} maxWidth="md" sx=${{ pt: 3 }}>
+
+              <!-- Header-Box -->
+              <${Paper} variant="outlined" sx=${{ p: 3, mb: 2 }}>
+                <${Typography} variant="caption" color="primary.main" sx=${{ display: 'block', mb: 1, cursor: 'pointer' }}>
+                  ← Opportunity-Liste
+                <//>
+                <${Box} sx=${{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+                  <${Box} sx=${{ flex: 1, minWidth: 0 }}>
+                    <${Stack} direction="row" alignItems="center" gap=${1.25} flexWrap="wrap" sx=${{ mb: 1 }}>
+                      <${Typography} variant="h6" fontWeight=${700}>${OPP.titel}<//>
+                      <${StatusPill} status=${status} />
+                    <//>
+                    <${Stack} direction="row" alignItems="center" flexWrap="wrap" gap=${0} sx=${{ fontSize: '12px', color: 'text.secondary' }}>
+                      <${Typography} variant="caption">Erstellt von ${OPP.erstelltVon}<//>
+                      <${Box} component="span" sx=${{ mx: 1.25, color: 'divider' }}>|<//>
+                      <${Typography} variant="caption">${OPP.erstelltAm}<//>
+                      <${Box} component="span" sx=${{ mx: 1.25, color: 'divider' }}>|<//>
+                      <${Box} sx=${{ display: 'inline-flex', alignItems: 'center', gap: 0.5, whiteSpace: 'nowrap' }}>
+                        <${Typography} variant="caption">Reaktionsfrist:<//>
+                        <${DaysBadge} days=${OPP.reaktionstage} />
+                      <//>
+                      <${Box} component="span" sx=${{ mx: 1.25, color: 'divider' }}>|<//>
+                      <${Typography} variant="caption">${OPP.positionen} Positionen<//>
+                    <//>
+                  <//>
+                  <${Stack} direction="row" spacing=${1} sx=${{ flexShrink: 0, pt: 0.25 }}>
+                    <${Button} variant="outlined" color="error" size="small" disabled=${isWithdrawn} onClick=${() => setConfirm(true)}>
+                      Archivieren
+                    <//>
+                    <${Button} variant="outlined" size="small" disabled=${isWithdrawn}>Bearbeiten<//>
+                  <//>
+                <//>
+              <//>
+
+              <!-- Tabs -->
+              <${Tabs} value=${tab} onChange=${(_, v) => setTab(v)} sx=${{ mb: 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <${Tab} label="Matches" />
+                <${Tab} label="Status & Historie" />
+                <${Tab} label="Details" />
+              <//>
+
+              ${tab === 0 && html`<${TabTodo} label="Matches" />`}
+              ${tab === 1 && html`<${TabTodo} label="Status & Historie" />`}
+              ${tab === 2 && html`<${TabDetails} />`}
+
+            <//>
+          <//>
+
+          <!-- Archivieren-Dialog -->
+          <${Dialog} open=${confirmOpen} onClose=${() => setConfirm(false)}>
+            <${DialogTitle}>Opportunity archivieren?<//>
+            <${DialogContent}>
+              <${DialogContentText}>
+                Die Opportunity wird auf „Zurückgezogen" gesetzt und kann nicht mehr bearbeitet werden.
+              <//>
+            <//>
+            <${DialogActions}>
+              <${Button} onClick=${() => setConfirm(false)}>Abbrechen<//>
+              <${Button} onClick=${handleWithdraw} color="error" variant="contained">Archivieren<//>
+            <//>
+          <//>
+
+        <//>
+      `;
+    }
+
+    createRoot(document.getElementById('root')).render(html`<${App} />`);
+  </script>
+</body>
+</html>
