@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Meine Opportunities — Mockup</title>
+  <title>Meine Opportunities (Sprint 1) — Mockup</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
   <style> * { box-sizing: border-box; } body { margin: 0; } </style>
@@ -17,49 +17,58 @@
   <script>
     const { createElement: h, useState, useCallback, useMemo } = React;
     const { createRoot } = ReactDOM;
-    const { Box, Typography, Button, Paper, Container, Stack, Table, TableHead, TableBody, TableRow, TableCell, TableContainer, TextField, MenuItem, IconButton, Tooltip, ThemeProvider, createTheme, CssBaseline, Chip } = MaterialUI;
+    const { Box, Typography, Button, Paper, Container, Stack, Table, TableHead, TableBody,
+            TableRow, TableCell, TableContainer, TextField, MenuItem, IconButton, Tooltip,
+            ThemeProvider, createTheme, CssBaseline } = MaterialUI;
 
     const html = htm.bind(h);
 
     const theme = createTheme({
-      palette: { primary: { main: '#1976D2' } },
+      palette: { primary: { main: '#1976D2' }, error: { main: '#E53935' } },
       components: { MuiButton: { defaultProps: { disableElevation: true } } },
     });
 
-    // Farben gemäß colors.ts
+    // Sprint 1: nur Offen / Entwurf / Zurückgezogen — Farben gemäß colors.ts
     const STATUS_COLORS = {
-      'Offen':          { bgcolor: '#E3F0FC', color: '#1256A0' },  // statusOpen
-      'Genehmigt':      { bgcolor: '#E1F5EE', color: '#0F6E56' },  // candidateApproved
-      'In Prüfung':     { bgcolor: '#FAEEDA', color: '#854F0B' },  // candidateReview
-      'Abgelehnt':      { bgcolor: '#FCEBEB', color: '#791F1F' },  // candidateRejected
-      'Ausstehend':     { bgcolor: '#FAEEDA', color: '#854F0B' },  // candidateReview
-      'Entwurf':        { bgcolor: '#F1EFE8', color: '#5F5E5A' },  // statusDraft
-      'Abgeschlossen':  { bgcolor: '#F1EFE8', color: '#5F5E5A' },  // neutral
-      'Zurückgezogen':  { bgcolor: '#FEF0E0', color: '#8B5E00' },  // statusWithdrawn
+      'Offen':          { bgcolor: '#E3F0FC', color: '#1256A0' },
+      'Entwurf':        { bgcolor: '#F1EFE8', color: '#5F5E5A' },
+      'Zurückgezogen':  { bgcolor: '#FEF0E0', color: '#8B5E00' },
     };
 
+    // Deadlines relativ zu 2026-06-04 (heute)
     const DATA = [
-      { id: 1, title: 'Backend-Projekt Datenmigration',   client: 'Hypoteq AG',           startDate: '2026-07-01', deadline: '2026-06-07', skills: ['Java', 'AWS', 'Docker'],                 extraSkills: 2, matches: 12, status: 'Offen' },
-      { id: 2, title: 'Container Plattform Initiative',    client: 'Reply GmbH',           startDate: '2026-07-15', deadline: '2026-06-12', skills: ['Docker', 'Kubernetes', 'GitOps'],       extraSkills: 1, matches: 5,  status: 'In Prüfung' },
-      { id: 3, title: 'Business Analysten IT-Consulting',  client: 'IPSWAYS Insurance',    startDate: '2026-08-01', deadline: '2026-06-25', skills: ['Business Analysis', 'Scrum', 'BPMN'],   extraSkills: 2, matches: 7,  status: 'Offen' },
-      { id: 4, title: 'Compliance-Beratung DSGVO',         client: 'Finanz Informatik',    startDate: '2026-05-15', deadline: '2026-04-10', skills: ['DSGVO', 'Compliance'],                  extraSkills: 0, matches: 3,  status: 'Genehmigt' },
-      { id: 5, title: 'KI-Beratung Retail Banking',        client: 'Volksbank Rhein-Main', startDate: '2026-08-15', deadline: '2026-06-10', skills: ['GenAI', 'LLM', 'Prompt Engineering'],  extraSkills: 3, matches: 0,  status: 'Offen', noMatch: true },
-      { id: 6, title: 'Cloud-Migration Sparkasse',          client: 'Finanz Informatik',    startDate: '2026-09-01', deadline: '2026-07-15', skills: ['AWS', 'Terraform', 'CI/CD'],            extraSkills: 1, matches: 0,  status: 'Entwurf' },
-      { id: 7, title: 'SAP-Rollout Automotive',             client: 'Automotive Reply',     startDate: '2026-10-01', deadline: '2026-07-20', skills: ['SAP', 'ABAP'],                          extraSkills: 1, matches: 2,  status: 'Zurückgezogen' },
+      { id: 1, title: 'AML-Regulatorik Banking-Projekt',     client: 'Hypoteq AG',           startDate: '2026-08-01', deadline: '2026-06-07', skills: ['AML', 'Compliance', 'Banking'],    extraSkills: 1, status: 'Offen' },
+      { id: 2, title: 'Container Plattform Initiative',       client: 'Reply GmbH',            startDate: '2026-07-15', deadline: '2026-06-12', skills: ['Docker', 'Kubernetes', 'GitOps'],  extraSkills: 1, status: 'Offen' },
+      { id: 3, title: 'Business Intelligence Retail',         client: 'IPSWAYS Insurance',     startDate: '2026-09-01', deadline: '2026-06-25', skills: ['Power BI', 'SQL', 'ETL'],          extraSkills: 2, status: 'Offen' },
+      { id: 4, title: 'Cloud-Migration Sparkasse',            client: 'Finanz Informatik',     startDate: '2026-10-01', deadline: '2026-07-10', skills: ['AWS', 'Terraform'],                extraSkills: 1, status: 'Entwurf' },
+      { id: 5, title: 'Compliance-Beratung DSGVO',            client: 'Volksbank Rhein-Main',  startDate: '2026-05-15', deadline: '2026-04-10', skills: ['DSGVO', 'Compliance'],             extraSkills: 0, status: 'Zurückgezogen' },
     ];
 
-    function daysBadge(iso) {
-      const today = new Date('2026-06-04'); today.setHours(0, 0, 0, 0);
-      const due   = new Date(iso); due.setHours(0, 0, 0, 0);
+    // Frist-Badge: Farben gemäß deadlineUrgent / deadlineWarning / deadlineOk / deadlineExpired
+    function DeadlineBadge({ iso }) {
+      const today = new Date('2026-06-04');
+      const due   = new Date(iso + 'T00:00:00');
       const days  = Math.ceil((due - today) / 86400000);
       let bgcolor, color, label;
-      if (days < 0)       { bgcolor = '#F5F5F5'; color = '#9E9E9E'; label = 'Abgelaufen'; }
-      else if (days <= 7) { bgcolor = '#FFEBEE'; color = '#C62828'; label = `${days} Tage`; }
-      else if (days <= 14){ bgcolor = '#FFF3E0'; color = '#E65100'; label = `${days} Tage`; }
-      else                { bgcolor = '#E8F5E9'; color = '#2E7D32'; label = `${days} Tage`; }
+      if      (days < 0)   { bgcolor = '#F5F5F5'; color = '#9E9E9E'; label = 'Abgelaufen'; }
+      else if (days <= 7)  { bgcolor = '#FFEBEE'; color = '#C62828'; label = `${days} Tage`; }
+      else if (days <= 14) { bgcolor = '#FFF3E0'; color = '#E65100'; label = `${days} Tage`; }
+      else                 { bgcolor = '#E8F5E9'; color = '#2E7D32'; label = `${days} Tage`; }
       return html`
-        <${Box} sx=${{ display: 'inline-block', px: 1, py: 0.25, borderRadius: '10px', bgcolor, color, fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+        <${Box} sx=${{ display: 'inline-block', px: 1, py: 0.25, borderRadius: '10px',
+          bgcolor, color, fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap' }}>
           ${label}
+        <//>
+      `;
+    }
+
+    function StatusPill({ status }) {
+      const s = STATUS_COLORS[status] || STATUS_COLORS['Entwurf'];
+      return html`
+        <${Box} sx=${{ display: 'inline-block', bgcolor: s.bgcolor, color: s.color,
+          px: 1.25, py: 0.25, borderRadius: '12px',
+          fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap' }}>
+          ${status}
         <//>
       `;
     }
@@ -73,13 +82,12 @@
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <${Typography} variant="overline" color="text.secondary">
-            Mockup · <${Box} component="span" sx=${{ color: 'primary.main' }}>Meine Opportunities<//>
+            Mockup · <${Box} component="span" sx=${{ color: 'primary.main' }}>Meine Opportunities — Sprint 1<//>
           <//>
           <${Stack} direction="row" spacing=${1} alignItems="center">
             <${Typography} variant="caption" color="text.secondary">Demo:<//>
             ${['Normal', 'Leer A', 'Leer B'].map(label => html`
-              <${Button} key=${label} size="small"
-                variant=${demoState === label ? 'contained' : 'outlined'}
+              <${Button} key=${label} size="small" variant=${demoState === label ? 'contained' : 'outlined'}
                 onClick=${() => setDemoState(label)}
                 sx=${{ fontSize: '11px', py: 0.25, minWidth: 0, px: 1.25 }}>
                 ${label}
@@ -129,6 +137,7 @@
       `;
     }
 
+    const SPRINT1_STATUSES = ['Offen', 'Entwurf', 'Zurückgezogen'];
     const COLS = ['', 'Titel', 'Kunde', 'Startdatum', 'Abzugeben bis', 'Skills', 'Matches', 'Status'];
 
     function App() {
@@ -139,7 +148,7 @@
       const [search,       setSearch]       = useState('');
       const [showFavs,     setShowFavs]     = useState(false);
       const [favorites,    setFavorites]    = useState(
-        () => new Set(JSON.parse(localStorage.getItem('opp-hub-favorites') || '[]'))
+        () => new Set(JSON.parse(localStorage.getItem('opp-hub-s1-favorites') || '[]'))
       );
 
       const resetFilters = useCallback(() => {
@@ -150,14 +159,14 @@
         setFavorites(prev => {
           const next = new Set(prev);
           if (next.has(id)) next.delete(id); else next.add(id);
-          localStorage.setItem('opp-hub-favorites', JSON.stringify([...next]));
+          localStorage.setItem('opp-hub-s1-favorites', JSON.stringify([...next]));
           return next;
         });
       }, []);
 
       const visible = useMemo(() => {
-        if (demoState === 'Leer A') return null;
-        if (demoState === 'Leer B') return [];
+        if (demoState === 'Leer A') return null;   // null = no data at all
+        if (demoState === 'Leer B') return [];     // [] = data exists but filters hide it
         return DATA.filter(d => {
           return (!statusFilter || d.status === statusFilter) &&
                  (!dateFrom || d.deadline >= dateFrom) &&
@@ -175,15 +184,20 @@
         <${ThemeProvider} theme=${theme}>
           <${CssBaseline} />
           <${MockupBar} demoState=${demoState} setDemoState=${setDemoState} />
+
           <${Container} maxWidth="lg" sx=${{ py: 4 }}>
 
-            <${Typography} variant="h6" fontWeight=${700} sx=${{ mb: 2 }}>Meine Opportunities<//>
+            <${Typography} variant="h6" fontWeight=${700} sx=${{ mb: 2 }}>
+              Meine Opportunities
+            <//>
 
+            <!-- Filter-Zeile -->
             <${Stack} direction="row" spacing=${1.5} sx=${{ mb: 2 }} alignItems="flex-end" flexWrap="wrap">
-              <${TextField} label="Status" select size="small" value=${statusFilter}
-                onChange=${e => setStatusFilter(e.target.value)} sx=${{ minWidth: 160 }}>
+              <${TextField} label="Status" select size="small"
+                value=${statusFilter} onChange=${e => setStatusFilter(e.target.value)}
+                sx=${{ minWidth: 160 }}>
                 <${MenuItem} value="">Alle<//>
-                ${['Offen', 'In Prüfung', 'Genehmigt', 'Abgelehnt', 'Ausstehend', 'Entwurf', 'Abgeschlossen', 'Zurückgezogen'].map(s => html`
+                ${SPRINT1_STATUSES.map(s => html`
                   <${MenuItem} key=${s} value=${s}>${s}<//>
                 `)}
               <//>
@@ -194,7 +208,8 @@
                 value=${dateTo} onChange=${e => setDateTo(e.target.value)}
                 InputLabelProps=${{ shrink: true }} sx=${{ minWidth: 150 }} />
               <${TextField} label="Suche" size="small" placeholder="Titel oder Kunde"
-                value=${search} onChange=${e => setSearch(e.target.value)} sx=${{ minWidth: 200 }} />
+                value=${search} onChange=${e => setSearch(e.target.value)}
+                sx=${{ minWidth: 200 }} />
               <${Box} sx=${{ flex: 1 }} />
               <${Button} variant="outlined" size="small"
                 onClick=${() => setShowFavs(v => !v)}
@@ -209,6 +224,7 @@
               <${Button} variant="contained" size="small">+ Neue Opportunity<//>
             <//>
 
+            <!-- Tabelle -->
             <${TableContainer} component=${Paper} variant="outlined">
               <${Table} size="small">
                 <${TableHead}>
@@ -230,10 +246,10 @@
                     visible.length === 0 ? html`<${EmptyStateB} onReset=${resetFilters} />` :
                     visible.map(d => {
                       const isFav = favorites.has(d.id);
-                      const sc    = STATUS_COLORS[d.status] || STATUS_COLORS['Entwurf'];
                       return html`
                         <${TableRow} key=${d.id} hover sx=${{ cursor: 'pointer' }}>
 
+                          <!-- Favorit -->
                           <${TableCell} sx=${{ pr: 0, width: 44 }}>
                             <${IconButton} size="small"
                               onClick=${e => { e.stopPropagation(); toggleFav(d.id); }}
@@ -242,25 +258,32 @@
                             <//>
                           <//>
 
+                          <!-- Titel -->
                           <${TableCell}>
                             <${Typography} variant="body2" fontWeight=${500}>${d.title}<//>
                           <//>
 
+                          <!-- Kunde -->
                           <${TableCell}>
                             <${Typography} variant="body2">${d.client}<//>
                           <//>
 
+                          <!-- Startdatum -->
                           <${TableCell} sx=${{ whiteSpace: 'nowrap' }}>
-                            ${new Date(d.startDate + 'T00:00:00').toLocaleDateString('de-DE')}
+                            <${Typography} variant="body2">
+                              ${new Date(d.startDate + 'T00:00:00').toLocaleDateString('de-DE')}
+                            <//>
                           <//>
 
+                          <!-- Abzugeben bis + Frist-Badge -->
                           <${TableCell} sx=${{ whiteSpace: 'nowrap' }}>
                             <${Typography} variant="body2" sx=${{ mb: 0.375 }}>
                               ${new Date(d.deadline + 'T00:00:00').toLocaleDateString('de-DE')}
                             <//>
-                            ${daysBadge(d.deadline)}
+                            <${DeadlineBadge} iso=${d.deadline} />
                           <//>
 
+                          <!-- Skills -->
                           <${TableCell}>
                             <${Stack} direction="row" flexWrap="wrap" gap=${0.5}>
                               ${d.skills.map(s => html`
@@ -280,37 +303,17 @@
                             <//>
                           <//>
 
+                          <!-- Matches: Sprint-1-Platzhalter -->
                           <${TableCell}>
-                            ${d.matches > 0
-                              ? html`
-                                <${Stack} direction="row" alignItems="center" gap=${0.75}>
-                                  <${Box} sx=${{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main', flexShrink: 0 }} />
-                                  <${Typography} variant="body2" fontWeight=${700} color="primary.main">${d.matches}<//>
-                                <//>
-                              `
-                              : d.noMatch
-                                ? html`
-                                  <${Tooltip}
-                                    title="Kein Kandidat gefunden. Mögliche Ursachen: Skills zu speziell, Zeitraum zu eng oder keine Verfügbarkeit. Details in der Opportunity."
-                                    arrow placement="top">
-                                    <${Box} sx=${{
-                                      display: 'inline-flex', alignItems: 'center', gap: 0.5,
-                                      bgcolor: '#FFF3E0', color: '#E65100',
-                                      px: 1, py: 0.25, borderRadius: '10px',
-                                      fontSize: '12px', fontWeight: 700, whiteSpace: 'nowrap', cursor: 'help',
-                                    }}>⚠ Kein Treffer<//>
-                                  <//>
-                                `
-                                : html`<${Typography} variant="body2" color="text.disabled">—<//>` }
+                            <${Tooltip} title="Matching wird in einem späteren Sprint implementiert" placement="top" arrow>
+                              <${Typography} variant="body2" color="text.disabled"
+                                sx=${{ cursor: 'help' }}>—<//>
+                            <//>
                           <//>
 
+                          <!-- Status -->
                           <${TableCell}>
-                            <${Box} sx=${{ display: 'inline-block', bgcolor: sc.bgcolor, color: sc.color,
-                              px: 1.25, py: 0.25, borderRadius: '12px',
-                              fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
-                              letterSpacing: 0.5, whiteSpace: 'nowrap' }}>
-                              ${d.status}
-                            <//>
+                            <${StatusPill} status=${d.status} />
                           <//>
 
                         <//>
@@ -321,6 +324,7 @@
               <//>
             <//>
 
+            <!-- Zähler -->
             <${Box} sx=${{ display: 'flex', justifyContent: 'flex-end', pt: 1.5 }}>
               <${Typography} variant="caption" color="text.secondary">
                 ${shownCount > 0 ? `1–${shownCount} von ${totalCount}` : `0 von ${totalCount}`}
