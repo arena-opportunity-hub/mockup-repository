@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Farb-Review — Opportunity Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      font-size: 14px;
+      color: #212121;
+      background: #F5F6F8;
+    }
+
+    .top-bar {
+      position: sticky; top: 0; z-index: 100;
+      background: #fff;
+      border-bottom: 1px solid #E0E0E0;
+      padding: 10px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .top-bar-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: #757575; }
+    .top-bar-label span { color: #1976D2; }
+    .top-bar a { font-size: 13px; color: #1976D2; text-decoration: none; }
+    .top-bar a:hover { text-decoration: underline; }
+
+    .page { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+    .page-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .page-sub { font-size: 13px; color: #757575; margin-bottom: 32px; }
+
+    .section { background: #fff; border: 1px solid #E0E0E0; border-radius: 4px; padding: 20px 24px; margin-bottom: 16px; }
+    .section-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.7px; color: #757575;
+      padding-bottom: 12px; margin-bottom: 16px;
+      border-bottom: 1px solid #E0E0E0;
+    }
+
+    .color-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+
+    /* ── Base swatch ── */
+    .swatch-item { display: flex; flex-direction: column; gap: 6px; min-width: 88px; }
+    .swatch-box { width: 88px; height: 48px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.08); }
+    .swatch-name { font-size: 12px; font-weight: 500; }
+    .swatch-hex  { font-size: 11px; color: #757575; font-family: monospace; }
+
+    /* ── Pill preview ── */
+    .pill-item { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+    .pill {
+      display: inline-block; padding: 3px 10px; border-radius: 12px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
+      text-transform: uppercase; white-space: nowrap;
+    }
+    .pill-meta { font-size: 11px; color: #757575; font-family: monospace; line-height: 1.6; }
+    .pill-token { font-size: 11px; font-weight: 500; color: #212121; }
+
+    /* ── Solid chip ── */
+    .solid-item { display: flex; flex-direction: column; gap: 6px; }
+    .solid-box {
+      height: 40px; min-width: 120px; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.3px;
+    }
+    .solid-meta { font-size: 11px; font-family: monospace; color: #757575; }
+    .solid-token { font-size: 11px; font-weight: 500; }
+
+    /* ── Score bar ── */
+    .score-item { display: flex; flex-direction: column; gap: 6px; min-width: 120px; }
+    .score-bar-track { height: 8px; border-radius: 4px; background: #E0E0E0; overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: 4px; }
+    .score-meta { font-size: 11px; font-family: monospace; color: #757575; }
+    .score-token { font-size: 11px; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <span class="top-bar-label">Design Review · <span>Farb-Tokens — Opportunity Hub</span></span>
+  <a href="index.html">← Katalog</a>
+</div>
+
+<div class="page">
+  <div class="page-title">Farb-Review</div>
+
+  <!-- Basis -->
+  <div class="section">
+    <div class="section-title">Basis-Tokens</div>
+    <div class="color-grid">
+
+      <div class="swatch-item">
+        <div class="swatch-box" style="background:#1976D2;"></div>
+        <div class="swatch-name">primary</div>
+        <div class="swatch-hex">#1976D2</div>
+      </div>
+      <div class="swatch-item">
+        <div class="swatch-box" style="background:#E3F0FC;"></div>
+        <div class="swatch-name">primaryLight</div>
+        <div class="swatch-hex">#E3F0FC</div>
+      </div>
+      <div class="swatch-item">
+        <div class="swatch-box" style="background:#1256A0;"></div>
+        <div class="swatch-name">primaryDark</div>
+        <div class="swatch-hex">#1256A0</div>
+      </div>
+      <div class="swatch-item">
+        <div class="swatch-box" style="background:#E53935;"></div>
+        <div class="swatch-name">danger</div>
+        <div class="swatch-hex">#E53935</div>
+      </div>
+      <div class="swatch-item">
+        <div class="swatch-box" style="background:#212121;"></div>
+        <div class="swatch-name">text</div>
+        <div class="swatch-hex">#212121</div>
+      </div>
+      <div class="swatch-item">
+        <div class="swatch-box" style="background:#757575;"></div>
+        <div class="swatch-name">textMuted</div>
+        <div class="swatch-hex">#757575</div>
+      </div>
+      <div class="swatch-item">
+        <div class="swatch-box" style="background:#E0E0E0;"></div>
+        <div class="swatch-name">border</div>
+        <div class="swatch-hex">#E0E0E0</div>
+      </div>
+      <div class="swatch-item">
+        <div class="swatch-box" style="background:#FFFFFF; border:1px solid #E0E0E0;"></div>
+        <div class="swatch-name">surface</div>
+        <div class="swatch-hex">#FFFFFF</div>
+      </div>
+      <div class="swatch-item">
+        <div class="swatch-box" style="background:#F5F6F8;"></div>
+        <div class="swatch-name">bg</div>
+        <div class="swatch-hex">#F5F6F8</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Opportunity-Status -->
+  <div class="section">
+    <div class="section-title">Opportunity-Status-Pills</div>
+    <div class="color-grid">
+
+      <div class="pill-item">
+        <div class="pill" style="background:#E3F0FC; color:#1256A0;">Offen</div>
+        <div class="pill-token">statusOpen</div>
+        <div class="pill-meta">#E3F0FC / #1256A0</div>
+      </div>
+      <div class="pill-item">
+        <div class="pill" style="background:#F1EFE8; color:#5F5E5A;">Entwurf</div>
+        <div class="pill-token">statusDraft</div>
+        <div class="pill-meta">#F1EFE8 / #5F5E5A</div>
+      </div>
+      <div class="pill-item">
+        <div class="pill" style="background:#FEF0E0; color:#8B5E00;">Zurückgezogen</div>
+        <div class="pill-token">statusWithdrawn</div>
+        <div class="pill-meta">#FEF0E0 / #8B5E00</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Kandidaten-Status -->
+  <div class="section">
+    <div class="section-title">Kandidaten-Status-Pills</div>
+    <div class="color-grid">
+
+      <div class="pill-item">
+        <div class="pill" style="background:#E1F5EE; color:#0F6E56;">Genehmigt</div>
+        <div class="pill-token">candidateApproved</div>
+        <div class="pill-meta">#E1F5EE / #0F6E56</div>
+      </div>
+      <div class="pill-item">
+        <div class="pill" style="background:#FAEEDA; color:#854F0B;">In Prüfung</div>
+        <div class="pill-token">candidateReview</div>
+        <div class="pill-meta">#FAEEDA / #854F0B</div>
+      </div>
+      <div class="pill-item">
+        <div class="pill" style="background:#FCEBEB; color:#791F1F;">Abgelehnt</div>
+        <div class="pill-token">candidateRejected</div>
+        <div class="pill-meta">#FCEBEB / #791F1F</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Reaktionsfrist -->
+  <div class="section">
+    <div class="section-title">Reaktionsfrist-Badge</div>
+    <div class="color-grid">
+
+      <div class="pill-item">
+        <div class="pill" style="background:#FFEBEE; color:#C62828;">3 Tage</div>
+        <div class="pill-token">deadlineUrgent (≤7 Tage)</div>
+        <div class="pill-meta">#FFEBEE / #C62828</div>
+      </div>
+      <div class="pill-item">
+        <div class="pill" style="background:#FFF3E0; color:#E65100;">10 Tage</div>
+        <div class="pill-token">deadlineWarning (≤14 Tage)</div>
+        <div class="pill-meta">#FFF3E0 / #E65100</div>
+      </div>
+      <div class="pill-item">
+        <div class="pill" style="background:#E8F5E9; color:#2E7D32;">21 Tage</div>
+        <div class="pill-token">deadlineOk (&gt;14 Tage)</div>
+        <div class="pill-meta">#E8F5E9 / #2E7D32</div>
+      </div>
+      <div class="pill-item">
+        <div class="pill" style="background:#F5F5F5; color:#9E9E9E;">Abgelaufen</div>
+        <div class="pill-token">deadlineExpired</div>
+        <div class="pill-meta">#F5F5F5 / #9E9E9E</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Match-Pool-Header -->
+  <div class="section">
+    <div class="section-title">Match-Pool-Header (Solid)</div>
+    <div class="color-grid">
+
+      <div class="solid-item">
+        <div class="solid-box" style="background:#2E7D32; color:#fff; min-width:160px;">Sofort verfügbar</div>
+        <div class="solid-token">poolAvailable</div>
+        <div class="solid-meta">#2E7D32 · Text #FFFFFF</div>
+      </div>
+      <div class="solid-item">
+        <div class="solid-box" style="background:#E65100; color:#fff; min-width:160px;">Bald verfügbar</div>
+        <div class="solid-token">poolSoon</div>
+        <div class="solid-meta">#E65100 · Text #FFFFFF</div>
+      </div>
+      <div class="solid-item">
+        <div class="solid-box" style="background:#B71C1C; color:#fff; min-width:160px;">Teilweise verfügbar</div>
+        <div class="solid-token">poolPartial</div>
+        <div class="solid-meta">#B71C1C · Text #FFFFFF</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Score-Bar -->
+  <div class="section">
+    <div class="section-title">Score-Bar</div>
+    <div class="color-grid">
+
+      <div class="score-item">
+        <div class="score-bar-track"><div class="score-bar-fill" style="background:#2E7D32; width:85%;"></div></div>
+        <div class="score-token">scoreHigh</div>
+        <div class="score-meta">#2E7D32</div>
+      </div>
+      <div class="score-item">
+        <div class="score-bar-track"><div class="score-bar-fill" style="background:#1976D2; width:60%;"></div></div>
+        <div class="score-token">scoreMedium</div>
+        <div class="score-meta">#1976D2 (= primary)</div>
+      </div>
+      <div class="score-item">
+        <div class="score-bar-track"><div class="score-bar-fill" style="background:#E65100; width:35%;"></div></div>
+        <div class="score-token">scoreLow</div>
+        <div class="score-meta">#E65100</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Skill-Badges -->
+  <div class="section">
+    <div class="section-title">Skill-Badges</div>
+    <div class="color-grid">
+
+      <div class="pill-item">
+        <div class="pill" style="background:#FCEBEB; color:#791F1F;">Pflicht</div>
+        <div class="pill-token">skillMandatory</div>
+        <div class="pill-meta">#FCEBEB / #791F1F</div>
+      </div>
+      <div class="pill-item">
+        <div class="pill" style="background:#F1EFE8; color:#5F5E5A;">Optional</div>
+        <div class="pill-token">skillOptional</div>
+        <div class="pill-meta">#F1EFE8 / #5F5E5A</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Verfügbarkeits-Status -->
+  <div class="section">
+    <div class="section-title">Verfügbarkeits-Status</div>
+    <div class="color-grid">
+
+      <div class="solid-item">
+        <div class="solid-box" style="background:#00B050; color:#fff; min-width:130px;">billable</div>
+        <div class="solid-token">availBillable</div>
+        <div class="solid-meta">#00B050</div>
+      </div>
+      <div class="solid-item">
+        <div class="solid-box" style="background:#B4F1B1; color:#212121; min-width:130px;">prolongation</div>
+        <div class="solid-token">availProlongation</div>
+        <div class="solid-meta">#B4F1B1</div>
+      </div>
+      <div class="solid-item">
+        <div class="solid-box" style="background:#C4BD97; color:#212121; min-width:130px;">reserved</div>
+        <div class="solid-token">availReserved</div>
+        <div class="solid-meta">#C4BD97</div>
+      </div>
+      <div class="solid-item">
+        <div class="solid-box" style="background:#1976D2; color:#fff; min-width:130px;">offered to</div>
+        <div class="solid-token">availOfferedTo</div>
+        <div class="solid-meta">#1976D2 (= primary)</div>
+      </div>
+      <div class="solid-item">
+        <div class="solid-box" style="background:#FFC000; color:#212121; min-width:130px;">parttime</div>
+        <div class="solid-token">availParttime</div>
+        <div class="solid-meta">#FFC000</div>
+      </div>
+      <div class="solid-item">
+        <div class="solid-box" style="background:#00838F; color:#fff; min-width:130px;">absence</div>
+        <div class="solid-token">availAbsence</div>
+        <div class="solid-meta">#00838F</div>
+      </div>
+      <div class="solid-item">
+        <div class="solid-box" style="background:#455A64; color:#fff; min-width:130px;">left</div>
+        <div class="solid-token">availLeft</div>
+        <div class="solid-meta">#455A64</div>
+      </div>
+      <div class="solid-item">
+        <div class="solid-box" style="background:#512DA8; color:#fff; min-width:130px;">junior</div>
+        <div class="solid-token">availJunior</div>
+        <div class="solid-meta">#512DA8</div>
+      </div>
+      <div class="solid-item">
+        <div class="solid-box" style="background:#FF0000; color:#fff; min-width:130px;">bench</div>
+        <div class="solid-token">availBench</div>
+        <div class="solid-meta">#FF0000</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Sonstige -->
+  <div class="section">
+    <div class="section-title">Sonstige</div>
+    <div class="color-grid">
+
+      <div class="swatch-item">
+        <div class="swatch-box" style="background:#323232;"></div>
+        <div class="swatch-name">snackbarBg</div>
+        <div class="swatch-hex">#323232</div>
+      </div>
+      <div class="swatch-item">
+        <div class="swatch-box" style="background:#F5F5F5;"></div>
+        <div class="swatch-name">chipNeutralBg</div>
+        <div class="swatch-hex">#F5F5F5</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
