@@ -311,12 +311,6 @@ textarea.input-outlined { resize: vertical; min-height: 80px; }
 .snackbar { position: fixed; bottom: 24px; left: calc(var(--sidebar-w) + 24px); background: #323232; color: #fff; padding: 12px 20px; border-radius: var(--radius); font-size: 14px; z-index: 300; opacity: 0; transform: translateY(8px); transition: opacity 0.2s, transform 0.2s; pointer-events: none; }
 .snackbar.show { opacity: 1; transform: translateY(0); }
 
-.empty-state { text-align: center; padding: 48px 24px; display: none; }
-.empty-state.visible { display: block; }
-.empty-state-icon { font-size: 36px; margin-bottom: 12px; color: var(--c-text-muted); }
-.empty-state-title { font-size: 15px; font-weight: 600; color: var(--c-text); margin-bottom: 6px; }
-.empty-state-sub { font-size: 13px; color: var(--c-text-muted); }
-
 .days-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
 .days-urgent  { background: #FFEBEE; color: #C62828; }
 .days-warning { background: #FFF3E0; color: #E65100; }
