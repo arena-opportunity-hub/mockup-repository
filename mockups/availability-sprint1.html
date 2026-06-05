@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mitarbeiterverwaltung (Sprint 1) — Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style> * { box-sizing: border-box; } body { margin: 0; } </style>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@mui/material@5/umd/material-ui.development.js"></script>
+  <script src="https://unpkg.com/htm/dist/htm.umd.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const { createElement: h, useState, useMemo, useCallback } = React;
+    const { createRoot } = ReactDOM;
+    const {
+      Box, Typography, Button, Paper, Container, Stack,
+      Table, TableHead, TableBody, TableRow, TableCell, TableContainer,
+      TextField, MenuItem, IconButton, Tooltip,
+      Drawer, Divider,
+      ThemeProvider, createTheme, CssBaseline, Tabs, Tab,
+    } = MaterialUI;
+
+    const html = htm.bind(h);
+
+    const theme = createTheme({
+      palette: { primary: { main: '#1976D2' }, error: { main: '#E53935' } },
+      components: { MuiButton: { defaultProps: { disableElevation: true } } },
+    });
+
+    /* ── Availability status colors (from colors.ts) ── */
+    const AV_STATUS = {
+      bench:       { label: 'Bench',               solid: '#FF0000', textColor: '#fff' },
+      billable:    { label: 'Billable',             solid: '#00B050', textColor: '#fff' },
+      prolongation:{ label: 'Prolongation möglich', solid: '#B4F1B1', textColor: '#212121' },
+      reserved:    { label: 'Reserviert',           solid: '#C4BD97', textColor: '#212121' },
+      offeredTo:   { label: 'Angeboten an',         solid: '#1976D2', textColor: '#fff' },
+      parttime:    { label: 'Teilzeit',             solid: '#FFC000', textColor: '#212121' },
+      absence:     { label: 'Abwesenheit',          solid: '#00838F', textColor: '#fff' },
+      left:        { label: 'Ausgeschieden',        solid: '#455A64', textColor: '#fff' },
+      junior:      { label: 'Junior (Bench)',       solid: '#512DA8', textColor: '#fff' },
+    };
+
+    /* ── Demo data (6 employees, one entry each) ── */
+    const EMPLOYEES = [
+      { id: 1, name: 'Max Mustermann',  initials: 'MM', avatarColor: '#1976D2', level: 'Senior Consultant',
+        status: 'bench',        kunde: null,             von: '01.04.2026', bis: null,         auslastung: 100, region: 'Bayern' },
+      { id: 2, name: 'Sandra Koch',     initials: 'SK', avatarColor: '#388E3C', level: 'Consultant',
+        status: 'billable',     kunde: 'Commerzbank AG', von: '01.01.2026', bis: '31.12.2026', auslastung: 100, region: 'NRW' },
+      { id: 3, name: 'Thomas Berger',   initials: 'TB', avatarColor: '#7B1FA2', level: 'Senior Consultant',
+        status: 'prolongation', kunde: 'Reply GmbH',     von: '01.01.2026', bis: '31.07.2026', auslastung: 100, region: 'Hamburg' },
+      { id: 4, name: 'Klaus Becker',    initials: 'KB', avatarColor: '#455A64', level: 'Consultant',
+        status: 'offeredTo',    kunde: 'Deutsche Bank',  von: '15.05.2026', bis: '30.09.2026', auslastung: 100, region: 'NRW' },
+      { id: 5, name: 'Maria Schulz',    initials: 'MS', avatarColor: '#7B1FA2', level: 'Senior Consultant',
+        status: 'parttime',     kunde: 'Munich Re',      von: '01.01.2026', bis: '31.12.2026', auslastung: 60,  region: 'Bayern' },
+      { id: 6, name: 'Anna Weber',      initials: 'AW', avatarColor: '#C62828', level: 'Consultant',
+        status: 'absence',      kunde: null,             von: '01.01.2026', bis: '30.09.2026', auslastung: 0,   region: 'NRW' },
+    ];
+
+    /* ── Status dot + label pill ── */
+    function StatusPill({ statusKey }) {
+      const s = AV_STATUS[statusKey] || AV_STATUS.bench;
+      return html`
+        <${Box} sx=${{
+          display: 'inline-flex', alignItems: 'center', gap: 0.75,
+          bgcolor: s.solid, color: s.textColor,
+          px: 1.25, py: 0.25, borderRadius: '10px',
+          fontSize: '11px', fontWeight: 700,
+          textTransform: 'uppercase', letterSpacing: 0.4, whiteSpace: 'nowrap',
+        }}>
+          ${s.label}
+        <//>
+      `;
+    }
+
+    /* ── Status dot only (for table column) ── */
+    function StatusDot({ statusKey }) {
+      const s = AV_STATUS[statusKey] || AV_STATUS.bench;
+      return html`
+        <${Stack} direction="row" alignItems="center" gap=${0.75}>
+          <${Box} sx=${{ width: 10, height: 10, borderRadius: '50%', bgcolor: s.solid, flexShrink: 0 }} />
+          <${Typography} variant="body2">${s.label}<//>
+        <//>
+      `;
+    }
+
+    /* ── MockupBar ── */
+    function MockupBar() {
+      return html`
+        <${Paper} square elevation=${0} sx=${{
+          position: 'sticky', top: 0, zIndex: 1100,
+          borderBottom: '1px solid', borderColor: 'divider',
+          px: 4, py: 1.25,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <${Typography} variant="overline" color="text.secondary">
+            Mockup · <${Box} component="span" sx=${{ color: 'primary.main' }}>Mitarbeiterverwaltung — Sprint 1<//>
+          <//>
+          <${Button} component="a" href="../index.html" size="small">← Katalog<//>
+        <//>
+      `;
+    }
+
+    /* ── Employee Drawer ── */
+    function EmployeeDrawer({ emp, onClose }) {
+      if (!emp) return null;
+      const av = AV_STATUS[emp.status] || AV_STATUS.bench;
+
+      return html`
+        <${Drawer} anchor="right" open=${true} onClose=${onClose}
+          sx=${{ zIndex: 1200 }}
+          PaperProps=${{ sx: { width: 400, display: 'flex', flexDirection: 'column' } }}>
+
+          <!-- Header -->
+          <${Box} sx=${{
+            px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider',
+            display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0,
+          }}>
+            <${Box} sx=${{
+              width: 44, height: 44, borderRadius: '50%',
+              bgcolor: emp.avatarColor, color: '#fff',
+              fontWeight: 700, fontSize: '15px', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>${emp.initials}<//>
+            <${Box} sx=${{ flex: 1 }}>
+              <${Typography} variant="subtitle1" fontWeight=${700}>${emp.name}<//>
+              <${Typography} variant="caption" color="text.secondary">${emp.level}<//>
+            <//>
+            <${Button} size="small" color="inherit" onClick=${onClose}
+              sx=${{ minWidth: 0, px: 1 }}>✕<//>
+          <//>
+
+          <!-- Body -->
+          <${Box} sx=${{ flex: 1, overflowY: 'auto', px: 3, py: 2.5 }}>
+            <${Typography} variant="overline" color="text.secondary" sx=${{
+              display: 'block', fontWeight: 700, letterSpacing: 0.5, fontSize: '11px',
+              borderBottom: '1px solid', borderColor: 'divider', pb: 1, mb: 1.5,
+            }}>
+              Verfügbarkeitseinträge
+            <//>
+
+            <!-- Single entry row -->
+            <${Paper} variant="outlined" sx=${{ p: 1.5, mb: 1 }}>
+              <${Stack} direction="row" alignItems="flex-start" gap=${1}>
+                <${Box} sx=${{ flex: 1, minWidth: 0 }}>
+                  <${Stack} direction="row" alignItems="center" gap=${0.75} sx=${{ mb: 0.5 }} flexWrap="wrap">
+                    <${StatusPill} statusKey=${emp.status} />
+                    <${Typography} variant="caption" color="text.secondary">
+                      ${emp.auslastung}%
+                    <//>
+                  <//>
+                  <${Typography} variant="body2" color="text.secondary" sx=${{ fontSize: '12px' }}>
+                    ${emp.von} – ${emp.bis || 'offen'}
+                  <//>
+                  ${emp.kunde && html`
+                    <${Typography} variant="caption" color="text.secondary"
+                      sx=${{ display: 'block', mt: 0.25 }}>
+                      ${emp.kunde}
+                    <//>
+                  `}
+                <//>
+                <${Stack} direction="row" gap=${0.25} sx=${{ flexShrink: 0 }}>
+                  <${Tooltip} title="Bearbeiten" placement="top">
+                    <${Button} size="small" color="inherit"
+                      onClick=${() => alert('Bearbeiten: ' + emp.name)}
+                      sx=${{ minWidth: 0, px: 0.75, py: 0.25, fontSize: '14px' }}>
+                      ✏
+                    <//>
+                  <//>
+                  <${Tooltip} title="Löschen" placement="top">
+                    <${Button} size="small" color="error"
+                      onClick=${() => alert('Löschen: ' + emp.name)}
+                      sx=${{ minWidth: 0, px: 0.75, py: 0.25, fontSize: '14px' }}>
+                      🗑
+                    <//>
+                  <//>
+                <//>
+              <//>
+            <//>
+
+            <${Button} variant="outlined" size="small" fullWidth
+              component="a" href="availability-form.html"
+              sx=${{ mt: 1 }}>
+              + Neuer Eintrag
+            <//>
+          <//>
+        <//>
+      `;
+    }
+
+    /* ── Empty state ── */
+    function EmptyState() {
+      return html`
+        <${TableRow}>
+          <${TableCell} colSpan=${7} sx=${{ py: 8, textAlign: 'center', border: 'none' }}>
+            <${Typography} sx=${{ fontSize: '36px', mb: 1.5, color: 'text.disabled' }}>👤<//>
+            <${Typography} variant="subtitle1" fontWeight=${600} sx=${{ mb: 0.75 }}>
+              Keine Mitarbeitenden gefunden
+            <//>
+            <${Typography} variant="body2" color="text.secondary">
+              Passe die Filter an.
+            <//>
+          <//>
+        <//>
+      `;
+    }
+
+    /* ── Tab placeholder ── */
+    function TabPlaceholder({ label }) {
+      return html`
+        <${Box} sx=${{
+          border: '2px dashed', borderColor: 'divider',
+          borderRadius: 1, px: 4, py: 6, textAlign: 'center', color: 'text.disabled',
+          bgcolor: '#FAFAFA',
+        }}>
+          <${Typography} variant="subtitle2" gutterBottom>${label}<//>
+          <${Typography} variant="caption">Wird in einem späteren Sprint implementiert.<//>
+        <//>
+      `;
+    }
+
+    const COLS = ['Mitarbeiter', 'Status', 'Kunde', 'Von', 'Bis', 'Region', ''];
+
+    /* ── App ── */
+    function App() {
+      const [tab,          setTab]          = useState(0);
+      const [search,       setSearch]       = useState('');
+      const [statusFilter, setStatusFilter] = useState('');
+      const [drawerEmp,    setDrawerEmp]    = useState(null);
+
+      const visible = useMemo(() => EMPLOYEES.filter(e =>
+        (!search       || e.name.toLowerCase().includes(search.toLowerCase())) &&
+        (!statusFilter || e.status === statusFilter)
+      ), [search, statusFilter]);
+
+      const totalCount = EMPLOYEES.length;
+
+      return html`
+        <${ThemeProvider} theme=${theme}>
+          <${CssBaseline} />
+          <${MockupBar} />
+
+          <${Container} maxWidth="lg" sx=${{ py: 4 }}>
+
+            <!-- Page heading -->
+            <${Typography} variant="h6" fontWeight=${700} sx=${{ mb: 3 }}>
+              Mitarbeiterverwaltung
+            <//>
+
+            <!-- Tabs -->
+            <${Tabs} value=${tab} onChange=${(_, v) => setTab(v)}
+              sx=${{ mb: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <${Tab} label="Übersicht" />
+              <${Tab} label="Kalenderansicht" />
+              <${Tab} label="Dispolisten-Export" />
+            <//>
+
+            ${tab === 1 && html`<${TabPlaceholder} label="Kalenderansicht" />`}
+            ${tab === 2 && html`<${TabPlaceholder} label="Dispolisten-Export" />`}
+
+            ${tab === 0 && html`
+              <${Box}>
+                <!-- Filter row -->
+                <${Stack} direction="row" spacing=${1.5} sx=${{ mb: 2 }} alignItems="flex-end" flexWrap="wrap">
+                  <${TextField} label="Name suchen" size="small"
+                    value=${search} onChange=${e => setSearch(e.target.value)}
+                    sx=${{ minWidth: 220 }} />
+                  <${TextField} label="Status" select size="small"
+                    value=${statusFilter} onChange=${e => setStatusFilter(e.target.value)}
+                    sx=${{ minWidth: 200 }}>
+                    <${MenuItem} value="">Alle Status<//>
+                    ${Object.entries(AV_STATUS).map(([k, v]) => html`
+                      <${MenuItem} key=${k} value=${k}>
+                        <${Stack} direction="row" alignItems="center" gap=${1}>
+                          <${Box} sx=${{ width: 10, height: 10, borderRadius: '50%', bgcolor: v.solid, flexShrink: 0 }} />
+                          ${v.label}
+                        <//>
+                      <//>
+                    `)}
+                  <//>
+                <//>
+
+                <!-- Table -->
+                <${TableContainer} component=${Paper} variant="outlined">
+                  <${Table} size="small">
+                    <${TableHead}>
+                      <${TableRow} sx=${{ bgcolor: '#FAFAFA' }}>
+                        ${COLS.map((c, i) => html`
+                          <${TableCell} key=${i} sx=${{
+                            fontWeight: 700, textTransform: 'uppercase',
+                            fontSize: '11px', letterSpacing: 0.5, color: 'text.secondary',
+                            whiteSpace: 'nowrap', py: 1.5,
+                          }}>
+                            ${c}
+                          <//>
+                        `)}
+                      <//>
+                    <//>
+                    <${TableBody}>
+                      ${visible.length === 0
+                        ? html`<${EmptyState} />`
+                        : visible.map(emp => html`
+                          <${TableRow} key=${emp.id} hover
+                            sx=${{ cursor: 'pointer' }}
+                            onClick=${() => setDrawerEmp(emp)}>
+
+                            <!-- Mitarbeiter -->
+                            <${TableCell}>
+                              <${Stack} direction="row" alignItems="center" gap=${1.25}>
+                                <${Box} sx=${{
+                                  width: 34, height: 34, borderRadius: '50%',
+                                  bgcolor: emp.avatarColor, color: '#fff',
+                                  fontWeight: 700, fontSize: '12px', flexShrink: 0,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}>${emp.initials}<//>
+                                <${Box}>
+                                  <${Typography} variant="body2" fontWeight=${600}>${emp.name}<//>
+                                  <${Typography} variant="caption" color="text.secondary">${emp.level}<//>
+                                <//>
+                              <//>
+                            <//>
+
+                            <!-- Status -->
+                            <${TableCell}>
+                              <${StatusDot} statusKey=${emp.status} />
+                            <//>
+
+                            <!-- Kunde -->
+                            <${TableCell}>
+                              <${Typography} variant="body2" color=${emp.kunde ? 'text.primary' : 'text.disabled'}>
+                                ${emp.kunde || '—'}
+                              <//>
+                            <//>
+
+                            <!-- Von -->
+                            <${TableCell} sx=${{ whiteSpace: 'nowrap' }}>
+                              <${Typography} variant="body2">${emp.von}<//>
+                            <//>
+
+                            <!-- Bis -->
+                            <${TableCell} sx=${{ whiteSpace: 'nowrap' }}>
+                              <${Typography} variant="body2" color=${emp.bis ? 'text.primary' : 'text.disabled'}>
+                                ${emp.bis || '—'}
+                              <//>
+                            <//>
+
+                            <!-- Region -->
+                            <${TableCell}>
+                              <${Typography} variant="body2">${emp.region}<//>
+                            <//>
+
+                            <!-- Open drawer hint -->
+                            <${TableCell} align="right">
+                              <${Typography} variant="caption" color="text.disabled" sx=${{ userSelect: 'none' }}>
+                                →
+                              <//>
+                            <//>
+
+                          <//>
+                        `)
+                      }
+                    <//>
+                  <//>
+                <//>
+
+                <!-- Row counter -->
+                <${Box} sx=${{ display: 'flex', justifyContent: 'flex-end', pt: 1.5 }}>
+                  <${Typography} variant="caption" color="text.secondary">
+                    ${visible.length} von ${totalCount} Mitarbeitenden
+                  <//>
+                <//>
+              <//>
+            `}
+          <//>
+
+          <!-- Employee drawer -->
+          <${EmployeeDrawer} emp=${drawerEmp} onClose=${() => setDrawerEmp(null)} />
+
+        <//>
+      `;
+    }
+
+    createRoot(document.getElementById('root')).render(html`<${App} />`);
+  </script>
+</body>
+</html>
