@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opportunity erfassen / bearbeiten — Sprint 2 Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style> * { box-sizing: border-box; } body { margin: 0; } </style>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@mui/material@5/umd/material-ui.development.js"></script>
+  <script src="https://unpkg.com/htm/dist/htm.umd.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const { createElement: h, useState, useCallback, useMemo } = React;
+    const { createRoot } = ReactDOM;
+    const { Box, Typography, Button, Paper, Container, Stack, Grid, TextField, MenuItem,
+            ToggleButtonGroup, ToggleButton, IconButton, Autocomplete, Tooltip, Chip,
+            ThemeProvider, createTheme, CssBaseline } = MaterialUI;
+
+    const html = htm.bind(h);
+
+    const theme = createTheme({
+      palette: { primary: { main: '#1976D2' }, error: { main: '#E53935' } },
+      components: { MuiButton: { defaultProps: { disableElevation: true } } },
+    });
+
+    /* ── Helpers ─────────────────────────────────────────────── */
+    function MockupBar() {
+      return html`
+        <${Paper} square elevation=${0} sx=${{
+          position: 'sticky', top: 0, zIndex: 1100,
+          borderBottom: '1px solid', borderColor: 'divider',
+          px: 4, py: 1.25,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <${Typography} variant="overline" color="text.secondary">
+            Mockup · <${Box} component="span" sx=${{ color: 'primary.main' }}>Opportunity erfassen / bearbeiten · Sprint 2<//>
+          <//>
+          <${Button} component="a" href="../index.html" size="small">← Katalog<//>
+        <//>
+      `;
+    }
+
+    function SectionCard({ title, children }) {
+      return html`
+        <${Paper} variant="outlined" sx=${{ p: 3, mb: 1.5 }}>
+          <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'block', mb: 2.5, borderBottom: '1px solid', borderColor: 'divider', pb: 1.5 }}>
+            ${title}
+          <//>
+          ${children}
+        <//>
+      `;
+    }
+
+    function FieldLabel({ children }) {
+      return html`
+        <${Typography} variant="caption" color="text.secondary" sx=${{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.75 }}>
+          ${children}
+        <//>
+      `;
+    }
+
+    /* ── Stammdaten ──────────────────────────────────────────── */
+    const KUNDEN = [
+      'Allianz SE', 'Commerzbank AG', 'Deutsche Bank AG', 'Deutsche Telekom AG',
+      'Generali Deutschland', 'Munich Re', 'SAP SE', 'Siemens AG',
+      'T-Systems International', 'Volkswagen AG',
+    ];
+
+    const REGIONEN = [
+      'Remote', 'Deutschland',
+      'Baden-Württemberg', 'Bayern', 'Berlin', 'Brandenburg', 'Bremen',
+      'Hamburg', 'Hessen', 'Mecklenburg-Vorpommern', 'Niedersachsen',
+      'Nordrhein-Westfalen', 'Rheinland-Pfalz', 'Saarland', 'Sachsen',
+      'Sachsen-Anhalt', 'Schleswig-Holstein', 'Thüringen',
+    ];
+
+    const acFilter = MaterialUI.createFilterOptions ? MaterialUI.createFilterOptions() : (o, p) => o.filter(x => x.toLowerCase().includes(p.inputValue.toLowerCase()));
+
+    function KundeAutocomplete() {
+      const [value, setValue] = useState(null);
+      return html`
+        <${Autocomplete}
+          value=${value}
+          onChange=${(_, newVal) => {
+            if (newVal && typeof newVal === 'object' && newVal.inputValue) {
+              setValue(newVal.inputValue);
+            } else {
+              setValue(newVal);
+            }
+          }}
+          filterOptions=${(options, params) => {
+            const filtered = acFilter(options, params);
+            const iv = params.inputValue;
+            if (iv !== '' && !options.includes(iv)) {
+              filtered.push({ inputValue: iv, label: '"' + iv + '" neu anlegen' });
+            }
+            return filtered;
+          }}
+          options=${KUNDEN}
+          getOptionLabel=${opt => {
+            if (typeof opt === 'string') return opt;
+            if (opt.inputValue) return opt.inputValue;
+            return opt.label || '';
+          }}
+          isOptionEqualToValue=${(opt, val) => {
+            if (opt && opt.inputValue) return opt.inputValue === val;
+            return opt === val;
+          }}
+          freeSolo selectOnFocus clearOnBlur handleHomeEndKeys
+          fullWidth size="small"
+          renderInput=${params => html`<${TextField} ...${params} label="Kunde / Projekt" />`}
+        />
+      `;
+    }
+
+    /* ── Skill-Katalog & Kategorien ──────────────────────────── */
+    const CATEGORIES = [
+      { key: 'domain',          label: 'Domain' },
+      { key: 'tool',            label: 'Tool' },
+      { key: 'method',          label: 'Methode' },
+      { key: 'soft',            label: 'Soft Skill' },
+      { key: 'language',        label: 'Sprache' },
+      { key: 'industry_system', label: 'Branche / System' },
+    ];
+
+    const SKILL_CATALOG = {
+      domain:          ['AML', 'Asset Management', 'Banking', 'Capital Markets', 'Compliance', 'Credit Risk', 'ESG', 'Insurance', 'Leasing', 'Payments', 'Risk Management', 'Trade Finance', 'Wealth Management'],
+      tool:            ['Confluence', 'Excel', 'JIRA', 'MS Office', 'MS Project', 'Power BI', 'PowerPoint', 'SAP', 'Salesforce', 'Tableau'],
+      method:          ['Agile', 'BPMN', 'Business Analysis', 'Design Thinking', 'DevOps', 'Kanban', 'PMI', 'Prince2', 'Scrum', 'Six Sigma'],
+      soft:            ['Analytisches Denken', 'Eigeninitiative', 'Kommunikation', 'Präsentation', 'Teamfähigkeit'],
+      language:        ['Deutsch', 'Englisch', 'Französisch', 'Spanisch'],
+      industry_system: ['Avaloq', 'Corebanking', 'EU-AML-Paket', 'Finanz Informatik', 'Murex', 'SAP FSCM', 'SWIFT'],
+    };
+
+    let nextId = 10;
+    const INITIAL_SKILLS = {
+      domain:          [{ id: 1, kind: 'skill', name: 'AML', type: 'pflicht', unmapped: false }, { id: 2, kind: 'skill', name: 'Compliance', type: 'pflicht', unmapped: false }],
+      tool:            [{ id: 3, kind: 'skill', name: 'MS Office', type: 'optional', unmapped: false }],
+      method:          [],
+      soft:            [],
+      language:        [],
+      industry_system: [
+        { id: 4, kind: 'skill', name: 'EU-AML-Paket', type: 'pflicht', unmapped: false },
+        { id: 5, kind: 'group', label: 'Regulatorik-Framework', type: 'optional',
+          skills: [{ id: 6, name: 'MiFID II', unmapped: false }, { id: 7, name: 'DSGVO', unmapped: false }] },
+        { id: 8, kind: 'skill', name: 'FutureSkill 9000', type: 'optional', unmapped: true },
+      ],
+    };
+
+    /* ── SkillRow ────────────────────────────────────────────── */
+    function SkillRow({ skill, catalog, onUpdate, onRemove }) {
+      return html`
+        <${Stack} direction="row" spacing=${1} alignItems="center" sx=${{
+          border: '1px solid',
+          borderColor: skill.unmapped ? '#F9A825' : 'divider',
+          borderRadius: 1,
+          px: 1.5, py: 0.625,
+          bgcolor: skill.unmapped ? '#FFFDE7' : 'background.paper',
+          transition: 'border-color 0.15s',
+          '&:focus-within': { borderColor: skill.unmapped ? '#F9A825' : 'primary.main' },
+        }}>
+
+          <${Autocomplete}
+            freeSolo
+            value=${skill.name || null}
+            inputValue=${skill.name}
+            onInputChange=${(_, val, reason) => {
+              if (reason === 'input') {
+                onUpdate('name', val);
+                onUpdate('unmapped', val !== '' && !catalog.includes(val));
+              }
+            }}
+            onChange=${(_, newVal) => {
+              const name = typeof newVal === 'string' ? newVal : '';
+              onUpdate('name', name);
+              onUpdate('unmapped', false);
+            }}
+            options=${catalog}
+            size="small"
+            sx=${{ flex: 1 }}
+            disableClearable
+            renderInput=${params => html`
+              <${TextField} ...${params} variant="standard"
+                placeholder="Skill eingeben …"
+                InputProps=${{ ...params.InputProps, disableUnderline: true }}
+                sx=${{ '& input': { fontSize: '14px' } }}
+              />
+            `}
+          />
+
+          ${skill.unmapped && skill.name && html`
+            <${Tooltip}
+              title="Skill nicht im Katalog — wird als 'unmapped' gespeichert und muss nachträglich zugeordnet werden."
+              arrow placement="top"
+            >
+              <${Box} sx=${{
+                display: 'inline-flex', alignItems: 'center', gap: 0.25,
+                bgcolor: '#FAEEDA', color: '#854F0B',
+                px: 1, py: 0.25, borderRadius: '10px',
+                fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap', cursor: 'help', flexShrink: 0,
+              }}>
+                ⚠ unmapped
+              <//>
+            <//>
+          `}
+
+          <${ToggleButtonGroup}
+            value=${skill.type} exclusive size="small"
+            onChange=${(_, v) => v && onUpdate('type', v)}
+            sx=${{ flexShrink: 0 }}
+          >
+            <${ToggleButton} value="pflicht" sx=${{
+              px: 1.25, py: 0.25, fontSize: '11px', fontWeight: 700,
+              '&.Mui-selected': { bgcolor: 'error.main', color: '#fff', '&:hover': { bgcolor: 'error.dark' } },
+            }}>Pflicht<//>
+            <${ToggleButton} value="optional" sx=${{
+              px: 1.25, py: 0.25, fontSize: '11px', fontWeight: 700,
+              '&.Mui-selected': { bgcolor: 'primary.main', color: '#fff', '&:hover': { bgcolor: 'primary.dark' } },
+            }}>Optional<//>
+          <//>
+
+          <${IconButton} size="small" onClick=${onRemove}
+            sx=${{ color: 'text.disabled', '&:hover': { color: 'error.main' } }}>✕<//>
+        <//>
+      `;
+    }
+
+    /* ── SkillGroupRow ───────────────────────────────────────── */
+    function SkillGroupRow({ group, catalog, onUpdateGroup, onRemoveGroup, onAddSkill, onUpdateSkill, onRemoveSkill }) {
+      const hasUnmapped = group.skills.some(sk => sk.unmapped && sk.name);
+      return html`
+        <${Box} sx=${{
+          border: '1px solid', borderColor: hasUnmapped ? '#F9A825' : '#1976D2',
+          borderRadius: 1.5, overflow: 'hidden',
+        }}>
+          <!-- Header -->
+          <${Stack} direction="row" alignItems="center" gap=${1} sx=${{
+            px: 1.5, py: 0.875,
+            bgcolor: hasUnmapped ? '#FFF8E1' : '#E3F0FC',
+            borderBottom: '1px solid', borderColor: hasUnmapped ? '#F9A825' : '#b3d2f0',
+          }}>
+            <${Box} sx=${{
+              bgcolor: '#1976D2', color: '#fff', px: 0.75, py: 0.125, borderRadius: '6px',
+              fontSize: '10px', fontWeight: 700, letterSpacing: 0.5, flexShrink: 0,
+            }}>ODER<//>
+            <${TextField}
+              variant="standard" size="small"
+              placeholder="Gruppenbezeichnung (optional, z. B. »Wiki-Tool«)"
+              value=${group.label}
+              onChange=${e => onUpdateGroup('label', e.target.value)}
+              InputProps=${{ disableUnderline: true }}
+              sx=${{ flex: 1, '& input': { fontSize: '13px', fontWeight: 500 } }}
+            />
+            <${ToggleButtonGroup}
+              value=${group.type} exclusive size="small"
+              onChange=${(_, v) => v && onUpdateGroup('type', v)}
+              sx=${{ flexShrink: 0 }}
+            >
+              <${ToggleButton} value="pflicht" sx=${{
+                px: 1.25, py: 0.25, fontSize: '11px', fontWeight: 700,
+                '&.Mui-selected': { bgcolor: 'error.main', color: '#fff', '&:hover': { bgcolor: 'error.dark' } },
+              }}>Pflicht<//>
+              <${ToggleButton} value="optional" sx=${{
+                px: 1.25, py: 0.25, fontSize: '11px', fontWeight: 700,
+                '&.Mui-selected': { bgcolor: 'primary.main', color: '#fff', '&:hover': { bgcolor: 'primary.dark' } },
+              }}>Optional<//>
+            <//>
+            <${IconButton} size="small" onClick=${onRemoveGroup}
+              sx=${{ color: 'text.disabled', '&:hover': { color: 'error.main' }, flexShrink: 0 }}>✕<//>
+          <//>
+
+          <!-- Skills within group -->
+          <${Box} sx=${{ px: 1.5, pt: 0.875, pb: 1 }}>
+            <${Stack} spacing=${0.5}>
+              ${group.skills.map((sk, i) => html`
+                <${Stack} key=${sk.id} direction="row" alignItems="center" gap=${0.75}>
+                  <${Box} sx=${{ minWidth: 30, textAlign: 'right', color: '#1976D2', fontSize: '10px', fontWeight: 700, flexShrink: 0 }}>
+                    ${i > 0 ? 'ODER' : ''}
+                  <//>
+                  <${Box} sx=${{
+                    flex: 1, border: '1px solid', borderRadius: 1, px: 1, py: 0.375,
+                    borderColor: sk.unmapped ? '#F9A825' : 'divider',
+                    bgcolor: sk.unmapped ? '#FFFDE7' : 'background.paper',
+                  }}>
+                    <${Autocomplete}
+                      freeSolo value=${sk.name || null} inputValue=${sk.name}
+                      options=${catalog} size="small" disableClearable
+                      onInputChange=${(_, val, reason) => {
+                        if (reason === 'input') {
+                          onUpdateSkill(sk.id, 'name', val);
+                          onUpdateSkill(sk.id, 'unmapped', val !== '' && !catalog.includes(val));
+                        }
+                      }}
+                      onChange=${(_, val) => {
+                        const name = typeof val === 'string' ? val : '';
+                        onUpdateSkill(sk.id, 'name', name);
+                        onUpdateSkill(sk.id, 'unmapped', false);
+                      }}
+                      renderInput=${params => html`
+                        <${TextField} ...${params} variant="standard" placeholder="Skill eingeben …"
+                          InputProps=${{ ...params.InputProps, disableUnderline: true }}
+                          sx=${{ '& input': { fontSize: '13px' } }}
+                        />
+                      `}
+                    />
+                  <//>
+                  ${sk.unmapped && sk.name && html`
+                    <${Tooltip} title="Nicht im Decidalo-Katalog — wird als 'unmapped' gespeichert." arrow placement="top">
+                      <${Box} sx=${{
+                        bgcolor: '#FAEEDA', color: '#854F0B', px: 0.875, py: 0.25, borderRadius: '10px',
+                        fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap', cursor: 'help', flexShrink: 0,
+                      }}>⚠ unmapped<//>
+                    <//>
+                  `}
+                  <${IconButton} size="small" onClick=${() => onRemoveSkill(sk.id)}
+                    sx=${{ color: 'text.disabled', '&:hover': { color: 'error.main' }, flexShrink: 0 }}>✕<//>
+                <//>
+              `)}
+            <//>
+            <${Button} size="small" variant="text" color="primary"
+              onClick=${onAddSkill}
+              sx=${{ mt: 0.5, fontSize: '12px', py: 0.25, pl: 5 }}>
+              + Alternative hinzufügen
+            <//>
+          <//>
+        <//>
+      `;
+    }
+
+    /* ── App ─────────────────────────────────────────────────── */
+    function App() {
+
+      /* Skills */
+      const [skillsByCat, setSkillsByCat] = useState(INITIAL_SKILLS);
+
+      const addSkill = useCallback(cat => {
+        setSkillsByCat(prev => ({ ...prev, [cat]: [...prev[cat], { id: nextId++, name: '', type: 'pflicht', unmapped: false }] }));
+      }, []);
+
+      const updateSkill = useCallback((cat, id, field, value) => {
+        setSkillsByCat(prev => ({ ...prev, [cat]: prev[cat].map(sk => sk.id === id ? { ...sk, [field]: value } : sk) }));
+      }, []);
+
+      const removeSkill = useCallback((cat, id) => {
+        setSkillsByCat(prev => ({ ...prev, [cat]: prev[cat].filter(item => item.id !== id) }));
+      }, []);
+
+      const addGroup = useCallback(cat => {
+        setSkillsByCat(prev => ({ ...prev, [cat]: [...prev[cat], {
+          id: nextId++, kind: 'group', label: '', type: 'pflicht',
+          skills: [{ id: nextId++, name: '', unmapped: false }],
+        }]}));
+      }, []);
+
+      const updateGroup = useCallback((cat, id, field, value) => {
+        setSkillsByCat(prev => ({ ...prev, [cat]: prev[cat].map(item => item.id === id ? { ...item, [field]: value } : item) }));
+      }, []);
+
+      const addSkillToGroup = useCallback((cat, groupId) => {
+        setSkillsByCat(prev => ({ ...prev, [cat]: prev[cat].map(item =>
+          item.id === groupId ? { ...item, skills: [...item.skills, { id: nextId++, name: '', unmapped: false }] } : item
+        )}));
+      }, []);
+
+      const updateGroupSkill = useCallback((cat, groupId, skillId, field, value) => {
+        setSkillsByCat(prev => ({ ...prev, [cat]: prev[cat].map(item =>
+          item.id === groupId
+            ? { ...item, skills: item.skills.map(sk => sk.id === skillId ? { ...sk, [field]: value } : sk) }
+            : item
+        )}));
+      }, []);
+
+      const removeGroupSkill = useCallback((cat, groupId, skillId) => {
+        setSkillsByCat(prev => ({ ...prev, [cat]: prev[cat].map(item =>
+          item.id === groupId ? { ...item, skills: item.skills.filter(sk => sk.id !== skillId) } : item
+        )}));
+      }, []);
+
+      const totalUnmapped = useMemo(() => {
+        let count = 0;
+        Object.values(skillsByCat).flat().forEach(item => {
+          if (item.kind === 'group') count += item.skills.filter(sk => sk.unmapped && sk.name).length;
+          else if (item.unmapped && item.name) count++;
+        });
+        return count;
+      }, [skillsByCat]);
+
+      /* Timeline */
+      const [customerSystems, setCustomerSystems] = useState([]);
+
+      const [startMode, setStartMode] = useState('date');   // 'asap' | 'month' | 'date'
+      const [startDate, setStartDate] = useState('2026-07-01');
+      const [startMonth, setStartMonth] = useState('2026-07');
+      const [endMode,   setEndMode]   = useState('date');   // 'date' | 'duration'
+      const [endDate,   setEndDate]   = useState('');
+      const [duration,  setDuration]  = useState('');
+
+      const computedEnd = useMemo(() => {
+        if (endMode !== 'duration' || !duration || isNaN(parseInt(duration, 10))) return null;
+        let base;
+        if      (startMode === 'date')  base = startDate  ? new Date(startDate + 'T00:00:00') : null;
+        else if (startMode === 'month') base = startMonth ? new Date(startMonth + '-01T00:00:00') : null;
+        else                            base = new Date();
+        if (!base) return null;
+        base.setMonth(base.getMonth() + parseInt(duration, 10));
+        return base.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+      }, [startMode, startDate, startMonth, endMode, duration]);
+
+      return html`
+        <${ThemeProvider} theme=${theme}>
+          <${CssBaseline} />
+          <${MockupBar} />
+          <${Container} maxWidth="md" sx=${{ py: 4 }}>
+
+            <!-- ── Projekt ── -->
+            <${SectionCard} title="Projekt">
+              <${Grid} container spacing=${2}>
+                <${Grid} item xs=${12}>
+                  <${TextField} label=${'Titel *'} fullWidth size="small" />
+                <//>
+                <${Grid} item xs=${6}>
+                  <${KundeAutocomplete} />
+                <//>
+                <${Grid} item xs=${6}>
+                  <${TextField} label="Branche" select fullWidth size="small" defaultValue="">
+                    ${['Banking','Insurance','Public Sector','Healthcare','Retail','Energy','Telco','Sonstige'].map(b => html`
+                      <${MenuItem} key=${b} value=${b}>${b}<//>
+                    `)}
+                  <//>
+                <//>
+                <${Grid} item xs=${6}>
+                  <${TextField} label="Vertragsart" select fullWidth size="small" defaultValue="">
+                    ${['T&M','Turnkey', 'ANÜ'].map(v => html`<${MenuItem} key=${v} value=${v}>${v}<//>`) }
+                  <//>
+                <//>
+              <//>
+            <//>
+
+            <!-- ── Beschreibung ── -->
+            <${SectionCard} title="Beschreibung">
+              <${Grid} container spacing=${2}>
+                <${Grid} item xs=${12}>
+                  <${TextField} label=${'Projektziel *'} fullWidth multiline minRows=${3} size="small" />
+                <//>
+                <${Grid} item xs=${12}>
+                  <${TextField} label="Aufgaben & Verantwortlichkeiten" fullWidth multiline minRows=${3} size="small" />
+                <//>
+              <//>
+            <//>
+
+            <!-- ── Skills ── -->
+            <${SectionCard} title=${'Geforderte Skills *'}>
+
+              ${totalUnmapped > 0 && html`
+                <${Box} sx=${{
+                  display: 'flex', alignItems: 'center', gap: 1,
+                  bgcolor: '#FAEEDA', color: '#854F0B',
+                  border: '1px solid #F9A825', borderRadius: 1,
+                  px: 2, py: 1.25, mb: 2.5, fontSize: '13px',
+                }}>
+                  <${Box} component="span" sx=${{ fontSize: '16px' }}>⚠<//>
+                  <${Typography} variant="body2" sx=${{ color: 'inherit' }}>
+                    <strong>${totalUnmapped} Skill${totalUnmapped > 1 ? 's' : ''}</strong> nicht im Katalog — werden als <em>unmapped</em> gespeichert und müssen nachträglich zugeordnet werden.
+                  <//>
+                <//>
+              `}
+
+              ${CATEGORIES.map(({ key, label }) => {
+                const catSkills = skillsByCat[key];
+                const catalog   = SKILL_CATALOG[key];
+                return html`
+                  <${Box} key=${key} sx=${{ mb: 2.5, '&:last-child': { mb: 0 } }}>
+                    <${Box} sx=${{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
+                      <${Typography} variant="caption" color="text.secondary" sx=${{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        ${label}
+                      <//>
+                      ${catSkills.length > 0 && html`
+                        <${Box} sx=${{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#E3F0FC', color: '#1256A0', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          ${catSkills.length}
+                        <//>
+                      `}
+                    <//>
+                    <${Stack} spacing=${0.625}>
+                      ${catSkills.map(item => item.kind === 'group'
+                        ? html`<${SkillGroupRow}
+                            key=${item.id}
+                            group=${item}
+                            catalog=${catalog}
+                            onUpdateGroup=${(field, val) => updateGroup(key, item.id, field, val)}
+                            onRemoveGroup=${() => removeSkill(key, item.id)}
+                            onAddSkill=${() => addSkillToGroup(key, item.id)}
+                            onUpdateSkill=${(sid, field, val) => updateGroupSkill(key, item.id, sid, field, val)}
+                            onRemoveSkill=${sid => removeGroupSkill(key, item.id, sid)}
+                          />`
+                        : html`<${SkillRow}
+                            key=${item.id}
+                            skill=${item}
+                            catalog=${catalog}
+                            onUpdate=${(field, val) => updateSkill(key, item.id, field, val)}
+                            onRemove=${() => removeSkill(key, item.id)}
+                          />`
+                      )}
+                      <${Button}
+                        variant="outlined" color="inherit" size="small"
+                        onClick=${() => addSkill(key)}
+                        sx=${{ borderStyle: 'dashed', justifyContent: 'flex-start', color: 'text.secondary', borderColor: 'divider', fontSize: '12px', py: 0.5 }}
+                      >
+                        + ${label} hinzufügen
+                      <//>
+                      <${Button}
+                        variant="outlined" color="inherit" size="small"
+                        onClick=${() => addGroup(key)}
+                        sx=${{ borderStyle: 'dashed', justifyContent: 'flex-start', color: '#1976D2', borderColor: '#b3d2f0', fontSize: '12px', py: 0.5, bgcolor: '#F5F9FF' }}
+                      >
+                        + ODER-Gruppe hinzufügen
+                      <//>
+                    <//>
+                  <//>
+                `;
+              })}
+            <//>
+
+            <!-- ── Zeitleiste & Auslastung ── -->
+            <${SectionCard} title="Zeitleiste & Auslastung">
+              <${Grid} container spacing=${2.5}>
+
+                <!-- Startdatum -->
+                <${Grid} item xs=${12}>
+                  <${FieldLabel}>Startdatum *<//>
+                  <${Stack} direction="row" spacing=${1.5} alignItems="center" flexWrap="wrap">
+                    <${ToggleButtonGroup}
+                      value=${startMode} exclusive size="small"
+                      onChange=${(_, v) => v && setStartMode(v)}
+                    >
+                      <${ToggleButton} value="asap"  sx=${{ px: 2, py: 0.5, fontSize: '12px', fontWeight: 700 }}>ASAP<//>
+                      <${ToggleButton} value="month" sx=${{ px: 2, py: 0.5, fontSize: '12px', fontWeight: 700 }}>Nur Monat<//>
+                      <${ToggleButton} value="date"  sx=${{ px: 2, py: 0.5, fontSize: '12px', fontWeight: 700 }}>Genaues Datum<//>
+                    <//>
+
+                    ${startMode === 'asap' && html`
+                      <${Box} sx=${{ bgcolor: '#E3F0FC', color: '#1256A0', px: 1.5, py: 0.625, borderRadius: 1, fontSize: '13px', fontWeight: 500 }}>
+                        Start so früh wie möglich
+                      <//>
+                    `}
+                    ${startMode === 'month' && html`
+                      <${TextField}
+                        label="Monat / Jahr" type="month" size="small"
+                        value=${startMonth} onChange=${e => setStartMonth(e.target.value)}
+                        InputLabelProps=${{ shrink: true }} sx=${{ minWidth: 180 }}
+                      />
+                    `}
+                    ${startMode === 'date' && html`
+                      <${TextField}
+                        label="Datum" type="date" size="small"
+                        value=${startDate} onChange=${e => setStartDate(e.target.value)}
+                        InputLabelProps=${{ shrink: true }} sx=${{ minWidth: 180 }}
+                      />
+                    `}
+                  <//>
+                <//>
+
+                <!-- Ende -->
+                <${Grid} item xs=${12}>
+                  <${FieldLabel}>Ende<//>
+                  <${Stack} direction="row" spacing=${1.5} alignItems="center" flexWrap="wrap">
+                    <${ToggleButtonGroup}
+                      value=${endMode} exclusive size="small"
+                      onChange=${(_, v) => v && setEndMode(v)}
+                    >
+                      <${ToggleButton} value="date"     sx=${{ px: 2, py: 0.5, fontSize: '12px', fontWeight: 700 }}>Enddatum<//>
+                      <${ToggleButton} value="duration" sx=${{ px: 2, py: 0.5, fontSize: '12px', fontWeight: 700 }}>Dauer<//>
+                    <//>
+
+                    ${endMode === 'date' && html`
+                      <${TextField}
+                        label="Enddatum" type="date" size="small"
+                        value=${endDate} onChange=${e => setEndDate(e.target.value)}
+                        InputLabelProps=${{ shrink: true }} sx=${{ minWidth: 180 }}
+                      />
+                    `}
+                    ${endMode === 'duration' && html`
+                      <${Stack} direction="row" alignItems="center" spacing=${1.25}>
+                        <${TextField}
+                          label="Dauer (Monate)" type="number" size="small"
+                          value=${duration} onChange=${e => setDuration(e.target.value)}
+                          inputProps=${{ min: 1, max: 60 }} sx=${{ width: 165 }}
+                        />
+                        ${computedEnd
+                          ? html`
+                            <${Box} sx=${{ bgcolor: '#E8F5E9', color: '#2E7D32', px: 1.5, py: 0.625, borderRadius: 1, fontSize: '13px', fontWeight: 500 }}>
+                              → Ende ca. <strong>${computedEnd}</strong>
+                            <//>
+                          `
+                          : html`
+                            <${Typography} variant="caption" color="text.disabled" sx=${{ fontStyle: 'italic' }}>
+                              Enddatum wird automatisch berechnet
+                            <//>
+                          `
+                        }
+                      <//>
+                    `}
+                  <//>
+                <//>
+
+                <!-- Weitere Felder -->
+                <${Grid} item xs=${4}>
+                  <${TextField} label="Auslastung" select fullWidth size="small" defaultValue="100">
+                    ${['100','75','50','25'].map(v => html`<${MenuItem} key=${v} value=${v}>${v} %<//>`) }
+                  <//>
+                <//>
+                <${Grid} item xs=${4}>
+                  <${TextField} label="Reaktionsdeadline" type="date" fullWidth size="small" InputLabelProps=${{ shrink: true }} />
+                <//>
+                <${Grid} item xs=${4}>
+                  <${TextField} label="Positionen (Slots)" type="number" fullWidth size="small" defaultValue="1" inputProps=${{ min: 1 }} />
+                <//>
+                <${Grid} item xs=${4}>
+                  <${TextField} label="Level" select fullWidth size="small" defaultValue="">
+                    ${['Junior','Consultant','Senior Consultant','Principal','Manager'].map(v => html`<${MenuItem} key=${v} value=${v}>${v}<//>`) }
+                  <//>
+                <//>
+              <//>
+            <//>
+
+            <!-- ── Anforderungen ── -->
+            <${SectionCard} title="Anforderungen">
+              <${Grid} container spacing=${2}>
+                <${Grid} item xs=${6}>
+                  <${TextField} label="Region" select fullWidth size="small" defaultValue="">
+                    ${REGIONEN.map(v => html`<${MenuItem} key=${v} value=${v}>${v}<//>`) }
+                  <//>
+                <//>
+                <${Grid} item xs=${6}>
+                  <${TextField} label="Remote-Anteil" select fullWidth size="small" defaultValue="25">
+                    ${['0','25','50','75','100'].map(v => html`<${MenuItem} key=${v} value=${v}>${v} %<//>`) }
+                  <//>
+                <//>
+                <${Grid} item xs=${12}>
+                  <${Autocomplete}
+                    multiple freeSolo
+                    value=${customerSystems}
+                    onChange=${(_, val) => setCustomerSystems(val)}
+                    options=${SKILL_CATALOG.industry_system}
+                    size="small"
+                    fullWidth
+                    renderTags=${(val, getTagProps) => val.map((option, i) => html`
+                      <${Chip} key=${option} label=${option} size="small" ...${getTagProps({ index: i })} />
+                    `)}
+                    renderInput=${params => html`
+                      <${TextField} ...${params}
+                        label="Kundensysteme / Legacy-Systeme (optional)"
+                        helperText="Kundenspezifische Altsysteme und Tools — fließen in die Domain-Fit-Berechnung ein (z. B. OSPlus, Avaloq, SAP FSCM)"
+                      />
+                    `}
+                  />
+                <//>
+              <//>
+            </${SectionCard}>
+
+            <!-- ── Actions ── -->
+            <${Paper} variant="outlined" sx=${{ px: 3, py: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <${Typography} variant="caption" color="text.secondary">* Pflichtfelder<//>
+              <${Stack} direction="row" spacing=${1}>
+                <${Button} variant="text" color="inherit">Entwurf speichern<//>
+                <${Button} variant="contained">Matches finden<//>
+              <//>
+            <//>
+
+          <//>
+        <//>
+      `;
+    }
+
+    createRoot(document.getElementById('root')).render(html`<${App} />`);
+  </script>
+</body>
+</html>

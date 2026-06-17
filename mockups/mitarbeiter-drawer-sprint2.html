@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mitarbeiter-Drawer — Sprint 2 Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style>* { box-sizing: border-box; } body { margin: 0; }</style>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@mui/material@5/umd/material-ui.development.js"></script>
+  <script src="https://unpkg.com/htm/dist/htm.umd.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const { createElement: h, useState } = React;
+    const { createRoot } = ReactDOM;
+    const {
+      Box, Typography, Button, Paper, Stack, Divider,
+      TextField, MenuItem, Slider,
+      Drawer, Tooltip, Snackbar,
+      ThemeProvider, createTheme, CssBaseline,
+    } = MaterialUI;
+
+    const html = htm.bind(h);
+
+    const theme = createTheme({
+      palette: { primary: { main: '#1976D2' }, error: { main: '#E53935' } },
+      components: { MuiButton: { defaultProps: { disableElevation: true } } },
+    });
+
+    /* ── Konstanten ──────────────────────────────────────────────────── */
+    const LEVEL_LABELS = {
+      junior: 'Junior', consultant: 'Consultant', senior: 'Senior Consultant',
+      principal: 'Principal', manager: 'Manager',
+    };
+
+    const MOBILITY_LABELS = {
+      0: 'Kein Reisen', 1: 'Lokal (< 50 km)', 2: 'Regional (< 200 km)',
+      3: 'National', 4: 'DACH / Europa', 5: 'Weltweit',
+    };
+
+    const AVAIL_STATUS = {
+      bench:                 { label: 'Bench / Verfügbar',     bg: '#E1F5EE', color: '#0F6E56' },
+      billable:              { label: 'Verrechnet',             bg: '#E3F0FC', color: '#1256A0' },
+      prolongation_possible: { label: 'Verlängerung möglich',  bg: '#E6F1FB', color: '#0C447C' },
+      reserved:              { label: 'Reserviert',             bg: '#F1EFE8', color: '#5F5E5A' },
+      offered:               { label: 'Angeboten',              bg: '#FAEEDA', color: '#854F0B' },
+      parttime:              { label: 'Teilzeit',               bg: '#FAEEDA', color: '#854F0B' },
+      junior:                { label: 'Junior (Bench)',         bg: '#EDE7F6', color: '#512DA8' },
+      absence:               { label: 'Abwesenheit',            bg: '#FCEBEB', color: '#791F1F' },
+      left_company:          { label: 'Ausgeschieden',          bg: '#FCEBEB', color: '#791F1F' },
+    };
+
+    /* ── Mock-Daten ──────────────────────────────────────────────────── */
+    const EMPLOYEE = {
+      id: '1', initials: 'MM', avatarColor: '#1976D2',
+      firstName: 'Max', lastName: 'Mustermann',
+      email: 'max.mustermann@reply.de', employeeNo: 'RE-1042',
+      level: 'senior', managerName: 'Klaus Becker',
+      buId: 'Technology Reply', teamId: 'Cloud & Infrastructure',
+      region: 'Bayern', mobility: 3, dayRateMin: 850, isTeamlead: true,
+      lastSyncedAt: '2026-05-28',
+      decidaloProfileId: 'DEC-9821', mappingSource: 'auto',
+    };
+
+    const INITIAL_AVAIL = [
+      { id: 'av1', status: 'billable', startDate: '2026-01-01', endDate: '2026-06-30', capacityPercent: 100, note: 'Commerzbank Projekt' },
+      { id: 'av2', status: 'prolongation_possible', startDate: '2026-07-01', endDate: '2026-09-30', capacityPercent: 100, note: '' },
+      { id: 'av3', status: 'bench', startDate: '2026-10-01', endDate: null, capacityPercent: 100, note: '' },
+    ];
+
+
+    /* ── Helpers ─────────────────────────────────────────────────────── */
+    function fmtDate(iso) {
+      if (!iso) return 'offen';
+      const [y, m, d] = iso.split('-');
+      return d + '.' + m + '.' + y.slice(2);
+    }
+
+    /* ── Avatar ──────────────────────────────────────────────────────── */
+    function Avatar({ initials, color, size = 36 }) {
+      return html`
+        <${Box} sx=${{
+          width: size, height: size, borderRadius: '50%',
+          bgcolor: color, color: '#fff', fontWeight: 700,
+          fontSize: (size * 0.38) + 'px', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>${initials}<//>
+      `;
+    }
+
+    /* ── StatusPill ──────────────────────────────────────────────────── */
+    function StatusPill({ status }) {
+      const s = AVAIL_STATUS[status] || { label: status, bg: '#F1EFE8', color: '#5F5E5A' };
+      return html`
+        <${Box} sx=${{
+          display: 'inline-flex', alignItems: 'center',
+          bgcolor: s.bg, color: s.color,
+          px: 1, py: 0.25, borderRadius: '10px',
+          fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap',
+        }}>${s.label}<//>
+      `;
+    }
+
+    /* ── SectionHeader ───────────────────────────────────────────────── */
+    function SectionHeader({ label, hint }) {
+      return html`
+        <${Box} sx=${{ mb: 1.5 }}>
+          <${Typography} variant="overline" sx=${{
+            color: 'text.secondary', fontWeight: 700, letterSpacing: 0.8,
+            fontSize: '11px', display: 'block', lineHeight: 1.5,
+          }}>${label}<//>
+          ${hint && html`
+            <${Typography} variant="caption" color="text.secondary"
+              sx=${{ fontStyle: 'italic', display: 'block', mt: 0.25 }}>
+              ${hint}
+            <//>
+          `}
+        <//>
+      `;
+    }
+
+    /* ── MockupBar ───────────────────────────────────────────────────── */
+    function MockupBar() {
+      return html`
+        <${Paper} square elevation=${0} sx=${{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1600,
+          borderBottom: '1px solid', borderColor: 'divider',
+          px: 4, py: 1.25, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          bgcolor: '#fff',
+        }}>
+          <${Typography} variant="overline" color="text.secondary">
+            Mockup · ${' '}
+            <${Box} component="span" sx=${{ color: 'primary.main' }}>Mitarbeiter-Drawer · Sprint 2<//>
+          <//>
+          <${Button} component="a" href="../index.html" size="small">← Katalog<//>
+        <//>
+      `;
+    }
+
+    /* ── EmployeeDrawer ──────────────────────────────────────────────── */
+    function EmployeeDrawer({ emp, onClose, onSave }) {
+      const [mobility, setMobility]       = useState(emp.mobility);
+      const [dayRate, setDayRate]         = useState(emp.dayRateMin != null ? String(emp.dayRateMin) : '');
+      const [avail, setAvail]             = useState(INITIAL_AVAIL);
+      const [showOverride, setShowOverride] = useState(false);
+      const [manualId, setManualId]       = useState('');
+      const [profileId, setProfileId]     = useState(emp.decidaloProfileId);
+      const [mappingSrc, setMappingSrc]   = useState(emp.mappingSource);
+
+      const handleSave = () => {
+        if (manualId.trim()) {
+          setProfileId(manualId.trim());
+          setMappingSrc('manual');
+          setShowOverride(false);
+          setManualId('');
+        }
+        onSave();
+      };
+
+      return html`
+        <${Drawer} anchor="right" open=${true} onClose=${onClose}
+          sx=${{ zIndex: 1500 }}
+          PaperProps=${{
+            sx: { width: 560, display: 'flex', flexDirection: 'column',
+                  top: '48px', height: 'calc(100% - 48px)' }
+          }}>
+
+          <!-- Drawer-Header -->
+          <${Box} sx=${{
+            px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider',
+            display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0,
+          }}>
+            <${Avatar} initials=${emp.initials} color=${emp.avatarColor} size=${42} />
+            <${Box} sx=${{ flex: 1 }}>
+              <${Typography} variant="subtitle1" fontWeight=${700}>
+                ${emp.firstName} ${emp.lastName}
+              <//>
+              <${Typography} variant="caption" color="text.secondary">
+                ${emp.employeeNo} · ${LEVEL_LABELS[emp.level]}
+              <//>
+            <//>
+            <${Button} size="small" color="inherit" onClick=${onClose}
+              sx=${{ minWidth: 0, px: 1 }}>✕<//>
+          <//>
+
+          <!-- Scrollbarer Inhalt -->
+          <${Box} sx=${{ flex: 1, overflowY: 'auto', px: 3, py: 3 }}>
+
+            <!-- 1. Synchronisierte Stammdaten (read-only) -->
+            <${SectionHeader} label="Synchronisierte Stammdaten" />
+            <${Paper} variant="outlined" sx=${{ p: 2, bgcolor: '#FAFAFA' }}>
+              <${Box} sx=${{
+                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 28px',
+              }}>
+                ${[
+                  ['Name',           emp.firstName + ' ' + emp.lastName],
+                  ['Personalnummer', emp.employeeNo],
+                  ['E-Mail',         emp.email],
+                  ['Level',          LEVEL_LABELS[emp.level]],
+                  ['Vorgesetzter',   emp.managerName],
+                  ['Business Unit',  emp.buId],
+                  ['Team',           emp.teamId],
+                  ['Region',         emp.region],
+                  ['Teamlead',       emp.isTeamlead ? 'Ja' : 'Nein'],
+                ].map(([label, value]) => html`
+                  <${Box} key=${label}>
+                    <${Typography} variant="caption" color="text.secondary"
+                      sx=${{ display: 'block', fontWeight: 600, mb: 0.25 }}>
+                      ${label}
+                    <//>
+                    <${Typography} variant="body2">${value || '—'}<//>
+                  <//>
+                `)}
+              <//>
+            <//>
+            <${Typography} variant="caption" color="text.secondary"
+              sx=${{ display: 'block', mt: 0.75, mb: 3, fontStyle: 'italic' }}>
+              Zuletzt synchronisiert: 28.05.26
+            <//>
+
+            <${Divider} sx=${{ mb: 3 }} />
+
+            <!-- 2. Operative Felder (bearbeitbar) -->
+            <${SectionHeader} label="Operative Felder" />
+            <${Stack} spacing=${2.5} sx=${{ mb: 3 }}>
+
+              <${Box}>
+                <${Typography} variant="caption" color="text.secondary"
+                  sx=${{ fontWeight: 600, display: 'block', mb: 1 }}>
+                  Mobilität — Stufe ${mobility} · ${MOBILITY_LABELS[mobility]}
+                <//>
+                <${Box} sx=${{ px: 1 }}>
+                  <${Slider}
+                    value=${mobility}
+                    onChange=${(_, v) => setMobility(v)}
+                    min=${0} max=${5} step=${1}
+                    marks=${[0,1,2,3,4,5].map(v => ({ value: v, label: String(v) }))}
+                    size="small"
+                  />
+                <//>
+              <//>
+
+              <${TextField}
+                label="Min-Tagessatz (€)" size="small"
+                sx=${{ maxWidth: 220 }}
+                type="number"
+                value=${dayRate}
+                onChange=${e => setDayRate(e.target.value)}
+                placeholder="optional"
+                inputProps=${{ min: 0, step: 50 }}
+                helperText="Internes Feld — nicht für Consultants sichtbar"
+              />
+
+            <//>
+
+            <${Divider} sx=${{ mb: 3 }} />
+
+            <!-- 3. Verfügbarkeitseinträge -->
+            <${SectionHeader} label="Verfügbarkeit" />
+
+            ${avail.length === 0 && html`
+              <${Typography} variant="body2" color="text.secondary"
+                sx=${{ fontStyle: 'italic', mb: 1.5 }}>
+                Noch keine Einträge vorhanden.
+              <//>
+            `}
+
+            <${Stack} spacing=${1} sx=${{ mb: 1.5 }}>
+              ${avail.map(entry => html`
+                <${Paper} key=${entry.id} variant="outlined" sx=${{ p: 1.5 }}>
+                  <${Stack} direction="row" alignItems="flex-start" gap=${1}>
+                    <${Box} sx=${{ flex: 1, minWidth: 0 }}>
+                      <${Stack} direction="row" alignItems="center" gap=${1} sx=${{ mb: 0.5 }} flexWrap="wrap">
+                        <${StatusPill} status=${entry.status} />
+                        ${entry.status === 'parttime' && html`
+                          <${Typography} variant="caption" color="text.secondary">
+                            ${entry.capacityPercent} % Kapazität
+                          <//>
+                        `}
+                      <//>
+                      <${Typography} variant="body2" color="text.secondary" sx=${{ fontSize: '12px' }}>
+                        ${fmtDate(entry.startDate)} – ${fmtDate(entry.endDate)}
+                      <//>
+                      ${entry.note && html`
+                        <${Typography} variant="caption" color="text.secondary"
+                          sx=${{ fontStyle: 'italic', display: 'block', mt: 0.25 }}>
+                          ${entry.note}
+                        <//>
+                      `}
+                    <//>
+                    <${Stack} direction="row" gap=${0.5} sx=${{ flexShrink: 0 }}>
+                      <${Button} size="small" color="inherit"
+                        sx=${{ minWidth: 0, px: 1, py: 0.25, fontSize: '12px' }}
+                        component="a" href="availability-form-sprint2.html">
+                        Bearbeiten
+                      <//>
+                      <${Button} size="small" color="error"
+                        sx=${{ minWidth: 0, px: 1, py: 0.25, fontSize: '12px' }}
+                        onClick=${() => setAvail(prev => prev.filter(e => e.id !== entry.id))}>
+                        Löschen
+                      <//>
+                    <//>
+                  <//>
+                <//>
+              `)}
+            <//>
+
+            <${Button} variant="outlined" size="small"
+              component="a" href="availability-form-sprint2.html">
+              + Neuer Eintrag
+            <//>
+
+            <${Divider} sx=${{ my: 3 }} />
+
+            <!-- 4. Decidalo-Mapping -->
+            <${SectionHeader} label="Decidalo-Mapping" />
+            <${Box} sx=${{ mb: 1 }}>
+              ${profileId && !showOverride ? html`
+                <${Paper} variant="outlined" sx=${{
+                  p: 2,
+                  bgcolor: mappingSrc === 'manual' ? '#EEF4FC' : '#F0FBF5',
+                }}>
+                  <${Stack} direction="row" alignItems="flex-start" gap=${1.5}>
+                    <${Box} sx=${{ flex: 1 }}>
+                      <${Typography} variant="body2" fontWeight=${600} sx=${{ mb: 0.5 }}>
+                        ${mappingSrc === 'manual' ? '✓ Manuell verknüpft' : '✓ Automatisch gemappt'}
+                      <//>
+                      <${Typography} variant="caption" color="text.secondary">
+                        Profil-ID:${' '}
+                        <${Box} component="span" sx=${{ fontFamily: 'monospace' }}>
+                          ${profileId}
+                        <//>
+                      <//>
+                    <//>
+                    <${Stack} gap=${0.75} alignItems="flex-end" sx=${{ flexShrink: 0 }}>
+                      <${Button} size="small" variant="outlined" color="inherit"
+                        sx=${{ fontSize: '11px' }}
+                        onClick=${() => setShowOverride(true)}>
+                        Überschreiben
+                      <//>
+                      <${Tooltip} title="Öffnet Decidalo-Profil in neuem Tab" placement="left">
+                        <${Button} component="a" href="#" size="small"
+                          sx=${{ fontSize: '11px', color: 'primary.main' }}>
+                          Profil öffnen ↗
+                        <//>
+                      <//>
+                    <//>
+                  <//>
+                <//>
+              ` : html`
+                <${Box}>
+                  ${!profileId && html`
+                    <${Box} sx=${{
+                      bgcolor: '#FFF3E0', border: '1px solid #FFCC80', borderRadius: 1,
+                      px: 2, py: 1.25, mb: 1.5,
+                      display: 'flex', alignItems: 'flex-start', gap: 1,
+                    }}>
+                      <${Box} sx=${{ color: '#E65100', fontSize: '18px', lineHeight: 1.3 }}>⚠<//>
+                      <${Box}>
+                        <${Typography} variant="body2" fontWeight=${600}
+                          sx=${{ color: '#BF360C', mb: 0.25 }}>
+                          Kein Decidalo-Profil zugeordnet
+                        <//>
+                        <${Typography} variant="caption" color="text.secondary">
+                          Mitarbeitender erscheint nicht in Matching-Ergebnissen.
+                          Profil-ID manuell hinterlegen oder Mapping-Schlüssel klären.
+                        <//>
+                      <//>
+                    <//>
+                  `}
+                  <${Stack} direction="row" gap=${1} alignItems="flex-start">
+                    <${TextField}
+                      label="Decidalo Profil-ID (manuell)"
+                      size="small" sx=${{ flex: 1 }}
+                      value=${manualId}
+                      onChange=${e => setManualId(e.target.value)}
+                      placeholder="z. B. DEC-9999"
+                      helperText="Überschreibt das automatische Mapping dauerhaft"
+                    />
+                    ${showOverride && html`
+                      <${Button} size="small" color="inherit"
+                        sx=${{ mt: 0.5, flexShrink: 0 }}
+                        onClick=${() => { setShowOverride(false); setManualId(''); }}>
+                        Abbrechen
+                      <//>
+                    `}
+                  <//>
+                <//>
+              `}
+            <//>
+
+          <//><!-- end scrollable body -->
+
+          <!-- Drawer-Footer -->
+          <${Box} sx=${{
+            px: 3, py: 2, borderTop: '1px solid', borderColor: 'divider',
+            display: 'flex', gap: 1.5, justifyContent: 'flex-end',
+            flexShrink: 0, bgcolor: '#FAFAFA',
+          }}>
+            <${Button} color="inherit" onClick=${onClose}>Abbrechen<//>
+            <${Button} variant="contained" onClick=${handleSave}>Speichern<//>
+          <//>
+
+        <//>
+
+
+      `;
+    }
+
+    /* ── FakeBackground (Admin-Tabelle angedeutet) ───────────────────── */
+    function FakeBackground() {
+      const rows = [
+        { name: 'Max Mustermann', level: 'Senior Consultant', color: '#1976D2', mapped: true },
+        { name: 'Sandra Koch',    level: 'Consultant',        color: '#388E3C', mapped: true },
+        { name: 'Felix Weber',    level: 'Consultant',        color: '#F57C00', mapped: false },
+        { name: 'Thomas Berger',  level: 'Senior Consultant', color: '#7B1FA2', mapped: true },
+        { name: 'Sarah Braun',    level: 'Consultant',        color: '#E65100', mapped: false },
+      ];
+      return html`
+        <${Box} sx=${{ px: 4, pt: 3, opacity: 0.3, pointerEvents: 'none', userSelect: 'none' }}>
+          <${Typography} variant="h6" fontWeight=${700} sx=${{ mb: 0.5 }}>
+            Administration — Stammdaten & Mapping
+          <//>
+          <${Typography} variant="body2" color="text.secondary" sx=${{ mb: 3 }}>
+            7 Mitarbeitende synchronisiert · 2 ohne Decidalo-Mapping
+          <//>
+          <${Box} sx=${{
+            border: '1px solid #E0E0E0', borderRadius: 1, overflow: 'hidden', bgcolor: '#fff',
+          }}>
+            <${Box} sx=${{
+              display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 80px',
+              px: 2, py: 1, bgcolor: '#FAFAFA', borderBottom: '1px solid #E0E0E0',
+              gap: 2,
+            }}>
+              ${['Mitarbeiter', 'Level', 'Region', 'Decidalo'].map(h => html`
+                <${Typography} key=${h} variant="caption"
+                  sx=${{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary' }}>
+                  ${h}
+                <//>
+              `)}
+            <//>
+            ${rows.map((r, i) => html`
+              <${Box} key=${r.name} sx=${{
+                display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 80px',
+                px: 2, py: 1.25, gap: 2,
+                borderBottom: i < rows.length - 1 ? '1px solid #F0F0F0' : 'none',
+                bgcolor: i === 0 ? 'rgba(25,118,210,0.06)' : 'transparent',
+              }}>
+                <${Stack} direction="row" alignItems="center" gap=${1}>
+                  <${Box} sx=${{
+                    width: 28, height: 28, borderRadius: '50%', bgcolor: r.color, flexShrink: 0,
+                  }} />
+                  <${Typography} variant="body2" fontWeight=${i === 0 ? 600 : 400}>${r.name}<//>
+                <//>
+                <${Typography} variant="body2" color="text.secondary">${r.level}<//>
+                <${Box} sx=${{ width: 80, height: 14, bgcolor: '#E0E0E0', borderRadius: 1, mt: 0.5 }} />
+                <${Box} sx=${{
+                  width: 64, height: 20, borderRadius: '10px',
+                  bgcolor: r.mapped ? '#E1F5EE' : '#FFF3E0',
+                }} />
+              <//>
+            `)}
+          <//>
+        <//>
+      `;
+    }
+
+    /* ── App ─────────────────────────────────────────────────────────── */
+    function App() {
+      const [open, setOpen]       = useState(true);
+      const [snack, setSnack]     = useState(false);
+
+      return html`
+        <${ThemeProvider} theme=${theme}>
+          <${CssBaseline} />
+          <${MockupBar} />
+
+          <${Box} sx=${{ minHeight: '100vh', bgcolor: '#F5F6F8', pt: '48px' }}>
+            <${FakeBackground} />
+
+            ${open && html`
+              <${EmployeeDrawer}
+                emp=${EMPLOYEE}
+                onClose=${() => setOpen(false)}
+                onSave=${() => { setOpen(false); setSnack(true); }}
+              />
+            `}
+
+            ${!open && html`
+              <${Box} sx=${{
+                position: 'fixed', bottom: 40, left: '50%',
+                transform: 'translateX(-50%)',
+              }}>
+                <${Button} variant="contained" onClick=${() => setOpen(true)}>
+                  Drawer wieder öffnen
+                <//>
+              <//>
+            `}
+          <//>
+
+          <${Snackbar}
+            open=${snack}
+            autoHideDuration=${3000}
+            onClose=${() => setSnack(false)}
+            anchorOrigin=${{ vertical: 'bottom', horizontal: 'left' }}
+            message="Änderungen gespeichert."
+          />
+
+        <//>
+      `;
+    }
+
+    createRoot(document.getElementById('root')).render(html`<${App} />`);
+  </script>
+</body>
+</html>

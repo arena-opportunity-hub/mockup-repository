@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meine Opportunities — Sprint 2 Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style> * { box-sizing: border-box; } body { margin: 0; } </style>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@mui/material@5/umd/material-ui.development.js"></script>
+  <script src="https://unpkg.com/htm/dist/htm.umd.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const { createElement: h, useState, useCallback, useMemo } = React;
+    const { createRoot } = ReactDOM;
+    const { Box, Typography, Button, Paper, Container, Stack, Table, TableHead, TableBody, TableRow, TableCell, TableContainer, TextField, MenuItem, IconButton, Tooltip, ThemeProvider, createTheme, CssBaseline, Chip } = MaterialUI;
+
+    const html = htm.bind(h);
+
+    const theme = createTheme({
+      palette: { primary: { main: '#1976D2' } },
+      components: { MuiButton: { defaultProps: { disableElevation: true } } },
+    });
+
+    // Farben gemäß colors.ts
+    const STATUS_COLORS = {
+      'Offen':          { bgcolor: '#E3F0FC', color: '#1256A0' },  // statusOpen
+      'Genehmigt':      { bgcolor: '#E1F5EE', color: '#0F6E56' },  // candidateApproved
+      'In Prüfung':     { bgcolor: '#FAEEDA', color: '#854F0B' },  // candidateReview
+      'Abgelehnt':      { bgcolor: '#FCEBEB', color: '#791F1F' },  // candidateRejected
+      'Ausstehend':     { bgcolor: '#FAEEDA', color: '#854F0B' },  // candidateReview
+      'Entwurf':        { bgcolor: '#F1EFE8', color: '#5F5E5A' },  // statusDraft
+      'Abgeschlossen':  { bgcolor: '#F1EFE8', color: '#5F5E5A' },  // neutral
+      'Zurückgezogen':  { bgcolor: '#FEF0E0', color: '#8B5E00' },  // statusWithdrawn
+    };
+
+    const DATA = [
+      { id: 1, title: 'Backend-Projekt Datenmigration',   client: 'Hypoteq AG',           startDate: '2026-07-01', deadline: '2026-06-07', skills: ['Java', 'AWS', 'Docker'],                 extraSkills: 2, matches: 12, status: 'Offen' },
+      { id: 2, title: 'Container Plattform Initiative',    client: 'Reply GmbH',           startDate: '2026-07-15', deadline: '2026-06-12', skills: ['Docker', 'Kubernetes', 'GitOps'],       extraSkills: 1, matches: 5,  status: 'In Prüfung' },
+      { id: 3, title: 'Business Analysten IT-Consulting',  client: 'IPSWAYS Insurance',    startDate: '2026-08-01', deadline: '2026-06-25', skills: ['Business Analysis', 'Scrum', 'BPMN'],   extraSkills: 2, matches: 7,  status: 'Offen' },
+      { id: 4, title: 'Compliance-Beratung DSGVO',         client: 'Finanz Informatik',    startDate: '2026-05-15', deadline: '2026-04-10', skills: ['DSGVO', 'Compliance'],                  extraSkills: 0, matches: 3,  status: 'Genehmigt' },
+      { id: 5, title: 'KI-Beratung Retail Banking',        client: 'Volksbank Rhein-Main', startDate: '2026-08-15', deadline: '2026-06-10', skills: ['GenAI', 'LLM', 'Prompt Engineering'],  extraSkills: 3, matches: 0,  status: 'Offen', noMatch: true },
+      { id: 6, title: 'Cloud-Migration Sparkasse',          client: 'Finanz Informatik',    startDate: '2026-09-01', deadline: '2026-07-15', skills: ['AWS', 'Terraform', 'CI/CD'],            extraSkills: 1, matches: 0,  status: 'Entwurf' },
+      { id: 7, title: 'SAP-Rollout Automotive',             client: 'Automotive Reply',     startDate: '2026-10-01', deadline: '2026-07-20', skills: ['SAP', 'ABAP'],                          extraSkills: 1, matches: 2,  status: 'Zurückgezogen' },
+    ];
+
+    function daysBadge(iso) {
+      const today = new Date('2026-06-04'); today.setHours(0, 0, 0, 0);
+      const due   = new Date(iso); due.setHours(0, 0, 0, 0);
+      const days  = Math.ceil((due - today) / 86400000);
+      let bgcolor, color, label;
+      if (days < 0)       { bgcolor = '#F5F5F5'; color = '#9E9E9E'; label = 'Abgelaufen'; }
+      else if (days <= 7) { bgcolor = '#FFEBEE'; color = '#C62828'; label = `${days} Tage`; }
+      else if (days <= 14){ bgcolor = '#FFF3E0'; color = '#E65100'; label = `${days} Tage`; }
+      else                { bgcolor = '#E8F5E9'; color = '#2E7D32'; label = `${days} Tage`; }
+      return html`
+        <${Box} sx=${{ display: 'inline-block', px: 1, py: 0.25, borderRadius: '10px', bgcolor, color, fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          ${label}
+        <//>
+      `;
+    }
+
+    function MockupBar({ demoState, setDemoState }) {
+      return html`
+        <${Paper} square elevation=${0} sx=${{
+          position: 'sticky', top: 0, zIndex: 1100,
+          borderBottom: '1px solid', borderColor: 'divider',
+          px: 4, py: 1.25,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <${Typography} variant="overline" color="text.secondary">
+            Mockup · <${Box} component="span" sx=${{ color: 'primary.main' }}>Meine Opportunities · Sprint 2<//>
+          <//>
+          <${Stack} direction="row" spacing=${1} alignItems="center">
+            <${Typography} variant="caption" color="text.secondary">Demo:<//>
+            ${['Normal', 'Leer A', 'Leer B'].map(label => html`
+              <${Button} key=${label} size="small"
+                variant=${demoState === label ? 'contained' : 'outlined'}
+                onClick=${() => setDemoState(label)}
+                sx=${{ fontSize: '11px', py: 0.25, minWidth: 0, px: 1.25 }}>
+                ${label}
+              <//>
+            `)}
+            <${Box} sx=${{ ml: 1, borderLeft: '1px solid', borderColor: 'divider', pl: 1.5 }}>
+              <${Button} component="a" href="../index.html" size="small">← Katalog<//>
+            <//>
+          <//>
+        <//>
+      `;
+    }
+
+    function EmptyStateA() {
+      return html`
+        <${TableRow}>
+          <${TableCell} colSpan=${8} sx=${{ py: 8, textAlign: 'center', border: 'none' }}>
+            <${Typography} sx=${{ fontSize: '36px', mb: 1.5, color: 'text.disabled' }}>📋<//>
+            <${Typography} variant="subtitle1" fontWeight=${600} sx=${{ mb: 0.75 }}>
+              Noch keine Opportunities
+            <//>
+            <${Typography} variant="body2" color="text.secondary" sx=${{ mb: 2.5 }}>
+              Erstelle deine erste Opportunity, um Kandidaten zu finden.
+            <//>
+            <${Button} variant="contained" size="small">+ Erste Opportunity erstellen<//>
+          <//>
+        <//>
+      `;
+    }
+
+    function EmptyStateB({ onReset }) {
+      return html`
+        <${TableRow}>
+          <${TableCell} colSpan=${8} sx=${{ py: 8, textAlign: 'center', border: 'none' }}>
+            <${Typography} sx=${{ fontSize: '36px', mb: 1.5, color: 'text.disabled' }}>🔍<//>
+            <${Typography} variant="subtitle1" fontWeight=${600} sx=${{ mb: 0.75 }}>
+              Keine Opportunities gefunden
+            <//>
+            <${Typography} variant="body2" color="text.secondary" sx=${{ mb: 2.5 }}>
+              Die aktiven Filter liefern keine Treffer.
+            <//>
+            <${Button} variant="outlined" size="small" onClick=${onReset}>
+              Filter zurücksetzen
+            <//>
+          <//>
+        <//>
+      `;
+    }
+
+    const COLS = ['', 'Titel', 'Kunde', 'Startdatum', 'Abzugeben bis', 'Skills', 'Matches', 'Status'];
+
+    function App() {
+      const [demoState,    setDemoState]    = useState('Normal');
+      const [statusFilter, setStatusFilter] = useState('');
+      const [dateFrom,     setDateFrom]     = useState('');
+      const [dateTo,       setDateTo]       = useState('');
+      const [search,       setSearch]       = useState('');
+      const [showFavs,     setShowFavs]     = useState(false);
+      const [favorites,    setFavorites]    = useState(
+        () => new Set(JSON.parse(localStorage.getItem('opp-hub-favorites') || '[]'))
+      );
+
+      const resetFilters = useCallback(() => {
+        setStatusFilter(''); setDateFrom(''); setDateTo(''); setSearch(''); setShowFavs(false);
+      }, []);
+
+      const toggleFav = useCallback((id) => {
+        setFavorites(prev => {
+          const next = new Set(prev);
+          if (next.has(id)) next.delete(id); else next.add(id);
+          localStorage.setItem('opp-hub-favorites', JSON.stringify([...next]));
+          return next;
+        });
+      }, []);
+
+      const visible = useMemo(() => {
+        if (demoState === 'Leer A') return null;
+        if (demoState === 'Leer B') return [];
+        return DATA.filter(d => {
+          return (!statusFilter || d.status === statusFilter) &&
+                 (!dateFrom || d.deadline >= dateFrom) &&
+                 (!dateTo   || d.deadline <= dateTo) &&
+                 (!search   || d.title.toLowerCase().includes(search.toLowerCase()) ||
+                               d.client.toLowerCase().includes(search.toLowerCase())) &&
+                 (!showFavs || favorites.has(d.id));
+        });
+      }, [demoState, statusFilter, dateFrom, dateTo, search, showFavs, favorites]);
+
+      const totalCount = demoState === 'Leer A' ? 0 : DATA.length;
+      const shownCount = visible === null ? 0 : visible.length;
+
+      return html`
+        <${ThemeProvider} theme=${theme}>
+          <${CssBaseline} />
+          <${MockupBar} demoState=${demoState} setDemoState=${setDemoState} />
+          <${Container} maxWidth="lg" sx=${{ py: 4 }}>
+
+            <${Typography} variant="h6" fontWeight=${700} sx=${{ mb: 2 }}>Meine Opportunities<//>
+
+            <${Stack} direction="row" spacing=${1.5} sx=${{ mb: 2 }} alignItems="flex-end" flexWrap="wrap">
+              <${TextField} label="Status" select size="small" value=${statusFilter}
+                onChange=${e => setStatusFilter(e.target.value)} sx=${{ minWidth: 160 }}>
+                <${MenuItem} value="">Alle<//>
+                ${['Offen', 'In Prüfung', 'Genehmigt', 'Abgelehnt', 'Ausstehend', 'Entwurf', 'Abgeschlossen', 'Zurückgezogen'].map(s => html`
+                  <${MenuItem} key=${s} value=${s}>${s}<//>
+                `)}
+              <//>
+              <${TextField} label="Zeitraum Von" type="date" size="small"
+                value=${dateFrom} onChange=${e => setDateFrom(e.target.value)}
+                InputLabelProps=${{ shrink: true }} sx=${{ minWidth: 150 }} />
+              <${TextField} label="Bis" type="date" size="small"
+                value=${dateTo} onChange=${e => setDateTo(e.target.value)}
+                InputLabelProps=${{ shrink: true }} sx=${{ minWidth: 150 }} />
+              <${TextField} label="Suche" size="small" placeholder="Titel oder Kunde"
+                value=${search} onChange=${e => setSearch(e.target.value)} sx=${{ minWidth: 200 }} />
+              <${Box} sx=${{ flex: 1 }} />
+              <${Button} variant="outlined" size="small"
+                onClick=${() => setShowFavs(v => !v)}
+                sx=${{
+                  borderColor: showFavs ? '#FFC107' : 'divider',
+                  color:       showFavs ? '#8a6000' : 'text.secondary',
+                  bgcolor:     showFavs ? '#FFF8E1' : 'transparent',
+                  '&:hover':  { borderColor: '#FFC107', bgcolor: '#FFFDE7' },
+                }}>
+                ${showFavs ? '★ Favoriten' : '☆ Favoriten'}
+              <//>
+              <${Button} variant="contained" size="small">+ Neue Opportunity<//>
+            <//>
+
+            <${TableContainer} component=${Paper} variant="outlined">
+              <${Table} size="small">
+                <${TableHead}>
+                  <${TableRow} sx=${{ bgcolor: '#FAFAFA' }}>
+                    ${COLS.map((c, i) => html`
+                      <${TableCell} key=${i} sx=${{
+                        fontWeight: 700, textTransform: 'uppercase',
+                        fontSize: '11px', letterSpacing: 0.5, color: 'text.secondary',
+                        whiteSpace: 'nowrap', py: 1.5,
+                        ...(i === 0 ? { width: 44, pr: 0 } : {}),
+                      }}>
+                        ${c}
+                      <//>
+                    `)}
+                  <//>
+                <//>
+                <${TableBody}>
+                  ${visible === null ? html`<${EmptyStateA} />` :
+                    visible.length === 0 ? html`<${EmptyStateB} onReset=${resetFilters} />` :
+                    visible.map(d => {
+                      const isFav = favorites.has(d.id);
+                      const sc    = STATUS_COLORS[d.status] || STATUS_COLORS['Entwurf'];
+                      return html`
+                        <${TableRow} key=${d.id} hover onClick=${() => { window.location.href = 'opportunity-details-sprint2.html'; }} sx=${{ cursor: 'pointer' }}>
+
+                          <${TableCell} sx=${{ pr: 0, width: 44 }}>
+                            <${IconButton} size="small"
+                              onClick=${e => { e.stopPropagation(); toggleFav(d.id); }}
+                              sx=${{ color: isFav ? '#FFC107' : '#E0E0E0', '&:hover': { color: '#FFC107' } }}>
+                              ${isFav ? '★' : '☆'}
+                            <//>
+                          <//>
+
+                          <${TableCell}>
+                            <${Typography} variant="body2" fontWeight=${500} sx=${{ color: 'primary.main' }}>${d.title}<//>
+                          <//>
+
+                          <${TableCell}>
+                            <${Typography} variant="body2">${d.client}<//>
+                          <//>
+
+                          <${TableCell} sx=${{ whiteSpace: 'nowrap' }}>
+                            ${new Date(d.startDate + 'T00:00:00').toLocaleDateString('de-DE')}
+                          <//>
+
+                          <${TableCell} sx=${{ whiteSpace: 'nowrap' }}>
+                            <${Typography} variant="body2" sx=${{ mb: 0.375 }}>
+                              ${new Date(d.deadline + 'T00:00:00').toLocaleDateString('de-DE')}
+                            <//>
+                            ${daysBadge(d.deadline)}
+                          <//>
+
+                          <${TableCell}>
+                            <${Stack} direction="row" flexWrap="wrap" gap=${0.5}>
+                              ${d.skills.map(s => html`
+                                <${Box} key=${s} sx=${{ display: 'inline-block',
+                                  bgcolor: '#F5F5F5', color: 'text.primary',
+                                  px: 1, py: 0.25, borderRadius: '12px', fontSize: '12px' }}>
+                                  ${s}
+                                <//>
+                              `)}
+                              ${d.extraSkills > 0 && html`
+                                <${Box} sx=${{ display: 'inline-block',
+                                  bgcolor: '#E3F0FC', color: '#1256A0',
+                                  px: 1, py: 0.25, borderRadius: '12px', fontSize: '12px' }}>
+                                  +${d.extraSkills}
+                                <//>
+                              `}
+                            <//>
+                          <//>
+
+                          <${TableCell}>
+                            ${d.matches > 0
+                              ? html`
+                                <${Stack} direction="row" alignItems="center" gap=${0.75}>
+                                  <${Box} sx=${{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main', flexShrink: 0 }} />
+                                  <${Typography} variant="body2" fontWeight=${700} color="primary.main">${d.matches}<//>
+                                <//>
+                              `
+                              : d.noMatch
+                                ? html`
+                                  <${Tooltip}
+                                    title="Kein Kandidat gefunden. Mögliche Ursachen: Skills zu speziell, Zeitraum zu eng oder keine Verfügbarkeit. Details in der Opportunity."
+                                    arrow placement="top">
+                                    <${Box} sx=${{
+                                      display: 'inline-flex', alignItems: 'center', gap: 0.5,
+                                      bgcolor: '#FFF3E0', color: '#E65100',
+                                      px: 1, py: 0.25, borderRadius: '10px',
+                                      fontSize: '12px', fontWeight: 700, whiteSpace: 'nowrap', cursor: 'help',
+                                    }}>⚠ Kein Treffer<//>
+                                  <//>
+                                `
+                                : html`<${Typography} variant="body2" color="text.disabled">—<//>` }
+                          <//>
+
+                          <${TableCell}>
+                            <${Box} sx=${{ display: 'inline-block', bgcolor: sc.bgcolor, color: sc.color,
+                              px: 1.25, py: 0.25, borderRadius: '12px',
+                              fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
+                              letterSpacing: 0.5, whiteSpace: 'nowrap' }}>
+                              ${d.status}
+                            <//>
+                          <//>
+
+                        <//>
+                      `;
+                    })
+                  }
+                <//>
+              <//>
+            <//>
+
+            <${Box} sx=${{ display: 'flex', justifyContent: 'flex-end', pt: 1.5 }}>
+              <${Typography} variant="caption" color="text.secondary">
+                ${shownCount > 0 ? `1–${shownCount} von ${totalCount}` : `0 von ${totalCount}`}
+              <//>
+            <//>
+
+          <//>
+        <//>
+      `;
+    }
+
+    createRoot(document.getElementById('root')).render(html`<${App} />`);
+  </script>
+</body>
+</html>

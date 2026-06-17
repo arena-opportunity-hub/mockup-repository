@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opportunity-Details — Sprint 2 Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style> * { box-sizing: border-box; } body { margin: 0; } </style>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@mui/material@5/umd/material-ui.development.js"></script>
+  <script src="https://unpkg.com/htm/dist/htm.umd.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const { createElement: h, useState, useCallback, useMemo } = React;
+    const { createRoot } = ReactDOM;
+    const { Box, Typography, Button, Paper, Container, Stack, Grid, Divider, Table, TableHead, TableBody, TableRow, TableCell, TableContainer, TextField, MenuItem, Tabs, Tab, Drawer, IconButton, Tooltip, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, ThemeProvider, createTheme, CssBaseline } = MaterialUI;
+
+    const html = htm.bind(h);
+
+    const theme = createTheme({
+      palette: { primary: { main: '#1976D2' }, error: { main: '#E53935' } },
+      components: { MuiButton: { defaultProps: { disableElevation: true } } },
+    });
+
+    /* ── Helpers ─────────────────────────────────────────────── */
+    const STATUS_COLORS = {
+      'Offen':      { bgcolor: '#E3F0FC', color: '#1256A0' },
+      'Genehmigt':  { bgcolor: '#E1F5EE', color: '#0F6E56' },
+      'In Prüfung': { bgcolor: '#E6F1FB', color: '#0C447C' },
+      'Abgelehnt':  { bgcolor: '#FCEBEB', color: '#791F1F' },
+      'Ausstehend': { bgcolor: '#FAEEDA', color: '#854F0B' },
+      'Entwurf':    { bgcolor: '#F1EFE8', color: '#5F5E5A' },
+    };
+
+    function StatusPill({ label }) {
+      const s = STATUS_COLORS[label] || STATUS_COLORS['Entwurf'];
+      return html`
+        <${Box} sx=${{
+          display: 'inline-block', bgcolor: s.bgcolor, color: s.color,
+          px: 1.25, py: 0.25, borderRadius: '12px',
+          fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
+          letterSpacing: 0.4, whiteSpace: 'nowrap',
+        }}>${label}<//>
+      `;
+    }
+
+    function DaysBadge({ days }) {
+      let bgcolor, color;
+      if (days <= 7)  { bgcolor = '#FFEBEE'; color = '#C62828'; }
+      else if (days <= 14) { bgcolor = '#FFF3E0'; color = '#E65100'; }
+      else            { bgcolor = '#E8F5E9'; color = '#2E7D32'; }
+      return html`
+        <${Box} sx=${{ display: 'inline-block', bgcolor, color, px: 1, py: 0.25, borderRadius: '10px', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          ${days} Tage
+        <//>
+      `;
+    }
+
+    function Avatar({ initials, bgcolor }) {
+      return html`
+        <${Box} sx=${{
+          width: 40, height: 40, borderRadius: '50%', bgcolor, color: '#fff',
+          fontWeight: 700, fontSize: '14px', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>${initials}<//>
+      `;
+    }
+
+    function ScoreBar({ score, width = 160 }) {
+      const color = score >= 85 ? '#2E7D32' : score >= 70 ? '#1976D2' : '#E65100';
+      return html`
+        <${Stack} direction="row" alignItems="center" spacing=${1.25} sx=${{ minWidth: width, flexShrink: 0 }}>
+          <${Typography} variant="caption" color="text.secondary">Score<//>
+          <${Box} sx=${{ flex: 1, height: 6, bgcolor: '#E0E0E0', borderRadius: '3px', overflow: 'hidden' }}>
+            <${Box} sx=${{ width: score + '%', height: '100%', bgcolor: color, borderRadius: '3px' }} />
+          <//>
+          <${Typography} variant="body2" fontWeight=${700} sx=${{ minWidth: 24, textAlign: 'right' }}>${score}<//>
+        <//>
+      `;
+    }
+
+    /* ── Data ────────────────────────────────────────────────── */
+    const CANDIDATES = [
+      // direct (8)
+      { pool:'direct',  name:'Max Mustermann',   initials:'MM',  avatarColor:'#1976D2', role:'Senior Consultant',    manager:'Anna Schmidt',  score:80, status:'Genehmigt',  comment:'Anna Schmidt: «Hervorragende Passung. Max hat exakt die benötigte AWS-Erfahrung.»', chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:true,isGroup:true,matchedSkill:'EU-AML-Paket'},{label:'MS Office',matched:false}] },
+      { pool:'direct',  name:'Sandra Koch',      initials:'SK',  avatarColor:'#388E3C', role:'Consultant',           manager:'Anna Schmidt',  score:84, status:'In Prüfung', comment:'Anna Schmidt: «Sandra ist interessiert, ich spreche noch mit ihr.»',             chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true},{label:'MS Office',matched:false}] },
+      { pool:'direct',  name:'David Klein',      initials:'DK',  avatarColor:'#37474F', role:'Backend Developer',    manager:'Anna Schmidt',  score:83, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:true,isGroup:true,matchedSkill:'EU-AML-Paket'},{label:'MS Office',matched:true}] },
+      { pool:'direct',  name:'Julia Neumann',    initials:'JN',  avatarColor:'#6A1B9A', role:'Senior Consultant',    manager:'Klaus Bauer',   score:77, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
+      { pool:'direct',  name:'Patrick Hoffmann', initials:'PH',  avatarColor:'#00838F', role:'Consultant',           manager:'Klaus Bauer',   score:75, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:false},{label:'MS Office',matched:true}] },
+      { pool:'direct',  name:'Maria Keller',     initials:'MK',  avatarColor:'#AD1457', role:'Principal Consultant', manager:'Marco Lehmann', score:72, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
+      { pool:'direct',  name:'Tobias Schulz',    initials:'TS',  avatarColor:'#558B2F', role:'Backend Developer',    manager:'Anna Schmidt',  score:68, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'MS Office',matched:false}] },
+      { pool:'direct',  name:'Sarah Braun',      initials:'SB',  avatarColor:'#E65100', role:'Consultant',           manager:'Klaus Bauer',   score:65, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'Compliance',matched:true},{label:'MS Office',matched:true}] },
+      // soon (12)
+      { pool:'soon',    name:'Thomas Berger',    initials:'TB',  avatarColor:'#7B1FA2', role:'Senior Consultant',    manager:'Klaus Bauer',   score:78, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
+      { pool:'soon',    name:'Kai Fischer',      initials:'KF',  avatarColor:'#1565C0', role:'Senior Consultant',    manager:'Marco Lehmann', score:76, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
+      { pool:'soon',    name:'Lisa Müller',      initials:'LM',  avatarColor:'#0097A7', role:'Principal Consultant', manager:'Marco Lehmann', score:74, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'MS Office',matched:true},{label:'Compliance',matched:false}] },
+      { pool:'soon',    name:'Nina Wagner',      initials:'NW',  avatarColor:'#2E7D32', role:'Consultant',           manager:'Anna Schmidt',  score:73, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:false},{label:'MS Office',matched:true}] },
+      { pool:'soon',    name:'Robert Becker',    initials:'RB',  avatarColor:'#4527A0', role:'Principal',            manager:'Klaus Bauer',   score:71, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:true}] },
+      { pool:'soon',    name:'Laura Zimmer',     initials:'LZ',  avatarColor:'#00695C', role:'Consultant',           manager:'Anna Schmidt',  score:70, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'Compliance',matched:true},{label:'MS Office',matched:true}] },
+      { pool:'soon',    name:'Michael Krause',   initials:'MKr', avatarColor:'#C62828', role:'Senior Consultant',    manager:'Marco Lehmann', score:67, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:false}] },
+      { pool:'soon',    name:'Anna Richter',     initials:'AR',  avatarColor:'#F57F17', role:'Consultant',           manager:'Klaus Bauer',   score:66, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
+      { pool:'soon',    name:'Stefan Vogel',     initials:'SV',  avatarColor:'#01579B', role:'Backend Developer',    manager:'Anna Schmidt',  score:63, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'MS Office',matched:false}] },
+      { pool:'soon',    name:'Petra Schwarz',    initials:'PS',  avatarColor:'#880E4F', role:'Consultant',           manager:'Marco Lehmann', score:61, status:'Ausstehend', comment:null, chips:[{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
+      { pool:'soon',    name:'Jan Lange',        initials:'JL',  avatarColor:'#827717', role:'Senior Consultant',    manager:'Klaus Bauer',   score:59, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'Compliance',matched:true}] },
+      { pool:'soon',    name:'Eva Wolf',         initials:'EW',  avatarColor:'#4E342E', role:'Consultant',           manager:'Anna Schmidt',  score:57, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:false}] },
+      // partial (12)
+      { pool:'partial', name:'Felix Weber',      initials:'FW',  avatarColor:'#F57C00', role:'Consultant',           manager:'Anna Schmidt',  score:69, status:'In Prüfung', comment:'Anna Schmidt: «Prüfe die Verfügbarkeit noch einmal ab.»', chips:[{label:'AML',matched:true},{label:'Compliance',matched:false}] },
+      { pool:'partial', name:'Chris Huber',      initials:'CH',  avatarColor:'#5C6BC0', role:'Consultant',           manager:'Marco Lehmann', score:55, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'Compliance',matched:false}] },
+      { pool:'partial', name:'Sabine Hartmann',  initials:'SH',  avatarColor:'#00897B', role:'Senior Consultant',    manager:'Anna Schmidt',  score:53, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'MS Office',matched:true}] },
+      { pool:'partial', name:'Marco Kremer',     initials:'MKr2',avatarColor:'#8D6E63', role:'Consultant',           manager:'Klaus Bauer',   score:51, status:'Ausstehend', comment:null, chips:[{label:'Compliance',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
+      { pool:'partial', name:'Claudia Bauer',    initials:'CB',  avatarColor:'#78909C', role:'Principal',            manager:'Marco Lehmann', score:49, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'Compliance',matched:true}] },
+      { pool:'partial', name:'Daniel Schubert',  initials:'DS',  avatarColor:'#BF360C', role:'Consultant',           manager:'Anna Schmidt',  score:47, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
+      { pool:'partial', name:'Gabi Schröder',    initials:'GS',  avatarColor:'#1A237E', role:'Senior Consultant',    manager:'Klaus Bauer',   score:45, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'Compliance',matched:false}] },
+      { pool:'partial', name:'Hans Zimmermann',  initials:'HZ',  avatarColor:'#006064', role:'Consultant',           manager:'Marco Lehmann', score:43, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:true},{label:'MS Office',matched:false}] },
+      { pool:'partial', name:'Ines Braun',       initials:'IB',  avatarColor:'#4A148C', role:'Consultant',           manager:'Anna Schmidt',  score:41, status:'Ausstehend', comment:null, chips:[{label:'Compliance',matched:false},{label:'MS Office',matched:false}] },
+      { pool:'partial', name:'Klaus Werner',     initials:'KW',  avatarColor:'#263238', role:'Senior Consultant',    manager:'Klaus Bauer',   score:39, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'EU-Regulatorik',matched:false,isGroup:true}] },
+      { pool:'partial', name:'Lena Meyer',       initials:'LMy', avatarColor:'#B71C1C', role:'Consultant',           manager:'Marco Lehmann', score:37, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'Compliance',matched:false}] },
+      { pool:'partial', name:'Markus Peters',    initials:'MP',  avatarColor:'#33691E', role:'Consultant',           manager:'Anna Schmidt',  score:35, status:'Ausstehend', comment:null, chips:[{label:'AML',matched:false},{label:'MS Office',matched:false}] },
+    ];
+
+    const GROUPS = [
+      { pool: 'direct',  label: 'Sofort verfügbar',    subtitle: 'Status: Bench / Reserviert — bereit für sofortige Projekte', headerBg: '#2E7D32', countColor: '#2E7D32' },
+      { pool: 'soon',    label: 'Bald verfügbar',       subtitle: 'Wird voraussichtlich frei ab 01.07.2026',                    headerBg: '#E65100', countColor: '#E65100' },
+      { pool: 'partial', label: 'Teilweise verfügbar',  subtitle: 'Verfügbar mit eingeschränkter Kapazität (50 %)',             headerBg: '#B71C1C', countColor: '#B71C1C' },
+    ];
+
+    const POOL_CONFIG = {
+      direct:  { status: 'Sofort verfügbar (Bench)',    sub: 'Derzeit auf Bench — sofort einsetzbar',          dotColor: '#2E7D32', factor: '× 1,0' },
+      soon:    { status: 'Bald verfügbar',               sub: 'Frei ab ca. 01.07.2026 (Prolongation endet)',    dotColor: '#E65100', factor: '× 1,0' },
+      partial: { status: 'Teilweise verfügbar (50 %)',   sub: 'Kapazität eingeschränkt — teilzeitig einsetzbar', dotColor: '#B71C1C', factor: '× 0,7' },
+    };
+
+    const TIMELINE = [
+      { icon: '➕', dotClass: 'grey',   title: 'Opportunity erstellt',       desc: 'von Jannik Schröder',                                                      meta: 'vor 3 Tagen',    comment: null },
+      { icon: '◎',  dotClass: 'blue',   title: 'Matching gestartet',         desc: '6 Kandidaten gefunden: 3 sofort verfügbar, 2 bald, 1 teilweise',           meta: 'vor 3 Tagen',    comment: null },
+      { icon: '✉',  dotClass: 'blue',   title: 'Manager informiert',         desc: 'Anna Schmidt, Klaus Bauer, Marco Lehmann per E-Mail benachrichtigt',       meta: 'vor 3 Tagen',    comment: null },
+      { icon: '✓',  dotClass: 'green',  title: 'Genehmigt — Max Mustermann', desc: null,                                                                         meta: 'gestern, 14:32', comment: 'Anna Schmidt: «Hervorragende Passung. Max hat exakt die benötigte AWS-Erfahrung.»' },
+      { icon: '⏸',  dotClass: 'yellow', title: 'In Prüfung — Sandra Koch',   desc: null,                                                                         meta: 'gestern, 14:35', comment: 'Anna Schmidt: «Sandra ist interessiert, ich spreche noch mit ihr.»' },
+      { icon: '⏸',  dotClass: 'yellow', title: 'In Prüfung — Felix Weber',   desc: null,                                                                         meta: 'heute, 09:14',   comment: 'Anna Schmidt: «Prüfe die Verfügbarkeit.»' },
+    ];
+
+    const DOT_COLORS = {
+      grey:   { bgcolor: '#F1EFE8', color: '#5F5E5A' },
+      blue:   { bgcolor: '#E3F0FC', color: '#1976D2' },
+      green:  { bgcolor: '#E1F5EE', color: '#0F6E56' },
+      yellow: { bgcolor: '#FAEEDA', color: '#854F0B' },
+    };
+
+    /* ── MockupBar ───────────────────────────────────────────── */
+    function MockupBar() {
+      return html`
+        <${Paper} square elevation=${0} sx=${{
+          position: 'sticky', top: 0, zIndex: 1100,
+          borderBottom: '1px solid', borderColor: 'divider',
+          px: 4, py: 1.25,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <${Typography} variant="overline" color="text.secondary">
+            Mockup · <${Box} component="span" sx=${{ color: 'primary.main' }}>Opportunity-Details · Sprint 2<//>
+          <//>
+          <${Button} component="a" href="../index.html" size="small">← Katalog<//>
+        <//>
+      `;
+    }
+
+    const PAGE_SIZE = 25;
+
+    /* ── Tab: Matches ────────────────────────────────────────── */
+    function TabMatches({ onOpenDrawer }) {
+      const [fStatus,      setFStatus]      = useState('');
+      const [fManager,     setFManager]     = useState('');
+      const [fPool,        setFPool]        = useState('');
+      const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+      const resetPage = useCallback(() => setVisibleCount(PAGE_SIZE), []);
+
+      const filtered = useMemo(() => CANDIDATES.filter(c =>
+        (!fStatus  || c.status  === fStatus) &&
+        (!fManager || c.manager === fManager) &&
+        (!fPool    || c.pool    === fPool)
+      ), [fStatus, fManager, fPool]);
+
+      const visible   = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+      const remaining = filtered.length - visible.length;
+
+      return html`
+        <${Box}>
+          <${Stack} direction="row" spacing=${1.5} sx=${{ mb: 2.5 }} flexWrap="wrap">
+            <${TextField} label="Status" select size="small" value=${fStatus}
+              onChange=${e => { setFStatus(e.target.value); resetPage(); }} sx=${{ minWidth: 150 }}>
+              <${MenuItem} value="">Status: Alle<//>
+              ${['Ausstehend','Genehmigt','In Prüfung','Abgelehnt'].map(s =>
+                html`<${MenuItem} key=${s} value=${s}>${s}<//>`)}
+            <//>
+            <${TextField} label="Manager" select size="small" value=${fManager}
+              onChange=${e => { setFManager(e.target.value); resetPage(); }} sx=${{ minWidth: 160 }}>
+              <${MenuItem} value="">Manager: Alle<//>
+              ${['Anna Schmidt','Klaus Bauer','Marco Lehmann'].map(s =>
+                html`<${MenuItem} key=${s} value=${s}>${s}<//>`)}
+            <//>
+            <${TextField} label="Pool" select size="small" value=${fPool}
+              onChange=${e => { setFPool(e.target.value); resetPage(); }} sx=${{ minWidth: 170 }}>
+              <${MenuItem} value="">Pool: Alle<//>
+              <${MenuItem} value="direct">Sofort verfügbar<//>
+              <${MenuItem} value="soon">Bald verfügbar<//>
+              <${MenuItem} value="partial">Teilweise verfügbar<//>
+            <//>
+          <//>
+
+          ${GROUPS.filter(g => !fPool || g.pool === fPool).map(g => {
+            const poolTotal = filtered.filter(c => c.pool === g.pool).length;
+            const rows      = visible.filter(c => c.pool === g.pool);
+            const hidden    = poolTotal - rows.length;
+            return html`
+              <${Box} key=${g.pool} sx=${{ mb: 3.5 }}>
+                <${Box} sx=${{
+                  bgcolor: g.headerBg, color: '#fff', borderRadius: 1,
+                  px: 2, py: 1.125, display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.75,
+                }}>
+                  <${Box} component="span" sx=${{ fontSize: '18px' }}>●<//>
+                  <${Typography} variant="body2" fontWeight=${700} sx=${{ flex: 1, color: '#fff' }}>${g.label}<//>
+                  <${Box} sx=${{
+                    bgcolor: '#fff', color: g.countColor,
+                    px: 1, py: 0.25, borderRadius: '10px', fontSize: '12px', fontWeight: 700,
+                  }}>
+                    ${poolTotal} Kandidaten
+                  <//>
+                <//>
+                <${Typography} variant="caption" color="text.secondary" sx=${{ display: 'block', mb: 1, ml: 0.5, fontStyle: 'italic' }}>
+                  ${g.subtitle}
+                <//>
+
+                ${poolTotal === 0
+                  ? html`
+                    <${Box} sx=${{ border: '1px dashed', borderColor: 'divider', borderRadius: 1, textAlign: 'center', py: 1.75 }}>
+                      <${Typography} variant="body2" color="text.secondary" sx=${{ fontStyle: 'italic' }}>
+                        Keine Kandidaten für diese Filterauswahl.
+                      <//>
+                    <//>
+                  `
+                  : html`
+                    ${rows.map(c => html`
+                      <${Paper} key=${c.name} variant="outlined" onClick=${() => onOpenDrawer(c)} sx=${{
+                        p: 2, mb: 0.75, display: 'flex', alignItems: 'center', gap: 1.75,
+                        cursor: 'pointer', transition: 'box-shadow 0.15s',
+                        '&:hover': { boxShadow: '0 2px 8px rgba(0,0,0,0.10)' },
+                      }}>
+                        <${Avatar} initials=${c.initials} bgcolor=${c.avatarColor} />
+                        <${Box} sx=${{ flex: 1, minWidth: 0 }}>
+                          <${Typography} variant="body2" fontWeight=${700}>${c.name}<//>
+                          <${Typography} variant="caption" color="text.secondary" sx=${{ display: 'block', mb: 0.75 }}>${c.role}<//>
+                          <${Stack} direction="row" flexWrap="wrap" gap=${0.5}>
+                            ${c.chips.map(ch => ch.isGroup
+                              ? html`
+                                <${Tooltip} key=${ch.label}
+                                  title=${ch.matched ? 'ODER-Gruppe erfüllt durch: ' + ch.matchedSkill : 'ODER-Gruppe: keine Alternative nachgewiesen'}
+                                  arrow placement="top"
+                                >
+                                  <${Box} sx=${{
+                                    display: 'inline-flex', alignItems: 'center', gap: 0.5, cursor: 'help',
+                                    px: 1, py: 0.25, borderRadius: '12px', fontSize: '12px',
+                                    bgcolor: ch.matched ? '#E1F5EE' : '#FCEBEB',
+                                    color:   ch.matched ? '#0F6E56' : '#791F1F',
+                                  }}>
+                                    <${Box} sx=${{ fontSize: '9px', fontWeight: 700, opacity: 0.65 }}>ODER<//>
+                                    ${ch.label}
+                                  <//>
+                                <//>
+                              `
+                              : html`
+                                <${Box} key=${ch.label} sx=${{
+                                  display: 'inline-block', px: 1, py: 0.25, borderRadius: '12px', fontSize: '12px',
+                                  bgcolor: ch.matched ? '#E1F5EE' : '#FCEBEB',
+                                  color:   ch.matched ? '#0F6E56' : '#791F1F',
+                                }}>${ch.label}<//>
+                              `
+                            )}
+                          <//>
+                        <//>
+                        <${Stack} alignItems="flex-end" sx=${{ flexShrink: 0, minWidth: 110 }}>
+                          <${Typography} variant="caption" color="text.secondary">Führungskraft<//>
+                          <${Typography} variant="body2" fontWeight=${500}>${c.manager}<//>
+                        <//>
+                        <${ScoreBar} score=${c.score} />
+                        ${c.comment
+                          ? html`
+                            <${Tooltip} title=${c.comment} arrow placement="top">
+                              <${Box} sx=${{ display: 'inline-block', cursor: 'help' }}>
+                                <${StatusPill} label=${c.status} />
+                              <//>
+                            <//>`
+                          : html`<${StatusPill} label=${c.status} />`
+                        }
+                      <//>
+                    `)}
+                    ${hidden > 0 && html`
+                      <${Box} sx=${{ border: '1px dashed', borderColor: 'divider', borderRadius: 1, textAlign: 'center', py: 1.25, mb: 0.75 }}>
+                        <${Typography} variant="caption" color="text.secondary" sx=${{ fontStyle: 'italic' }}>
+                          + ${hidden} weitere Kandidaten — unten laden
+                        <//>
+                      <//>
+                    `}
+                  `
+                }
+              <//>
+            `;
+          })}
+
+          <!-- Pagination footer -->
+          <${Box} sx=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 0.5, pb: 1 }}>
+            <${Typography} variant="caption" color="text.secondary">
+              ${visible.length} von ${filtered.length} Kandidaten angezeigt
+            <//>
+            ${remaining > 0 && html`
+              <${Button}
+                variant="outlined" color="inherit" size="small"
+                onClick=${() => setVisibleCount(v => v + PAGE_SIZE)}
+                sx=${{ borderColor: 'divider' }}
+              >
+                Mehr laden (${remaining})
+              <//>
+            `}
+          <//>
+        <//>
+      `;
+    }
+
+    /* ── Tab: Status & Historie ──────────────────────────────── */
+    function TabHistory() {
+      return html`
+        <${Paper} variant="outlined" sx=${{ p: 3 }}>
+          <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'block', borderBottom: '1px solid', borderColor: 'divider', pb: 1.25, mb: 0.5 }}>
+            Aktivitäts-Timeline
+          <//>
+          <${Box}>
+            ${TIMELINE.map((item, i) => {
+              const dc = DOT_COLORS[item.dotClass];
+              return html`
+                <${Stack} key=${i} direction="row" gap=${2} sx=${{ py: 1.75, borderBottom: i < TIMELINE.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
+                  <${Stack} alignItems="center" sx=${{ flexShrink: 0, width: 32 }}>
+                    <${Box} sx=${{ width: 32, height: 32, borderRadius: '50%', bgcolor: dc.bgcolor, color: dc.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>
+                      ${item.icon}
+                    <//>
+                    ${i < TIMELINE.length - 1 && html`<${Box} sx=${{ width: '2px', flex: 1, bgcolor: 'divider', mt: 0.75 }} />`}
+                  <//>
+                  <${Box} sx=${{ flex: 1, minWidth: 0 }}>
+                    <${Typography} variant="body2" fontWeight=${600} sx=${{ mb: 0.25 }}>${item.title}<//>
+                    ${item.desc && html`<${Typography} variant="body2" color="text.secondary" sx=${{ mb: 0.5 }}>${item.desc}<//>` }
+                    ${item.comment && html`
+                      <${Box} sx=${{ bgcolor: '#F5F6F8', borderLeft: '3px solid', borderColor: 'divider', px: 1.5, py: 1, my: 0.75, borderRadius: '0 2px 2px 0' }}>
+                        <${Typography} variant="body2" sx=${{ lineHeight: 1.6 }}>${item.comment}<//>
+                      <//>
+                    `}
+                    <${Typography} variant="caption" color="text.disabled">${item.meta}<//>
+                  <//>
+                <//>
+              `;
+            })}
+          <//>
+        <//>
+      `;
+    }
+
+    /* ── Tab: Details ────────────────────────────────────────── */
+    function TabDetails() {
+      const PROJECT = [
+        ['Kunde', 'Hypoteq AG'], ['Branche', 'Banking'], ['Vertragsart', 'T&M'],
+        ['Startdatum', '01.07.2026'], ['Enddatum', '31.12.2026'], ['Auslastung', '100 %'],
+        ['Level', 'Senior Consultant'], ['Region', 'Deutschland'], ['Remote-Anteil', '25 %'],
+        ['Abzugeben bis', '30.05.2026'],
+      ];
+      const CUSTOMER_SYSTEMS = ['Avaloq', 'SAP FSCM'];
+      const SKILL_CATEGORIES = [
+        { key: 'domain',          label: 'Domain' },
+        { key: 'tool',            label: 'Tool' },
+        { key: 'method',          label: 'Methode' },
+        { key: 'soft',            label: 'Soft Skill' },
+        { key: 'language',        label: 'Sprache' },
+        { key: 'industry_system', label: 'Branche / System' },
+      ];
+      const SKILLS = [
+        { cat: 'domain',          name: 'AML',        type: 'pflicht'  },
+        { cat: 'domain',          name: 'Compliance', type: 'pflicht'  },
+        { cat: 'industry_system', kind: 'group', label: 'EU-Regulatorik', type: 'pflicht',
+          skills: ['EU-AML-Paket', 'MiFID II'] },
+        { cat: 'tool',            name: 'MS Office',  type: 'optional' },
+      ];
+      return html`
+        <${Stack} spacing=${1.5}>
+          <${Paper} variant="outlined" sx=${{ p: 3 }}>
+            <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'block', borderBottom: '1px solid', borderColor: 'divider', pb: 1.25, mb: 2 }}>
+              Projektdaten
+            <//>
+            <${Grid} container spacing=${2.25}>
+              ${PROJECT.map(([label, val]) => html`
+                <${Grid} key=${label} item xs=${4}>
+                  <${Typography} variant="caption" color="text.secondary" sx=${{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.25 }}>
+                    ${label}
+                  <//>
+                  <${Typography} variant="body2" fontWeight=${500}>${val}<//>
+                <//>
+              `)}
+            <//>
+
+            <${Box} sx=${{ borderTop: '1px solid', borderColor: 'divider', pt: 2, mt: 2 }}>
+              <${Typography} variant="caption" color="text.secondary" sx=${{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.75 }}>
+                Kundensysteme / Legacy-Systeme
+              <//>
+              <${Stack} direction="row" flexWrap="wrap" gap=${0.75} sx=${{ mb: 0.5 }}>
+                ${CUSTOMER_SYSTEMS.map(sys => html`
+                  <${Box} key=${sys} sx=${{ bgcolor: '#E3F0FC', color: '#1256A0', px: 1.25, py: 0.25, borderRadius: '12px', fontSize: '12px', fontWeight: 500 }}>
+                    ${sys}
+                  <//>
+                `)}
+              <//>
+            <//>
+          <//>
+
+          <${Paper} variant="outlined" sx=${{ p: 3 }}>
+            <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'block', borderBottom: '1px solid', borderColor: 'divider', pb: 1.25, mb: 2 }}>
+              Beschreibung
+            <//>
+            <${Grid} container spacing=${2.5}>
+              <${Grid} item xs=${6}>
+                <${Typography} variant="body2" fontWeight=${700} sx=${{ mb: 0.75 }}>Projektziel<//>
+                <${Typography} variant="body2" color="text.secondary" sx=${{ lineHeight: 1.65 }}>
+                  Migration der bestehenden On-Premise-Datenpipelines auf eine AWS-basierte Cloud-Infrastruktur. Ziel ist die Skalierbarkeit und Ausfallsicherheit der Datenmigration im Rahmen des strategischen Cloud-Programms der Hypoteq AG.
+                <//>
+              <//>
+              <${Grid} item xs=${6}>
+                <${Typography} variant="body2" fontWeight=${700} sx=${{ mb: 0.75 }}>Aufgaben & Verantwortlichkeiten<//>
+                <${Typography} variant="body2" color="text.secondary" sx=${{ lineHeight: 1.65 }}>
+                  Entwurf und Implementierung der Migrationsstrategie, enge Zusammenarbeit mit dem Kunden-Architekten-Team, Dokumentation der Schnittstellen sowie technische Abnahme der migrierten Datenpipelines.
+                <//>
+              <//>
+            <//>
+          <//>
+
+          <${Paper} variant="outlined" sx=${{ p: 3 }}>
+            <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'block', borderBottom: '1px solid', borderColor: 'divider', pb: 1.25, mb: 2 }}>
+              Geforderte Skills
+            <//>
+            <${Stack} spacing=${2}>
+              ${SKILL_CATEGORIES
+                .map(cat => ({ ...cat, skills: SKILLS.filter(sk => sk.cat === cat.key) }))
+                .filter(cat => cat.skills.length > 0)
+                .map(cat => html`
+                  <${Box} key=${cat.key}>
+                    <${Box} sx=${{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
+                      <${Typography} variant="caption" color="text.secondary" sx=${{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        ${cat.label}
+                      <//>
+                      <${Box} sx=${{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#E3F0FC', color: '#1256A0', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        ${cat.skills.length}
+                      <//>
+                    <//>
+                    <${Stack} spacing=${0.625}>
+                      ${cat.skills.map(sk => sk.kind === 'group'
+                        ? html`
+                          <${Box} key=${sk.label} sx=${{ border: '1px solid #1976D2', borderRadius: 1.5, overflow: 'hidden' }}>
+                            <${Stack} direction="row" alignItems="center" gap=${1} sx=${{ px: 1.5, py: 0.875, bgcolor: '#E3F0FC', borderBottom: '1px solid #b3d2f0' }}>
+                              <${Box} sx=${{ bgcolor: '#1976D2', color: '#fff', px: 0.75, py: 0.125, borderRadius: '6px', fontSize: '10px', fontWeight: 700, letterSpacing: 0.5, flexShrink: 0 }}>ODER<//>
+                              <${Typography} variant="body2" fontWeight=${600} sx=${{ flex: 1, color: '#1256A0' }}>${sk.label || 'ODER-Gruppe'}<//>
+                              <${Box} sx=${{ bgcolor: '#FCEBEB', color: '#791F1F', px: 1.25, py: 0.25, borderRadius: '12px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, flexShrink: 0 }}>
+                                ${sk.type === 'pflicht' ? 'Pflicht' : 'Optional'}
+                              <//>
+                            <//>
+                            <${Box} sx=${{ px: 1.5, py: 0.875 }}>
+                              ${sk.skills.map((name, i) => html`
+                                <${Stack} key=${name} direction="row" alignItems="center" gap=${1} sx=${{ mb: i < sk.skills.length - 1 ? 0.5 : 0 }}>
+                                  <${Typography} variant="caption" sx=${{ color: '#1976D2', fontWeight: 700, minWidth: 28, textAlign: 'right', flexShrink: 0 }}>
+                                    ${i === 0 ? '' : 'ODER'}
+                                  <//>
+                                  <${Typography} variant="body2">${name}<//>
+                                <//>
+                              `)}
+                            <//>
+                          <//>
+                        `
+                        : html`
+                          <${Box} key=${sk.name} sx=${{
+                            display: 'flex', alignItems: 'center', gap: 1.5,
+                            border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 1.75, py: 1,
+                          }}>
+                            <${Typography} variant="body2" fontWeight=${500} sx=${{ flex: 1 }}>${sk.name}<//>
+                            <${Box} sx=${{
+                              display: 'inline-block',
+                              bgcolor: sk.type === 'pflicht' ? '#FCEBEB' : '#E3F0FC',
+                              color:   sk.type === 'pflicht' ? '#791F1F' : '#1256A0',
+                              px: 1.25, py: 0.25, borderRadius: '12px',
+                              fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4,
+                            }}>
+                              ${sk.type === 'pflicht' ? 'Pflicht' : 'Optional'}
+                            <//>
+                          <//>
+                        `
+                      )}
+                    <//>
+                  <//>
+                `)
+              }
+            <//>
+          <//>
+        <//>
+      `;
+    }
+
+    /* ── Unmapped-Skills-Daten ──────────────────────────────── */
+    const DECIDALO_CATALOG = [
+      { id:'d1',  name:'AML / Anti-Money-Laundering',   cat:'domain'          },
+      { id:'d2',  name:'Compliance Management',          cat:'domain'          },
+      { id:'d3',  name:'KYC (Know Your Customer)',       cat:'domain'          },
+      { id:'d4',  name:'EU-AML-Paket (6. Direktive)',    cat:'domain'          },
+      { id:'d5',  name:'Risikomanagement',               cat:'domain'          },
+      { id:'d6',  name:'Basel III / IV Regulatorik',     cat:'domain'          },
+      { id:'d7',  name:'MiFID II',                       cat:'domain'          },
+      { id:'d8',  name:'Dow Jones Risk & Compliance',    cat:'tool'            },
+      { id:'d9',  name:'Refinitiv World-Check',          cat:'tool'            },
+      { id:'d10', name:'MS Office Suite',                cat:'tool'            },
+      { id:'d11', name:'Avaloq Banking Platform',        cat:'industry_system' },
+      { id:'d12', name:'SAP FSCM',                       cat:'industry_system' },
+    ];
+
+    const CAT_LABEL = { domain:'Domain', tool:'Tool', method:'Methode', soft:'Soft Skill', language:'Sprache', industry_system:'Branche/System' };
+
+    const UNMAPPED_SKILLS = [
+      { id:'u1', name:'KYC-Software Dow Jones', type:'pflicht',  note:'Aus Briefing übernommen — genaue Tool-Version unklar' },
+      { id:'u2', name:'Basel-IV-Readiness',     type:'pflicht',  note:null },
+      { id:'u3', name:'Avaloq CBS',             type:'optional', note:'Möglicherweise identisch mit Avaloq Banking Platform' },
+    ];
+
+    /* ── Tab: Unmapped Skills ────────────────────────────────── */
+    function TabUnmapped() {
+      const [sel,   setSel]   = useState({}); // skillId → catalogId | '__none__'
+      const [saved, setSaved] = useState(new Set());
+
+      const resolve = useCallback((skillId) => {
+        if (!sel[skillId]) return;
+        setSaved(prev => new Set([...prev, skillId]));
+      }, [sel]);
+
+      const unresolvedCount = UNMAPPED_SKILLS.length - saved.size;
+      const allDone = unresolvedCount === 0;
+
+      return html`
+        <${Box}>
+          <!-- Infobanner -->
+          <${Box} sx=${{
+            bgcolor:'#FFF3E0', border:'1px solid #FFCC80', borderRadius:1,
+            px:2, py:1.5, mb:2.5,
+            display:'flex', alignItems:'flex-start', gap:1.25,
+          }}>
+            <${Box} sx=${{ color:'#E65100', fontSize:'20px', lineHeight:1.2, flexShrink:0 }}>⚠<//>
+            <${Box}>
+              <${Typography} variant="body2" fontWeight=${700} sx=${{ color:'#BF360C', mb:0.25 }}>
+                ${UNMAPPED_SKILLS.length} Skills konnten beim Erfassen nicht im Decidalo-Katalog gefunden werden
+              <//>
+              <${Typography} variant="body2" color="text.secondary">
+                Ordnen Sie jeden Skill einem vorhandenen Decidalo-Skill zu oder veranlassen Sie die Neuanlage.
+                Nicht zugeordnete Skills fließen nicht ins Matching ein.
+              <//>
+            <//>
+          <//>
+
+          <!-- Skill-Karten -->
+          <${Stack} spacing=${1.5} sx=${{ mb:3 }}>
+            ${UNMAPPED_SKILLS.map(skill => {
+              const isSaved    = saved.has(skill.id);
+              const chosen     = sel[skill.id];
+              const chosenItem = DECIDALO_CATALOG.find(d => d.id === chosen);
+              const canSave    = !!chosen;
+
+              return html`
+                <${Paper} key=${skill.id} variant="outlined" sx=${{
+                  p:2.5,
+                  bgcolor: isSaved ? (chosen === '__none__' ? '#FAFAFA' : '#F0FBF5') : '#fff',
+                  borderColor: isSaved ? (chosen === '__none__' ? 'divider' : '#81C784') : 'divider',
+                }}>
+                  <${Stack} direction="row" alignItems="flex-start" gap=${2}>
+
+                    <!-- Skill-Info links -->
+                    <${Box} sx=${{ flex:1, minWidth:0 }}>
+                      <${Stack} direction="row" alignItems="center" gap=${1} flexWrap="wrap" sx=${{ mb:0.5 }}>
+                        <${Typography} variant="body2" fontWeight=${700}>${skill.name}<//>
+                        <${Box} sx=${{
+                          fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:0.4,
+                          px:1, py:0.125, borderRadius:'8px',
+                          bgcolor: skill.type === 'pflicht' ? '#FCEBEB' : '#E3F0FC',
+                          color:   skill.type === 'pflicht' ? '#791F1F' : '#1256A0',
+                        }}>${skill.type === 'pflicht' ? 'Pflicht' : 'Optional'}<//>
+                        ${!isSaved && html`
+                          <${Box} sx=${{ fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:0.4, px:1, py:0.125, borderRadius:'8px', bgcolor:'#FFF3E0', color:'#E65100' }}>
+                            Nicht gemappt
+                          <//>
+                        `}
+                      <//>
+                      ${skill.note && html`
+                        <${Typography} variant="caption" color="text.secondary" sx=${{ fontStyle:'italic' }}>
+                          Hinweis: ${skill.note}
+                        <//>
+                      `}
+                    <//>
+
+                    <!-- Mapping-UI rechts -->
+                    <${Box} sx=${{ flexShrink:0, minWidth:300 }}>
+                      ${isSaved ? html`
+                        <!-- Gespeichert -->
+                        ${chosen === '__none__'
+                          ? html`
+                            <${Box} sx=${{ display:'flex', alignItems:'center', gap:1, color:'text.secondary' }}>
+                              <${Box} sx=${{ fontSize:'16px' }}>📋<//>
+                              <${Typography} variant="body2" color="text.secondary">
+                                Kein Mapping — wird als neuer Skill im Admin vorgemerkt
+                              <//>
+                            <//>
+                          `
+                          : html`
+                            <${Box} sx=${{ display:'flex', alignItems:'center', gap:1 }}>
+                              <${Box} sx=${{ color:'#2E7D32', fontSize:'16px', fontWeight:700 }}>✓<//>
+                              <${Box}>
+                                <${Typography} variant="body2" fontWeight=${600} sx=${{ color:'#0F6E56' }}>
+                                  ${chosenItem.name}
+                                <//>
+                                <${Typography} variant="caption" color="text.secondary">
+                                  ${CAT_LABEL[chosenItem.cat] || chosenItem.cat}
+                                <//>
+                              <//>
+                            <//>
+                          `
+                        }
+                      ` : html`
+                        <!-- Noch nicht gespeichert -->
+                        <${Stack} spacing=${1}>
+                          <${TextField}
+                            label="Decidalo-Skill auswählen"
+                            size="small" select fullWidth
+                            value=${chosen || ''}
+                            onChange=${e => setSel(prev => ({ ...prev, [skill.id]: e.target.value }))}
+                          >
+                            <${MenuItem} value="" disabled><em>— bitte wählen —</em><//>
+                            ${DECIDALO_CATALOG.map(d => html`
+                              <${MenuItem} key=${d.id} value=${d.id}>
+                                ${d.name}
+                                <${Box} component="span" sx=${{ ml:1, fontSize:'11px', color:'text.disabled' }}>
+                                  (${CAT_LABEL[d.cat] || d.cat})
+                                <//>
+                              <//>
+                            `)}
+                            <${MenuItem} value="__none__">
+                              <${Box} sx=${{ color:'text.secondary', fontStyle:'italic' }}>
+                                Kein Treffer — neuen Skill anlegen
+                              <//>
+                            <//>
+                          <//>
+                          <${Button}
+                            variant="outlined" size="small"
+                            disabled=${!canSave}
+                            onClick=${() => resolve(skill.id)}
+                          >
+                            Übernehmen
+                          <//>
+                        <//>
+                      `}
+                    <//>
+
+                  <//>
+                <//>
+              `;
+            })}
+          <//>
+
+          <!-- Abschluss-Banner -->
+          ${allDone
+            ? html`
+              <${Box} sx=${{ bgcolor:'#E1F5EE', border:'1px solid #81C784', borderRadius:1, px:2, py:1.5, display:'flex', alignItems:'center', gap:2 }}>
+                <${Box} sx=${{ color:'#2E7D32', fontSize:'20px', flexShrink:0 }}>✓<//>
+                <${Box} sx=${{ flex:1 }}>
+                  <${Typography} variant="body2" fontWeight=${700} sx=${{ color:'#0F6E56', mb:0.25 }}>Alle Skills zugeordnet<//>
+                  <${Typography} variant="body2" color="text.secondary">
+                    Matches neu berechnen, damit die Zuordnungen ins Scoring einfließen.
+                  <//>
+                <//>
+                <${Button} variant="contained" size="small" sx=${{ flexShrink:0 }}>
+                  Matches neu berechnen
+                <//>
+              <//>
+            `
+            : html`
+              <${Typography} variant="caption" color="text.secondary">
+                ${unresolvedCount} von ${UNMAPPED_SKILLS.length} Skills noch nicht zugeordnet.
+              <//>
+            `
+          }
+        <//>
+      `;
+    }
+
+    /* ── ScorePlaceholder ───────────────────────────────────────────── */
+    function ScorePlaceholder({ candidate, onClose }) {
+      if (!candidate) return null;
+      return html`
+        <${Box} sx=${{ width: 520, maxWidth: '95vw', height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <${Box} sx=${{ borderBottom: '1px solid', borderColor: 'divider', px: 2.5, py: 1.75, flexShrink: 0 }}>
+            <${Stack} direction="row" alignItems="center" gap=${1.5}>
+              <${Avatar} initials=${candidate.initials} bgcolor=${candidate.avatarColor} />
+              <${Box} sx=${{ flex: 1, minWidth: 0 }}>
+                <${Stack} direction="row" alignItems="center" gap=${1} flexWrap="wrap" sx=${{ mb: 0.25 }}>
+                  <${Typography} variant="subtitle1" fontWeight=${700}>${candidate.name}<//> 
+                  <${StatusPill} label=${candidate.status} />
+                <//>
+                <${Typography} variant="caption" color="text.secondary">
+                  ${candidate.role} · ${candidate.manager}
+                <//>
+              <//>
+              <${Button} size="small" color="inherit" onClick=${onClose} sx=${{ minWidth: 0, px: 1 }}>✕<//>
+            <//>
+          <//>
+          <${Box} sx=${{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, px: 4, textAlign: 'center' }}>
+            <${Typography} variant="body2" color="text.secondary">
+              Score-Aufschlüsselung im Sprint-2-Score-Drawer abgebildet. Der Drawer ist read-only und enthält keine Bewertung.
+            <//>
+            <${Button} variant="contained" component="a" href="score-drawer-sprint2.html">
+              Score-Drawer öffnen →
+            <//>
+          <//>
+        <//>
+      `;
+    }
+
+    /* ── App ─────────────────────────────────────────────────── */
+    function App() {
+      const [tab,            setTab]            = useState(0);
+      const [drawerOpen,     setDrawerOpen]     = useState(false);
+      const [drawerCandidate,setDrawerCandidate] = useState(null);
+      const [confirmOpen,    setConfirm]        = useState(false);
+      const [archived,       setArchived]       = useState(false);
+
+      const openDrawer   = useCallback(c => { setDrawerCandidate(c); setDrawerOpen(true); }, []);
+      const closeDrawer  = useCallback(() => setDrawerOpen(false), []);
+      const handleArchive = () => { setArchived(true); setConfirm(false); };
+
+      const hasUnmapped = UNMAPPED_SKILLS.length > 0;
+
+      return html`
+        <${ThemeProvider} theme=${theme}>
+          <${CssBaseline} />
+          <${MockupBar} />
+
+          <${Box} sx=${{ bgcolor: '#F5F6F8', minHeight: '100vh', pb: 6 }}>
+          <${Container} maxWidth="md" sx=${{ pt: 3 }}>
+
+            <!-- Page header -->
+            <${Paper} variant="outlined" sx=${{ p: 3, mb: 2 }}>
+              <${Typography} variant="caption" color="primary.main" sx=${{ display: 'block', mb: 1, cursor: 'pointer' }}>
+                ← Opportunity-Liste
+              <//>
+              <${Box} sx=${{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+                <${Box} sx=${{ flex: 1, minWidth: 0 }}>
+                  <${Stack} direction="row" alignItems="center" gap=${1.25} flexWrap="wrap" sx=${{ mb: 1 }}>
+                    <${Typography} variant="h6" fontWeight=${700}>Backend-Projekt Datenmigration<//>
+                    <${StatusPill} label="Offen" />
+                  <//>
+                  <${Stack} direction="row" alignItems="center" flexWrap="wrap" gap=${0} sx=${{ fontSize: '12px', color: 'text.secondary' }}>
+                    <${Typography} variant="caption">Erstellt von Jannik Schröder<//>
+                    <${Box} component="span" sx=${{ mx: 1.25, color: 'divider' }}>|<//>
+                    <${Typography} variant="caption">12.04.2026<//>
+                    <${Box} component="span" sx=${{ mx: 1.25, color: 'divider' }}>|<//>
+                    <${Box} sx=${{ display: 'inline-flex', alignItems: 'center', gap: 0.5, whiteSpace: 'nowrap' }}>
+                      <${Typography} variant="caption">Reaktionsfrist:<//>
+                      <${DaysBadge} days=${3} />
+                    <//>
+                    <${Box} component="span" sx=${{ mx: 1.25, color: 'divider' }}>|<//>
+                    <${Typography} variant="caption">1 Position<//>
+                  <//>
+                <//>
+                <${Stack} direction="row" spacing=${1} sx=${{ flexShrink: 0, pt: 0.25 }}>
+                  <${Button} variant="outlined" color="error" size="small" disabled=${archived} onClick=${() => setConfirm(true)}>Archivieren<//>
+                  <${Button} variant="outlined" size="small" disabled=${archived}>Bearbeiten<//>
+                  <${Button} variant="contained" size="small" disabled=${archived}>Matches neu berechnen<//>
+                <//>
+              <//>
+            <//>
+
+            <!-- Tabs -->
+            <${Tabs} value=${tab} onChange=${(_, v) => setTab(v)} sx=${{ mb: 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <${Tab} label=${html`
+                <${Stack} direction="row" alignItems="center" gap=${0.75}>
+                  Matches
+                  <${Box} sx=${{ bgcolor:'#E3F0FC', color:'#1256A0', borderRadius:'10px', px:0.875, fontSize:'11px', fontWeight:700 }}>
+                    ${CANDIDATES.length}
+                  <//>
+                <//>
+              `} />
+              <${Tab} label="Status & Historie" />
+              <${Tab} label="Details" />
+              ${hasUnmapped && html`
+                <${Tab} label=${html`
+                  <${Stack} direction="row" alignItems="center" gap=${0.75}>
+                    Skill-Mapping
+                    <${Box} sx=${{ bgcolor:'#FFF3E0', color:'#E65100', borderRadius:'10px', px:0.875, fontSize:'11px', fontWeight:700 }}>
+                      ${UNMAPPED_SKILLS.length}
+                    <//>
+                  <//>
+                `} />
+              `}
+            <//>
+
+            ${tab === 0 && html`<${TabMatches} onOpenDrawer=${openDrawer} />`}
+            ${tab === 1 && html`<${TabHistory} />`}
+            ${tab === 2 && html`<${TabDetails} />`}
+            ${tab === 3 && hasUnmapped && html`<${TabUnmapped} />`}
+
+          <//>
+          <//>
+
+          <!-- Archivieren-Dialog -->
+          <${Dialog} open=${confirmOpen} onClose=${() => setConfirm(false)}>
+            <${DialogTitle}>Opportunity archivieren?<//>
+            <${DialogContent}>
+              <${DialogContentText}>
+                Die Opportunity wird archiviert und kann nicht mehr bearbeitet werden.
+              <//>
+            <//>
+            <${DialogActions}>
+              <${Button} onClick=${() => setConfirm(false)}>Abbrechen<//>
+              <${Button} onClick=${handleArchive} color="error" variant="contained">Archivieren<//>
+            <//>
+          <//>
+
+          <!-- Score Drawer -->
+          <${Drawer}
+            anchor="right"
+            open=${drawerOpen}
+            onClose=${closeDrawer}
+            PaperProps=${{ sx: { width: 520, maxWidth: '95vw' } }}
+          >
+            <${ScorePlaceholder} candidate=${drawerCandidate} onClose=${closeDrawer} />
+          <//>
+
+        <//>
+      `;
+    }
+
+    createRoot(document.getElementById('root')).render(html`<${App} />`);
+  </script>
+</body>
+</html>
