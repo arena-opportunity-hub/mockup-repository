@@ -6,7 +6,51 @@
   <title>Mitarbeiterverwaltung (Sprint 2) — Mockup</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
-  <style> * { box-sizing: border-box; } body { margin: 0; } </style>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    /* Calendar / Gantt table */
+    .cal-table { border-collapse: collapse; }
+    .cal-table th, .cal-table td { border: none; padding: 0; }
+    .cal-th-name {
+      font-size: 11px; font-weight: 700; color: #757575;
+      text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
+      background: #FAFAFA; padding: 6px 16px;
+      text-align: left; width: 220px; min-width: 220px;
+      position: sticky; left: 0; z-index: 2;
+      border-bottom: 1px solid #E0E0E0;
+    }
+    .cal-th-month {
+      border-left: 1px solid #E0E0E0;
+      font-size: 11px; font-weight: 700; color: #757575;
+      text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
+      background: #FAFAFA; padding: 6px 8px;
+      text-align: center;
+      border-bottom: 1px solid #E0E0E0;
+    }
+    .cal-th-kw {
+      width: 30px; min-width: 30px; max-width: 30px;
+      font-size: 11px; font-weight: 700; color: #757575;
+      border-left: 1px solid rgba(224,224,224,0.6);
+      padding: 6px 2px; text-align: center;
+      background: #FAFAFA;
+      border-bottom: 1px solid #E0E0E0;
+    }
+    .cal-td-name {
+      position: sticky; left: 0; background: #fff;
+      width: 220px; min-width: 220px; padding: 6px 16px;
+      border-bottom: 1px solid #EEEEEE; z-index: 1;
+    }
+    .cal-td-av {
+      width: 30px; min-width: 30px; max-width: 30px; height: 32px;
+      border-right: 1px solid rgba(255,255,255,0.25);
+      border-bottom: 1px solid rgba(224,224,224,0.35);
+      cursor: default;
+      transition: opacity 0.12s;
+    }
+    .cal-td-av:hover { opacity: 0.65 !important; }
+    .cal-tr-hover:hover .cal-td-name { background: #F5F9FF; }
+  </style>
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@mui/material@5/umd/material-ui.development.js"></script>
@@ -15,80 +59,160 @@
 <body>
   <div id="root"></div>
   <script>
-    const { createElement: h, useState, useMemo, useCallback } = React;
+    const { createElement: h, useState, useMemo } = React;
     const { createRoot } = ReactDOM;
     const {
-      Box, Typography, Button, Paper, Container, Stack,
+      Box, Typography, Button, Paper, Container, Stack, Divider,
       Table, TableHead, TableBody, TableRow, TableCell, TableContainer,
-      TextField, MenuItem, IconButton, Tooltip,
-      Drawer, Divider,
-      ThemeProvider, createTheme, CssBaseline, Tabs, Tab,
+      TextField, MenuItem, Tabs, Tab, Chip,
+      Drawer,
+      ThemeProvider, createTheme, CssBaseline,
     } = MaterialUI;
 
     const html = htm.bind(h);
 
     const theme = createTheme({
-      palette: { primary: { main: '#1976D2' }, error: { main: '#E53935' } },
+      palette: { primary: { main: '#1976D2' } },
       components: { MuiButton: { defaultProps: { disableElevation: true } } },
     });
 
-    /* ── Availability status colors (from colors.ts) ── */
+    /* ── Verfügbarkeitsstatus (Dispoliste-Farben) ── */
     const AV_STATUS = {
-      bench:       { label: 'Bench',               solid: '#FF0000', textColor: '#fff' },
-      billable:    { label: 'Billable',             solid: '#00B050', textColor: '#fff' },
-      prolongation:{ label: 'Prolongation möglich', solid: '#B4F1B1', textColor: '#212121' },
-      reserved:    { label: 'Reserviert',           solid: '#C4BD97', textColor: '#212121' },
-      offeredTo:   { label: 'Angeboten an',         solid: '#1976D2', textColor: '#fff' },
-      parttime:    { label: 'Teilzeit',             solid: '#FFC000', textColor: '#212121' },
-      absence:     { label: 'Abwesenheit',          solid: '#00838F', textColor: '#fff' },
-      left:        { label: 'Ausgeschieden',        solid: '#455A64', textColor: '#fff' },
-      junior:      { label: 'Junior (Bench)',       solid: '#512DA8', textColor: '#fff' },
+      bench:                 { color: '#FF0000', label: 'Bench' },
+      billable:              { color: '#00B050', label: 'Billable' },
+      prolongation_possible: { color: '#B4F1B1', label: 'Prolongation möglich' },
+      reserved:              { color: '#C4BD97', label: 'Reserviert' },
+      offered:               { color: '#1976D2', label: 'Angeboten' },
+      parttime:              { color: '#FFC000', label: 'Teilzeit' },
+      absence:               { color: '#0070C0', label: 'Abwesenheit' },
+      left_company:          { color: '#455A64', label: 'Ausgeschieden' },
     };
 
-    /* ── Demo data (6 employees, one entry each) ── */
-    const EMPLOYEES = [
-      { id: 1, name: 'Max Mustermann',  initials: 'MM', avatarColor: '#1976D2', level: 'Senior Consultant',
-        status: 'bench',        kunde: null,             von: '01.04.2026', bis: null,         auslastung: 100, region: 'Bayern' },
-      { id: 2, name: 'Sandra Koch',     initials: 'SK', avatarColor: '#388E3C', level: 'Consultant',
-        status: 'billable',     kunde: 'Commerzbank AG', von: '01.01.2026', bis: '31.12.2026', auslastung: 100, region: 'NRW' },
-      { id: 3, name: 'Thomas Berger',   initials: 'TB', avatarColor: '#7B1FA2', level: 'Senior Consultant',
-        status: 'prolongation', kunde: 'Reply GmbH',     von: '01.01.2026', bis: '31.07.2026', auslastung: 100, region: 'Hamburg' },
-      { id: 4, name: 'Klaus Becker',    initials: 'KB', avatarColor: '#455A64', level: 'Consultant',
-        status: 'offeredTo',    kunde: 'Deutsche Bank',  von: '15.05.2026', bis: '30.09.2026', auslastung: 100, region: 'NRW' },
-      { id: 5, name: 'Maria Schulz',    initials: 'MS', avatarColor: '#7B1FA2', level: 'Senior Consultant',
-        status: 'parttime',     kunde: 'Munich Re',      von: '01.01.2026', bis: '31.12.2026', auslastung: 60,  region: 'Bayern' },
-      { id: 6, name: 'Anna Weber',      initials: 'AW', avatarColor: '#C62828', level: 'Consultant',
-        status: 'absence',      kunde: null,             von: '01.01.2026', bis: '30.09.2026', auslastung: 0,   region: 'NRW' },
+    /* ── Stammdaten ── */
+    const CONSULTANTS = [
+      { name: 'Max Mustermann',  initials: 'MM', avatarColor: '#1976D2', level: 'Senior Consultant',    avKey: 'bench',                 customer: null,               offeredTo: null,               partTime: null, region: 'Bayern',            mobility: 'National',      comments: 'Sucht aktiv nach neuem Projekt.' },
+      { name: 'Sandra Koch',     initials: 'SK', avatarColor: '#388E3C', level: 'Consultant',           avKey: 'billable',              customer: 'Commerzbank AG',   offeredTo: null,               partTime: null, region: 'NRW',               mobility: 'Regional',      comments: null },
+      { name: 'Felix Weber',     initials: 'FW', avatarColor: '#F57C00', level: 'Consultant',           avKey: 'reserved',              customer: null,               offeredTo: null,               partTime: null, region: 'Berlin',            mobility: 'National',      comments: null },
+      { name: 'Thomas Berger',   initials: 'TB', avatarColor: '#7B1FA2', level: 'Senior Consultant',    avKey: 'prolongation_possible', customer: 'Reply GmbH',       offeredTo: null,               partTime: null, region: 'Hamburg',           mobility: 'National',      comments: 'Verlängerung wahrscheinlich bis Q3 2026.' },
+      { name: 'Jana Richter',    initials: 'JR', avatarColor: '#0097A7', level: 'Consultant',           avKey: 'bench',                 customer: null,               offeredTo: null,               partTime: null, region: 'Bayern',            mobility: 'Regional',      comments: null },
+      { name: 'Lisa Müller',     initials: 'LM', avatarColor: '#AD1457', level: 'Principal Consultant', avKey: 'billable',              customer: 'Allianz SE',       offeredTo: null,               partTime: null, region: 'Baden-Württemberg', mobility: 'International', comments: null },
+      { name: 'Klaus Becker',    initials: 'KB', avatarColor: '#455A64', level: 'Consultant',           avKey: 'offered',               customer: null,               offeredTo: 'Deutsche Bank AG', partTime: null, region: 'NRW',               mobility: 'Regional',      comments: 'Rückmeldung bis KW 23 erwartet.' },
+      { name: 'Maria Schulz',    initials: 'MS', avatarColor: '#7B1FA2', level: 'Senior Consultant',    avKey: 'parttime',              customer: 'Munich Re',        offeredTo: null,               partTime: 60,   region: 'Bayern',            mobility: 'National',      comments: null },
+      { name: 'Peter Hoffmann',  initials: 'PH', avatarColor: '#00838F', level: 'Principal Consultant', avKey: 'billable',              customer: 'Hypoteq AG',       offeredTo: null,               partTime: null, region: 'Hessen',            mobility: 'International', comments: null },
+      { name: 'Anna Weber',      initials: 'AW', avatarColor: '#C62828', level: 'Consultant',           avKey: 'absence',               customer: null,               offeredTo: null,               partTime: null, region: 'NRW',               mobility: 'Regional',      comments: 'Elternzeit bis September 2026.' },
     ];
 
-    /* ── Status dot + label pill ── */
-    function StatusPill({ statusKey }) {
-      const s = AV_STATUS[statusKey] || AV_STATUS.bench;
-      return html`
-        <${Box} sx=${{
-          display: 'inline-flex', alignItems: 'center', gap: 0.75,
-          bgcolor: s.solid, color: s.textColor,
-          px: 1.25, py: 0.25, borderRadius: '10px',
-          fontSize: '11px', fontWeight: 700,
-          textTransform: 'uppercase', letterSpacing: 0.4, whiteSpace: 'nowrap',
-        }}>
-          ${s.label}
-        <//>
-      `;
+    /* ── Gantt-Segmente: welcher Consultant ist wann in welchem Status ── */
+    const GANTT_ENTRIES = [
+      { name: 'Max Mustermann', segments: [
+          { fromKW:  1, toKW: 14, status: 'billable' },
+          { fromKW: 15, toKW: 52, status: 'bench' },
+      ]},
+      { name: 'Sandra Koch', segments: [
+          { fromKW:  1, toKW: 52, status: 'billable' },
+      ]},
+      { name: 'Felix Weber', segments: [
+          { fromKW:  1, toKW: 15, status: 'billable' },
+          { fromKW: 16, toKW: 25, status: 'reserved' },
+          { fromKW: 26, toKW: 52, status: 'billable' },
+      ]},
+      { name: 'Thomas Berger', segments: [
+          { fromKW:  1, toKW: 27, status: 'billable' },
+          { fromKW: 28, toKW: 30, status: 'prolongation_possible' },
+          { fromKW: 31, toKW: 52, status: 'bench' },
+      ]},
+      { name: 'Jana Richter', segments: [
+          { fromKW:  1, toKW: 25, status: 'bench' },
+          { fromKW: 26, toKW: 52, status: 'billable' },
+      ]},
+      { name: 'Lisa Müller', segments: [
+          { fromKW:  1, toKW: 52, status: 'billable' },
+      ]},
+      { name: 'Klaus Becker', segments: [
+          { fromKW:  1, toKW: 22, status: 'bench' },
+          { fromKW: 23, toKW: 24, status: 'offered' },
+          { fromKW: 25, toKW: 52, status: 'billable' },
+      ]},
+      { name: 'Maria Schulz', segments: [
+          { fromKW:  1, toKW: 52, status: 'parttime' },
+      ]},
+      { name: 'Peter Hoffmann', segments: [
+          { fromKW:  1, toKW: 52, status: 'billable' },
+      ]},
+      { name: 'Anna Weber', segments: [
+          { fromKW:  1, toKW: 38, status: 'absence' },
+          { fromKW: 39, toKW: 52, status: 'bench' },
+      ]},
+    ];
+
+    /* ── Hilfsfunktionen ── */
+    const CURRENT_KW   = 23; // 2026-06-01
+    const CURRENT_YEAR = 2026;
+
+    const MONTH_RANGES = [
+      { label: 'Januar',    from:  1, to:  4 },
+      { label: 'Februar',   from:  5, to:  8 },
+      { label: 'März',      from:  9, to: 13 },
+      { label: 'April',     from: 14, to: 17 },
+      { label: 'Mai',       from: 18, to: 21 },
+      { label: 'Juni',      from: 22, to: 25 },
+      { label: 'Juli',      from: 26, to: 30 },
+      { label: 'August',    from: 31, to: 35 },
+      { label: 'September', from: 36, to: 39 },
+      { label: 'Oktober',   from: 40, to: 44 },
+      { label: 'November',  from: 45, to: 48 },
+      { label: 'Dezember',  from: 49, to: 52 },
+    ];
+
+    function kwToMonthIdx(kw) {
+      return Math.max(0, MONTH_RANGES.findIndex(m => kw >= m.from && kw <= m.to));
     }
 
-    /* ── Status dot only (for table column) ── */
-    function StatusDot({ statusKey }) {
-      const s = AV_STATUS[statusKey] || AV_STATUS.bench;
-      return html`
-        <${Stack} direction="row" alignItems="center" gap=${0.75}>
-          <${Box} sx=${{ width: 10, height: 10, borderRadius: '50%', bgcolor: s.solid, flexShrink: 0 }} />
-          <${Typography} variant="body2">${s.label}<//>
-        <//>
-      `;
+    function getSegmentStatus(name, kw) {
+      const entry = GANTT_ENTRIES.find(e => e.name === name);
+      if (!entry) return null;
+      const seg = entry.segments.find(s => kw >= s.fromKW && kw <= s.toKW);
+      return seg ? seg.status : null;
     }
 
-    /* ── MockupBar ── */
+    function kwToMonthLabel(kw) {
+      if (kw <=  4) return 'Januar';
+      if (kw <=  8) return 'Februar';
+      if (kw <= 13) return 'März';
+      if (kw <= 17) return 'April';
+      if (kw <= 21) return 'Mai';
+      if (kw <= 25) return 'Juni';
+      if (kw <= 30) return 'Juli';
+      if (kw <= 35) return 'August';
+      if (kw <= 39) return 'September';
+      if (kw <= 44) return 'Oktober';
+      if (kw <= 48) return 'November';
+      return 'Dezember';
+    }
+
+    function buildMonthGroups(weeks) {
+      const groups = [];
+      for (const kw of weeks) {
+        const m = kwToMonthLabel(kw);
+        if (groups.length > 0 && groups[groups.length - 1].label === m) {
+          groups[groups.length - 1].count++;
+        } else {
+          groups.push({ label: m, count: 1 });
+        }
+      }
+      return groups;
+    }
+
+    const REGIONS    = [...new Set(CONSULTANTS.map(c => c.region))].sort();
+    const MOBILITIES = ['Lokal', 'Regional', 'National', 'International'];
+
+    const HISTORY = [
+      { filename: 'Dispoliste_2026_KW01-52.xlsx', date: '05.05.2026, 14:21', status: 'Fertig',    link: true },
+      { filename: 'Dispoliste_2026_KW01-26.xlsx', date: '28.04.2026, 09:05', status: 'Fertig',    link: true },
+      { filename: 'Dispoliste_2025_KW01-52.xlsx', date: '10.01.2026, 11:40', status: 'Abgelaufen',link: false },
+    ];
+
+    /* ══════════════════════════════════════════════════════════ */
     function MockupBar() {
       return html`
         <${Paper} square elevation=${0} sx=${{
@@ -105,153 +229,495 @@
       `;
     }
 
-    /* ── Employee Drawer ── */
-    function EmployeeDrawer({ emp, onClose }) {
-      if (!emp) return null;
-      const av = AV_STATUS[emp.status] || AV_STATUS.bench;
+    /* ── Tab 1: Übersicht (Tabelle) ── */
+    function TabUebersicht() {
+      const [search,    setSearch]    = useState('');
+      const [fStatus,   setFStatus]   = useState('');
+      const [fRegion,   setFRegion]   = useState('');
+      const [fMobility, setFMobility] = useState('');
+      const [drawerEmployee, setDrawerEmployee] = useState(null);
+
+      const visible = useMemo(() => CONSULTANTS.filter(c =>
+        (!search    || c.name.toLowerCase().includes(search.toLowerCase())) &&
+        (!fStatus   || c.avKey === fStatus) &&
+        (!fRegion   || c.region === fRegion) &&
+        (!fMobility || c.mobility === fMobility)
+      ), [search, fStatus, fRegion, fMobility]);
+
+      const COLS = ['Name', 'Level', 'Customer', 'Offered to', 'Comments', 'Part-Time', 'Region', 'Mobility'];
 
       return html`
-        <${Drawer} anchor="right" open=${true} onClose=${onClose}
-          sx=${{ zIndex: 1200 }}
-          PaperProps=${{ sx: { width: 400, display: 'flex', flexDirection: 'column' } }}>
-
-          <!-- Header -->
-          <${Box} sx=${{
-            px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider',
-            display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0,
-          }}>
-            <${Box} sx=${{
-              width: 44, height: 44, borderRadius: '50%',
-              bgcolor: emp.avatarColor, color: '#fff',
-              fontWeight: 700, fontSize: '15px', flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>${emp.initials}<//>
-            <${Box} sx=${{ flex: 1 }}>
-              <${Typography} variant="subtitle1" fontWeight=${700}>${emp.name}<//>
-              <${Typography} variant="caption" color="text.secondary">${emp.level}<//>
+        <${Box}>
+          <${Stack} direction="row" spacing=${1.5} sx=${{ mb: 2.5 }} flexWrap="wrap" alignItems="flex-end">
+            <${TextField} size="small" placeholder="Name suchen"
+              value=${search} onChange=${e => setSearch(e.target.value)} sx=${{ minWidth: 200 }} />
+            <${TextField} label="Status" select size="small" value=${fStatus}
+              onChange=${e => setFStatus(e.target.value)} sx=${{ minWidth: 190 }}>
+              <${MenuItem} value="">Alle Status<//>
+              ${Object.entries(AV_STATUS).map(([k, v]) => html`
+                <${MenuItem} key=${k} value=${k}>
+                  <${Stack} direction="row" alignItems="center" gap=${1}>
+                    <${Box} sx=${{ width: 10, height: 10, borderRadius: '50%', bgcolor: v.color, flexShrink: 0 }} />
+                    ${v.label}
+                  <//>
+                <//>
+              `)}
             <//>
-            <${Button} size="small" color="inherit" onClick=${onClose}
-              sx=${{ minWidth: 0, px: 1 }}>✕<//>
+            <${TextField} label="Region" select size="small" value=${fRegion}
+              onChange=${e => setFRegion(e.target.value)} sx=${{ minWidth: 190 }}>
+              <${MenuItem} value="">Alle Regionen<//>
+              ${REGIONS.map(r => html`<${MenuItem} key=${r} value=${r}>${r}<//>`) }
+            <//>
+            <${TextField} label="Mobility" select size="small" value=${fMobility}
+              onChange=${e => setFMobility(e.target.value)} sx=${{ minWidth: 160 }}>
+              <${MenuItem} value="">Alle<//>
+              ${MOBILITIES.map(m => html`<${MenuItem} key=${m} value=${m}>${m}<//>`) }
+            <//>
+            <${Box} sx=${{ flex: 1 }} />
+            <${Typography} variant="caption" color="text.secondary" sx=${{ alignSelf: 'center' }}>
+              ${visible.length} von ${CONSULTANTS.length} Mitarbeitenden
+            <//>
           <//>
 
-          <!-- Body -->
-          <${Box} sx=${{ flex: 1, overflowY: 'auto', px: 3, py: 2.5 }}>
-            <${Typography} variant="overline" color="text.secondary" sx=${{
-              display: 'block', fontWeight: 700, letterSpacing: 0.5, fontSize: '11px',
-              borderBottom: '1px solid', borderColor: 'divider', pb: 1, mb: 1.5,
-            }}>
-              Verfügbarkeitseinträge
-            <//>
+          <${Stack} direction="row" flexWrap="wrap" gap=${2} sx=${{ mb: 2 }}>
+            ${Object.entries(AV_STATUS).map(([k, v]) => html`
+              <${Stack} key=${k} direction="row" alignItems="center" spacing=${0.75}>
+                <${Box} sx=${{ width: 12, height: 12, borderRadius: '2px', bgcolor: v.color, flexShrink: 0 }} />
+                <${Typography} variant="caption">${v.label}<//>
+              <//>
+            `)}
+          <//>
 
-            <!-- Single entry row -->
-            <${Paper} variant="outlined" sx=${{ p: 1.5, mb: 1 }}>
-              <${Stack} direction="row" alignItems="flex-start" gap=${1}>
-                <${Box} sx=${{ flex: 1, minWidth: 0 }}>
-                  <${Stack} direction="row" alignItems="center" gap=${0.75} sx=${{ mb: 0.5 }} flexWrap="wrap">
-                    <${StatusPill} statusKey=${emp.status} />
-                    <${Typography} variant="caption" color="text.secondary">
-                      ${emp.auslastung}%
+          <${TableContainer} component=${Paper} variant="outlined">
+            <${Table} size="small">
+              <${TableHead}>
+                <${TableRow} sx=${{ bgcolor: '#FAFAFA' }}>
+                  ${COLS.map(c => html`
+                    <${TableCell} key=${c} sx=${{ fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary', whiteSpace: 'nowrap' }}>
+                      ${c}
                     <//>
-                  <//>
-                  <${Typography} variant="body2" color="text.secondary" sx=${{ fontSize: '12px' }}>
-                    ${emp.von} – ${emp.bis || 'offen'}
-                  <//>
-                  ${emp.kunde && html`
-                    <${Typography} variant="caption" color="text.secondary"
-                      sx=${{ display: 'block', mt: 0.25 }}>
-                      ${emp.kunde}
-                    <//>
-                  `}
+                  `)}
                 <//>
-                <${Stack} direction="row" gap=${0.25} sx=${{ flexShrink: 0 }}>
-                  <${Tooltip} title="Bearbeiten" placement="top">
-                    <${Button} size="small" color="inherit"
-                      onClick=${() => alert('Bearbeiten: ' + emp.name)}
-                      sx=${{ minWidth: 0, px: 0.75, py: 0.25, fontSize: '14px' }}>
-                      ✏
+              <//>
+              <${TableBody}>
+                ${visible.length === 0 ? html`
+                  <${TableRow}>
+                    <${TableCell} colSpan=${8} sx=${{ textAlign: 'center', py: 5 }}>
+                      <${Typography} variant="body2" color="text.secondary">Keine Mitarbeitenden für diese Filterauswahl.<//>
                     <//>
                   <//>
-                  <${Tooltip} title="Löschen" placement="top">
-                    <${Button} size="small" color="error"
-                      onClick=${() => alert('Löschen: ' + emp.name)}
-                      sx=${{ minWidth: 0, px: 0.75, py: 0.25, fontSize: '14px' }}>
-                      🗑
+                ` : visible.map(c => {
+                  const av = AV_STATUS[c.avKey] || AV_STATUS.bench;
+                  return html`
+                    <${TableRow} key=${c.name} hover sx=${{ cursor:'pointer' }} onClick=${() => setDrawerEmployee(c)}>
+                      <${TableCell}>
+                        <${Stack} direction="row" alignItems="center" gap=${1.25}>
+                          <${Box} sx=${{
+                            width: 34, height: 34, borderRadius: '50%', bgcolor: c.avatarColor, color: '#fff',
+                            fontWeight: 700, fontSize: '12px', flexShrink: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>${c.initials}<//>
+                          <${Box}>
+                            <${Stack} direction="row" alignItems="center" gap=${0.75}>
+                              <${Typography} variant="body2" fontWeight=${600}>${c.name}<//>
+                              <${Box} sx=${{ width: 8, height: 8, borderRadius: '50%', bgcolor: av.color, flexShrink: 0 }} title=${av.label} />
+                            <//>
+                            <${Typography} variant="caption" color="text.secondary">${av.label}<//>
+                          <//>
+                        <//>
+                      <//>
+                      <${TableCell}><${Typography} variant="body2">${c.level}<//>
+                      <//>
+                      <${TableCell}>
+                        <${Typography} variant="body2" color=${c.customer ? 'text.primary' : 'text.disabled'}>
+                          ${c.customer || '—'}
+                        <//>
+                      <//>
+                      <${TableCell}>
+                        ${c.offeredTo ? html`
+                          <${Box} sx=${{ display: 'inline-flex', alignItems: 'center', gap: 0.5, bgcolor: '#E3F0FC', color: '#1256A0', px: 1, py: 0.25, borderRadius: '10px', fontSize: '12px', fontWeight: 500 }}>
+                            ${c.offeredTo}
+                          <//>
+                        ` : html`<${Typography} variant="body2" color="text.disabled">—<//>` }
+                      <//>
+                      <${TableCell} sx=${{ maxWidth: 220 }}>
+                        <${Typography} variant="body2" color=${c.comments ? 'text.secondary' : 'text.disabled'}
+                          sx=${{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}
+                          title=${c.comments || ''}>
+                          ${c.comments || '—'}
+                        <//>
+                      <//>
+                      <${TableCell}>
+                        ${c.partTime ? html`
+                          <${Box} sx=${{ display: 'inline-block', bgcolor: '#FFF8E1', color: '#8a6000', px: 1, py: 0.25, borderRadius: '10px', fontSize: '12px', fontWeight: 700 }}>
+                            ${c.partTime}%
+                          <//>
+                        ` : html`<${Typography} variant="body2" color="text.disabled">—<//>` }
+                      <//>
+                      <${TableCell}><${Typography} variant="body2">${c.region}<//>
+                      <//>
+                      <${TableCell}><${Typography} variant="body2">${c.mobility}<//>
+                      <//>
                     <//>
-                  <//>
+                  `;
+                })}
+              <//>
+            <//>
+          <//>
+
+          ${drawerEmployee && html`
+            <${Drawer} anchor="right" open=${true} onClose=${() => setDrawerEmployee(null)}
+              sx=${{ zIndex:1200 }}
+              PaperProps=${{ sx:{ width:360, display:'flex', flexDirection:'column' } }}>
+              <${Box} sx=${{ px:3, py:2, borderBottom:'1px solid', borderColor:'divider', display:'flex', alignItems:'center', gap:1.5, flexShrink:0 }}>
+                <${Box} sx=${{ width:40, height:40, borderRadius:'50%', bgcolor:drawerEmployee.avatarColor, color:'#fff', fontWeight:700, fontSize:'15px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>${drawerEmployee.initials}<//>
+                <${Box} sx=${{ flex:1 }}>
+                  <${Typography} variant="subtitle1" fontWeight=${700}>${drawerEmployee.name}<//>
+                  <${Typography} variant="caption" color="text.secondary">${drawerEmployee.level}<//>
+                <//>
+                <${Button} size="small" color="inherit" onClick=${() => setDrawerEmployee(null)} sx=${{ minWidth:0, px:1 }}>✕<//>
+              <//>
+              <${Box} sx=${{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, px:4, textAlign:'center' }}>
+                <${Typography} variant="body2" color="text.secondary">
+                  Die vollständige Mitarbeiter-Ansicht ist im dedizierten Mockup abgebildet.
+                <//>
+                <${Button} variant="contained" component="a" href="mitarbeiter-drawer-sprint2.html">
+                  Mitarbeiter-Drawer öffnen →
                 <//>
               <//>
             <//>
+          `}
+        <//>
+      `;
+    }
 
-            <${Button} variant="outlined" size="small" fullWidth
-              component="a" href="availability-form-sprint2.html"
-              sx=${{ mt: 1 }}>
-              + Neuer Eintrag
+    /* ── Tab 2: Gantt-Ansicht ── */
+    function TabGantt() {
+      const [year,     setYear]     = useState(CURRENT_YEAR);
+      const [monthIdx, setMonthIdx] = useState(() => kwToMonthIdx(CURRENT_KW));
+      const [showYear, setShowYear] = useState(false);
+      const [search,   setSearch]   = useState('');
+      const [drawerEmployee, setDrawerEmployee] = useState(null);
+
+      const startKW = showYear ? 1  : MONTH_RANGES[monthIdx].from;
+      const endKW   = showYear ? 52 : MONTH_RANGES[monthIdx].to;
+      const weeks   = Array.from({ length: endKW - startKW + 1 }, (_, i) => startKW + i);
+      const mGroups = buildMonthGroups(weeks);
+
+      const visible = useMemo(() =>
+        CONSULTANTS.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase())),
+        [search]
+      );
+
+      const isCurrentYear = year === CURRENT_YEAR;
+      const canPrev = !showYear && monthIdx > 0;
+      const canNext = !showYear && monthIdx < 11;
+
+      const goToToday = () => { setYear(CURRENT_YEAR); setMonthIdx(kwToMonthIdx(CURRENT_KW)); setShowYear(false); };
+
+      return html`
+        <${Box}>
+
+          <!-- Steuerzeile -->
+          <${Stack} direction="row" spacing=${1} alignItems="center" sx=${{ mb: 2.5 }} flexWrap="wrap" gap=${1}>
+            <${TextField}
+              size="small" placeholder="Name suchen"
+              value=${search} onChange=${e => setSearch(e.target.value)}
+              sx=${{ minWidth: 200 }}
+            />
+            <${Box} sx=${{ flex: 1 }} />
+            <${Button} size="small" variant="outlined" onClick=${goToToday}>Heute<//>
+            <${TextField} size="small" select label="Jahr"
+              value=${year} onChange=${e => setYear(Number(e.target.value))}
+              sx=${{ minWidth: 88 }}>
+              <${MenuItem} value=${2026}>2026<//>
+              <${MenuItem} value=${2027}>2027<//>
+            <//>
+            <${Button} size="small" variant="outlined" disabled=${!canPrev}
+              onClick=${() => setMonthIdx(i => i - 1)}>
+              ◀
+            <//>
+            <${Typography} variant="body2" fontWeight=${600}
+              sx=${{ minWidth: 90, textAlign: 'center', whiteSpace: 'nowrap' }}>
+              ${showYear ? String(year) : MONTH_RANGES[monthIdx].label}
+            <//>
+            <${Button} size="small" variant="outlined" disabled=${!canNext}
+              onClick=${() => setMonthIdx(i => i + 1)}>
+              ▶
+            <//>
+            <${Button} size="small"
+              variant=${showYear ? 'contained' : 'outlined'}
+              onClick=${() => setShowYear(v => !v)}>
+              Ganzes Jahr
             <//>
           <//>
-        <//>
-      `;
-    }
 
-    /* ── Empty state ── */
-    function EmptyState() {
-      return html`
-        <${TableRow}>
-          <${TableCell} colSpan=${7} sx=${{ py: 8, textAlign: 'center', border: 'none' }}>
-            <${Typography} sx=${{ fontSize: '36px', mb: 1.5, color: 'text.disabled' }}>👤<//>
-            <${Typography} variant="subtitle1" fontWeight=${600} sx=${{ mb: 0.75 }}>
-              Keine Mitarbeitenden gefunden
-            <//>
-            <${Typography} variant="body2" color="text.secondary">
-              Passe die Filter an.
+          <${Stack} direction="row" flexWrap="wrap" gap=${2} sx=${{ mb: 2 }}>
+            ${Object.entries(AV_STATUS).map(([k, v]) => html`
+              <${Stack} key=${k} direction="row" alignItems="center" spacing=${0.75}>
+                <${Box} sx=${{ width: 12, height: 12, borderRadius: '2px', bgcolor: v.color, flexShrink: 0 }} />
+                <${Typography} variant="caption">${v.label}<//>
+              <//>
+            `)}
+            <${Stack} direction="row" alignItems="center" spacing=${0.75}>
+              <${Box} sx=${{ width: 12, height: 12, borderRadius: '2px', bgcolor: '#F0F0F0', border: '1px solid #E0E0E0', flexShrink: 0 }} />
+              <${Typography} variant="caption" color="text.secondary">Keine Daten<//>
             <//>
           <//>
+
+          <${TableContainer} component=${Paper} variant="outlined">
+            <${Table} size="small" sx=${{ borderCollapse: 'collapse' }}>
+              <${TableHead}>
+                <!-- Monats-Header -->
+                <${TableRow} sx=${{ bgcolor: '#FAFAFA' }}>
+                  <${TableCell} sx=${{
+                    fontWeight: 700, fontSize: '11px', textTransform: 'uppercase',
+                    letterSpacing: 0.5, color: 'text.secondary', whiteSpace: 'nowrap',
+                    width: 220, minWidth: 220, py: 0.75, px: 2,
+                    position: 'sticky', left: 0, zIndex: 3, bgcolor: '#FAFAFA',
+                    borderBottom: '1px solid #E0E0E0',
+                  }}>Name / Level<//>
+                  ${mGroups.map((mg, i) => html`
+                    <${TableCell} key=${i} colSpan=${mg.count} sx=${{
+                      fontWeight: 700, fontSize: '11px', textTransform: 'uppercase',
+                      letterSpacing: 0.5, color: 'text.secondary', whiteSpace: 'nowrap',
+                      bgcolor: '#FAFAFA', textAlign: 'center', py: 0.75, px: 1,
+                      borderLeft: '1px solid #E0E0E0',
+                      borderBottom: '1px solid #E0E0E0',
+                    }}>${mg.label}<//>
+                  `)}
+                <//>
+                <!-- KW-Header -->
+                <${TableRow} sx=${{ bgcolor: '#FAFAFA' }}>
+                  <${TableCell} sx=${{
+                    width: 220, minWidth: 220, py: 0.75, px: 2,
+                    position: 'sticky', left: 0, zIndex: 3, bgcolor: '#FAFAFA',
+                    borderBottom: '2px solid #E0E0E0',
+                  }} />
+                  ${weeks.map(kw => {
+                    const isToday = isCurrentYear && kw === CURRENT_KW;
+                    return html`
+                      <${TableCell} key=${kw} sx=${{
+                        width: 30, minWidth: 30, maxWidth: 30, p: 0,
+                        fontSize: '11px', textAlign: 'center', py: 0.75,
+                        fontWeight: isToday ? 700 : 400,
+                        color: isToday ? '#1565C0' : 'text.secondary',
+                        bgcolor: isToday ? '#E3F2FD' : '#FAFAFA',
+                        borderLeft: isToday ? '2px solid #1976D2' : '1px solid rgba(224,224,224,0.6)',
+                        borderBottom: isToday ? '2px solid #1976D2' : '2px solid #E0E0E0',
+                      }}>${kw}<//>
+                    `;
+                  })}
+                <//>
+              <//>
+              <${TableBody}>
+                ${visible.length === 0 ? html`
+                  <${TableRow}>
+                    <${TableCell} colSpan=${weeks.length + 1}
+                      sx=${{ textAlign: 'center', py: 5, color: 'text.secondary', fontSize: '13px' }}>
+                      Keine Mitarbeitenden für diese Suche.
+                    <//>
+                  <//>
+                ` : visible.map(c => html`
+                  <${TableRow} key=${c.name}
+                    sx=${{ '&:hover .MuiTableCell-root:first-of-type': { bgcolor: '#F5F9FF' } }}>
+                    <${TableCell} sx=${{
+                      position: 'sticky', left: 0, bgcolor: '#fff', zIndex: 1,
+                      width: 220, minWidth: 220, py: 0.75, px: 2,
+                      borderBottom: '1px solid #EEEEEE',
+                      cursor: 'pointer',
+                    }} onClick=${() => setDrawerEmployee(c)}>
+                      <${Stack} direction="row" alignItems="center" gap=${1}>
+                        <${Box} sx=${{
+                          width: 28, height: 28, borderRadius: '50%',
+                          bgcolor: c.avatarColor, color: '#fff',
+                          fontWeight: 700, fontSize: '11px', flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>${c.initials}<//>
+                        <${Box}>
+                          <${Typography} variant="body2" fontWeight=${600}
+                            sx=${{ lineHeight: 1.25, fontSize: '13px', color: 'primary.main' }}>
+                            ${c.name}
+                          <//>
+                          <${Typography} variant="caption" color="text.secondary">
+                            ${c.level}
+                          <//>
+                        <//>
+                      <//>
+                    <//>
+                    ${weeks.map(kw => {
+                      const status  = getSegmentStatus(c.name, kw);
+                      const av      = status ? AV_STATUS[status] : null;
+                      const isToday = isCurrentYear && kw === CURRENT_KW;
+                      return html`
+                        <${TableCell} key=${kw}
+                          title=${av
+                            ? 'KW ' + kw + ': ' + av.label + (c.customer ? ' · ' + c.customer : '')
+                            : 'KW ' + kw + ': Keine Daten'}
+                          onClick=${() => setDrawerEmployee(c)}
+                          sx=${{
+                            width: 30, minWidth: 30, maxWidth: 30, p: 0, height: 32,
+                            bgcolor: av ? av.color : '#F5F5F5',
+                            opacity: av ? 0.82 : 1,
+                            borderRight: '1px solid rgba(255,255,255,0.25)',
+                            borderBottom: '1px solid rgba(224,224,224,0.35)',
+                            borderLeft: isToday ? '2px solid rgba(25,118,210,0.5)' : undefined,
+                            cursor: 'pointer',
+                            transition: 'opacity 0.12s',
+                            '&:hover': { opacity: 0.65 },
+                          }}
+                        />
+                      `;
+                    })}
+                  <//>
+                `)}
+              <//>
+            <//>
+          <//>
+
+
+          ${isCurrentYear && html`
+            <${Typography} variant="caption" color="text.secondary" sx=${{ display: 'block', mt: 1.5 }}>
+              Heutiger Tag: KW ${CURRENT_KW} · ${MONTH_RANGES[kwToMonthIdx(CURRENT_KW)].label} ${CURRENT_YEAR} (blau markiert)
+            <//>
+          `}
+
+          ${drawerEmployee && html`
+            <${Drawer} anchor="right" open=${true} onClose=${() => setDrawerEmployee(null)}
+              sx=${{ zIndex:1200 }}
+              PaperProps=${{ sx:{ width:360, display:'flex', flexDirection:'column' } }}>
+              <${Box} sx=${{ px:3, py:2, borderBottom:'1px solid', borderColor:'divider', display:'flex', alignItems:'center', gap:1.5, flexShrink:0 }}>
+                <${Box} sx=${{ width:40, height:40, borderRadius:'50%', bgcolor:drawerEmployee.avatarColor, color:'#fff', fontWeight:700, fontSize:'15px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>${drawerEmployee.initials}<//>
+                <${Box} sx=${{ flex:1 }}>
+                  <${Typography} variant="subtitle1" fontWeight=${700}>${drawerEmployee.name}<//>
+                  <${Typography} variant="caption" color="text.secondary">${drawerEmployee.level}<//>
+                <//>
+                <${Button} size="small" color="inherit" onClick=${() => setDrawerEmployee(null)} sx=${{ minWidth:0, px:1 }}>✕<//>
+              <//>
+              <${Box} sx=${{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, px:4, textAlign:'center' }}>
+                <${Typography} variant="body2" color="text.secondary">
+                  Die vollständige Mitarbeiter-Ansicht ist im dedizierten Mockup abgebildet.
+                <//>
+                <${Button} variant="contained" component="a" href="mitarbeiter-drawer-sprint2.html">
+                  Mitarbeiter-Drawer öffnen →
+                <//>
+              <//>
+            <//>
+          `}
+
         <//>
       `;
     }
 
-    /* ── Tab placeholder ── */
-    function TabPlaceholder({ label }) {
+    /* ── Tab 3: Dispolisten-Export ── */
+    function TabExport() {
       return html`
-        <${Box} sx=${{
-          border: '2px dashed', borderColor: 'divider',
-          borderRadius: 1, px: 4, py: 6, textAlign: 'center', color: 'text.disabled',
-          bgcolor: '#FAFAFA',
-        }}>
-          <${Typography} variant="subtitle2" gutterBottom>${label}<//>
-          <${Typography} variant="caption">Wird in einem späteren Sprint implementiert.<//>
+        <${Box} sx=${{ maxWidth: 680 }}>
+
+          <${Paper} variant="outlined" sx=${{ p: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <${Box} sx=${{
+              width: 40, height: 40, bgcolor: '#1D6F42', borderRadius: '6px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontWeight: 700, fontSize: '16px', flexShrink: 0,
+            }}>X<//>
+            <${Box} sx=${{ flex: 1 }}>
+              <${Typography} variant="subtitle1" fontWeight=${700}>Dispoliste exportieren<//>
+              <${Typography} variant="body2" color="text.secondary">
+                Generiert eine Excel-Datei im Format der bekannten Dispoliste — mit Mitarbeitern als Zeilen und Kalenderwochen als Spalten, farbcodiert nach Verfügbarkeitsstatus.
+              <//>
+            <//>
+            <${Button}
+              variant="contained"
+              sx=${{ bgcolor: '#1D6F42', '&:hover': { bgcolor: '#155c35' }, whiteSpace: 'nowrap', flexShrink: 0 }}
+            >
+              Excel exportieren
+            <//>
+          <//>
+
+          <${Paper} variant="outlined" sx=${{ p: 2.5, mb: 2 }}>
+            <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'block', borderBottom: '1px solid', borderColor: 'divider', pb: 1.25, mb: 2 }}>
+              Export-Optionen
+            <//>
+            <${Stack} spacing=${1.5}>
+              <${Stack} direction="row" alignItems="center" spacing=${2}>
+                <${Typography} variant="body2" color="text.secondary" sx=${{ minWidth: 100 }}>Jahr<//>
+                <${TextField} select size="small" defaultValue="2026" sx=${{ minWidth: 80 }}>
+                  <${MenuItem} value="2026">2026<//>
+                  <${MenuItem} value="2025">2025<//>
+                <//>
+              <//>
+              <${Stack} direction="row" alignItems="center" spacing=${2}>
+                <${Typography} variant="body2" color="text.secondary" sx=${{ minWidth: 100 }}>Zeitraum<//>
+                <${Stack} direction="row" alignItems="center" spacing=${1}>
+                  <${Typography} variant="body2" color="text.secondary">Von KW<//>
+                  <${TextField} select size="small" defaultValue="1" sx=${{ minWidth: 70 }}>
+                    ${[1,2,3,4,5,10,20,30,40,52].map(v => html`<${MenuItem} key=${v} value=${v}>${v}<//>`) }
+                  <//>
+                  <${Typography} variant="body2" color="text.secondary">Bis KW<//>
+                  <${TextField} select size="small" defaultValue="52" sx=${{ minWidth: 70 }}>
+                    ${[1,10,20,30,40,52].map(v => html`<${MenuItem} key=${v} value=${v}>${v}<//>`) }
+                  <//>
+                <//>
+              <//>
+              <${Stack} direction="row" alignItems="center" spacing=${2}>
+                <${Typography} variant="body2" color="text.secondary" sx=${{ minWidth: 100 }}>Team-Filter<//>
+                <${TextField} select size="small" defaultValue="alle" sx=${{ minWidth: 140 }}>
+                  <${MenuItem} value="alle">Alle Teams<//>
+                  <${MenuItem} value="alpha">Team Alpha<//>
+                  <${MenuItem} value="beta">Team Beta<//>
+                <//>
+              <//>
+              <${Stack} direction="row" alignItems="center" spacing=${1}>
+                <input type="checkbox" defaultChecked id="active-only" />
+                <${Typography} component="label" htmlFor="active-only" variant="body2">
+                  Nur aktive Mitarbeitende
+                <//>
+              <//>
+            <//>
+          <//>
+
+          <${Typography} variant="body2" color="text.secondary" sx=${{ mb: 2 }}>
+            Der Export wird asynchron generiert und du erhältst eine E-Mail-Benachrichtigung mit dem Download-Link. Dateien verfallen nach 30 Tagen.
+          <//>
+
+          <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'block', mb: 1 }}>Frühere Exporte<//>
+          <${Stack} spacing=${0.75}>
+            ${HISTORY.map(item => html`
+              <${Paper} key=${item.filename} variant="outlined" sx=${{ px: 2, py: 1.25, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <${Typography} sx=${{ fontSize: '16px', flexShrink: 0 }}>◻<//>
+                <${Typography} variant="body2" fontWeight=${500} sx=${{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  ${item.filename}
+                <//>
+                <${Typography} variant="caption" color="text.secondary" sx=${{ whiteSpace: 'nowrap' }}>${item.date}<//>
+                <${Box} sx=${{
+                  display: 'inline-block', px: 1, py: 0.25, borderRadius: '10px',
+                  bgcolor: item.status === 'Fertig' ? '#E1F5EE' : '#F1EFE8',
+                  color:   item.status === 'Fertig' ? '#0F6E56' : '#5F5E5A',
+                  fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap',
+                }}>
+                  ${item.status}
+                <//>
+                ${item.link
+                  ? html`<${Typography} variant="caption" color="primary.main" sx=${{ cursor: 'pointer', whiteSpace: 'nowrap', '&:hover': { textDecoration: 'underline' } }}>Herunterladen<//>`
+                  : html`<${Typography} variant="caption" color="text.disabled">—<//>` }
+              <//>
+            `)}
+          <//>
+
         <//>
       `;
     }
 
-    const COLS = ['Mitarbeiter', 'Status', 'Kunde', 'Von', 'Bis', 'Region', ''];
-
-    /* ── App ── */
+    /* ── App Shell ── */
     function App() {
-      const [tab,          setTab]          = useState(0);
-      const [search,       setSearch]       = useState('');
-      const [statusFilter, setStatusFilter] = useState('');
-      const [drawerEmp,    setDrawerEmp]    = useState(null);
-
-      const visible = useMemo(() => EMPLOYEES.filter(e =>
-        (!search       || e.name.toLowerCase().includes(search.toLowerCase())) &&
-        (!statusFilter || e.status === statusFilter)
-      ), [search, statusFilter]);
-
-      const totalCount = EMPLOYEES.length;
+      const [tab, setTab] = useState(0);
 
       return html`
         <${ThemeProvider} theme=${theme}>
           <${CssBaseline} />
           <${MockupBar} />
-
           <${Container} maxWidth="lg" sx=${{ py: 4 }}>
 
-            <!-- Page heading -->
-            <${Typography} variant="h6" fontWeight=${700} sx=${{ mb: 3 }}>
-              Mitarbeiterverwaltung
-            <//>
-
-            <!-- Tabs -->
             <${Tabs} value=${tab} onChange=${(_, v) => setTab(v)}
               sx=${{ mb: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
               <${Tab} label="Übersicht" />
@@ -259,127 +725,24 @@
               <${Tab} label="Dispolisten-Export" />
             <//>
 
-            ${tab === 1 && html`<${TabPlaceholder} label="Kalenderansicht" />`}
-            ${tab === 2 && html`<${TabPlaceholder} label="Dispolisten-Export" />`}
-
-            ${tab === 0 && html`
-              <${Box}>
-                <!-- Filter row -->
-                <${Stack} direction="row" spacing=${1.5} sx=${{ mb: 2 }} alignItems="flex-end" flexWrap="wrap">
-                  <${TextField} label="Name suchen" size="small"
-                    value=${search} onChange=${e => setSearch(e.target.value)}
-                    sx=${{ minWidth: 220 }} />
-                  <${TextField} label="Status" select size="small"
-                    value=${statusFilter} onChange=${e => setStatusFilter(e.target.value)}
-                    sx=${{ minWidth: 200 }}>
-                    <${MenuItem} value="">Alle Status<//>
-                    ${Object.entries(AV_STATUS).map(([k, v]) => html`
-                      <${MenuItem} key=${k} value=${k}>
-                        <${Stack} direction="row" alignItems="center" gap=${1}>
-                          <${Box} sx=${{ width: 10, height: 10, borderRadius: '50%', bgcolor: v.solid, flexShrink: 0 }} />
-                          ${v.label}
-                        <//>
-                      <//>
-                    `)}
-                  <//>
+            ${tab === 0 && html`<${TabUebersicht} />`}
+            ${tab === 1 && html`<${TabGantt} />`}
+            ${tab === 2 && html`
+              <${Box} sx=${{
+                border: '2px dashed', borderColor: 'divider',
+                borderRadius: '8px', p: 4, textAlign: 'center',
+                color: 'text.secondary', bgcolor: '#FAFAFA'
+              }}>
+                <${Typography} variant="subtitle1" fontWeight=${700} sx=${{ mb: 1 }}>
+                  Dispolisten-Export ist für Sprint 2 ausgesetzt
                 <//>
-
-                <!-- Table -->
-                <${TableContainer} component=${Paper} variant="outlined">
-                  <${Table} size="small">
-                    <${TableHead}>
-                      <${TableRow} sx=${{ bgcolor: '#FAFAFA' }}>
-                        ${COLS.map((c, i) => html`
-                          <${TableCell} key=${i} sx=${{
-                            fontWeight: 700, textTransform: 'uppercase',
-                            fontSize: '11px', letterSpacing: 0.5, color: 'text.secondary',
-                            whiteSpace: 'nowrap', py: 1.5,
-                          }}>
-                            ${c}
-                          <//>
-                        `)}
-                      <//>
-                    <//>
-                    <${TableBody}>
-                      ${visible.length === 0
-                        ? html`<${EmptyState} />`
-                        : visible.map(emp => html`
-                          <${TableRow} key=${emp.id} hover
-                            sx=${{ cursor: 'pointer' }}
-                            onClick=${() => setDrawerEmp(emp)}>
-
-                            <!-- Mitarbeiter -->
-                            <${TableCell}>
-                              <${Stack} direction="row" alignItems="center" gap=${1.25}>
-                                <${Box} sx=${{
-                                  width: 34, height: 34, borderRadius: '50%',
-                                  bgcolor: emp.avatarColor, color: '#fff',
-                                  fontWeight: 700, fontSize: '12px', flexShrink: 0,
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                }}>${emp.initials}<//>
-                                <${Box}>
-                                  <${Typography} variant="body2" fontWeight=${600}>${emp.name}<//>
-                                  <${Typography} variant="caption" color="text.secondary">${emp.level}<//>
-                                <//>
-                              <//>
-                            <//>
-
-                            <!-- Status -->
-                            <${TableCell}>
-                              <${StatusDot} statusKey=${emp.status} />
-                            <//>
-
-                            <!-- Kunde -->
-                            <${TableCell}>
-                              <${Typography} variant="body2" color=${emp.kunde ? 'text.primary' : 'text.disabled'}>
-                                ${emp.kunde || '—'}
-                              <//>
-                            <//>
-
-                            <!-- Von -->
-                            <${TableCell} sx=${{ whiteSpace: 'nowrap' }}>
-                              <${Typography} variant="body2">${emp.von}<//>
-                            <//>
-
-                            <!-- Bis -->
-                            <${TableCell} sx=${{ whiteSpace: 'nowrap' }}>
-                              <${Typography} variant="body2" color=${emp.bis ? 'text.primary' : 'text.disabled'}>
-                                ${emp.bis || '—'}
-                              <//>
-                            <//>
-
-                            <!-- Region -->
-                            <${TableCell}>
-                              <${Typography} variant="body2">${emp.region}<//>
-                            <//>
-
-                            <!-- Open drawer hint -->
-                            <${TableCell} align="right">
-                              <${Typography} variant="caption" color="text.disabled" sx=${{ userSelect: 'none' }}>
-                                →
-                              <//>
-                            <//>
-
-                          <//>
-                        `)
-                      }
-                    <//>
-                  <//>
-                <//>
-
-                <!-- Row counter -->
-                <${Box} sx=${{ display: 'flex', justifyContent: 'flex-end', pt: 1.5 }}>
-                  <${Typography} variant="caption" color="text.secondary">
-                    ${visible.length} von ${totalCount} Mitarbeitenden
-                  <//>
+                <${Typography} variant="body2">
+                  Der Tab bleibt sichtbar, wird aber erst später umgesetzt.
                 <//>
               <//>
             `}
+
           <//>
-
-          <!-- Employee drawer -->
-          <${EmployeeDrawer} emp=${drawerEmp} onClose=${() => setDrawerEmp(null)} />
-
         <//>
       `;
     }
