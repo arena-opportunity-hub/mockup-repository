@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Audit-Log: Ist-Zustand im Edit-Event-Payload — Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style> * { box-sizing: border-box; } body { margin: 0; } </style>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@mui/material@5/umd/material-ui.development.js"></script>
+  <script src="https://unpkg.com/htm/dist/htm.umd.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const { createElement: h, useState } = React;
+    const { createRoot } = ReactDOM;
+    const {
+      Box, Typography, Button, Paper, Container, Stack, Tabs, Tab, Collapse,
+      Table, TableHead, TableBody, TableRow, TableCell,
+      ThemeProvider, createTheme, CssBaseline,
+    } = MaterialUI;
+
+    const html = htm.bind(h);
+
+    const theme = createTheme({
+      palette: { primary: { main: '#1976D2' }, error: { main: '#E53935' } },
+      components: { MuiButton: { defaultProps: { disableElevation: true } } },
+    });
+
+    function StatusPill({ label }) {
+      return html`<${Box} sx=${{ display: 'inline-block', bgcolor: '#E3F0FC', color: '#1256A0', px: 1.25, py: 0.25, borderRadius: '12px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>${label}<//>`;
+    }
+    function DaysBadge({ days }) {
+      return html`<${Box} sx=${{ display: 'inline-block', bgcolor: '#FFF3E0', color: '#E65100', px: 1, py: 0.25, borderRadius: '10px', fontSize: '12px', fontWeight: 600 }}>${days} Tage<//>`;
+    }
+
+    function MockupBar() {
+      return html`
+        <${Paper} square elevation=${0} sx=${{ position: 'sticky', top: 0, zIndex: 1100, borderBottom: '1px solid', borderColor: 'divider', px: 4, py: 1.25, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <${Typography} variant="overline" color="text.secondary">
+            Mockup · <${Box} component="span" sx=${{ color: 'primary.main' }}>Issue #578 · Audit-Log: Ist-Zustand im Edit-Event-Payload<//>
+          <//>
+          <${Button} component="a" href="../index.html" size="small">← Katalog<//>
+        <//>
+      `;
+    }
+
+    const DOT_COLORS = {
+      grey: { bgcolor: '#F1EFE8', color: '#5F5E5A' },
+      blue: { bgcolor: '#E3F0FC', color: '#1976D2' },
+    };
+
+    const TIMELINE = [
+      { icon: '➕', dotClass: 'grey', title: 'Opportunity erstellt', desc: 'von Jannik Schröder', meta: 'vor 5 Tagen', payload: null },
+      {
+        icon: '✎', dotClass: 'blue', title: 'Bearbeitet', desc: 'von Jannik Schröder', meta: 'vor 2 Tagen',
+        payload: [
+          { field: 'Enddatum',    before: '30.11.2026', after: '31.12.2026' },
+          { field: 'Auslastung',  before: '80 %',        after: '100 %' },
+        ],
+      },
+      {
+        icon: '✎', dotClass: 'blue', title: 'Bearbeitet', desc: 'von Jannik Schröder', meta: 'gestern, 09:20',
+        payload: [
+          { field: 'Reaktionsfrist',   before: '20.05.2026', after: '30.05.2026' },
+          { field: 'Remote-Anteil',    before: '50 %',        after: '25 %' },
+        ],
+      },
+    ];
+
+    function PayloadTable({ payload }) {
+      return html`
+        <${Table} size="small" sx=${{ mt: 1, mb: 0.5, bgcolor: '#F5F6F8', borderRadius: 1 }}>
+          <${TableHead}>
+            <${TableRow}>
+              <${TableCell} sx=${{ fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary' }}>Feld<//>
+              <${TableCell} sx=${{ fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary' }}>Vorher<//>
+              <${TableCell} sx=${{ fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary' }}>Nachher<//>
+            <//>
+          <//>
+          <${TableBody}>
+            ${payload.map(row => html`
+              <${TableRow} key=${row.field}>
+                <${TableCell}><${Typography} variant="body2" fontWeight=${600}>${row.field}<//><//>
+                <${TableCell}><${Typography} variant="body2" color="text.secondary" sx=${{ textDecoration: 'line-through' }}>${row.before}<//><//>
+                <${TableCell}><${Typography} variant="body2" sx=${{ color: '#0F6E56', fontWeight: 600 }}>${row.after}<//><//>
+              <//>
+            `)}
+          <//>
+        <//>
+      `;
+    }
+
+    function TimelineItem({ item, i, isLast }) {
+      const [open, setOpen] = useState(false);
+      const dc = DOT_COLORS[item.dotClass];
+      return html`
+        <${Stack} direction="row" gap=${2} sx=${{ py: 1.75, borderBottom: !isLast ? '1px solid' : 'none', borderColor: 'divider' }}>
+          <${Stack} alignItems="center" sx=${{ flexShrink: 0, width: 32 }}>
+            <${Box} sx=${{ width: 32, height: 32, borderRadius: '50%', bgcolor: dc.bgcolor, color: dc.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>
+              ${item.icon}
+            <//>
+            ${!isLast && html`<${Box} sx=${{ width: '2px', flex: 1, bgcolor: 'divider', mt: 0.75 }} />`}
+          <//>
+          <${Box} sx=${{ flex: 1, minWidth: 0 }}>
+            <${Stack} direction="row" alignItems="center" gap=${1} flexWrap="wrap">
+              <${Typography} variant="body2" fontWeight=${600}>${item.title}<//>
+              ${item.payload && html`
+                <${Button} size="small" color="inherit" onClick=${() => setOpen(v => !v)} sx=${{ minWidth: 0, py: 0, fontSize: '11px' }}>
+                  ${open ? 'Details verbergen' : 'Geänderte Felder anzeigen'}
+                <//>
+              `}
+            <//>
+            ${item.desc && html`<${Typography} variant="body2" color="text.secondary" sx=${{ mb: 0.5 }}>${item.desc}<//>`}
+            ${item.payload && html`
+              <${Collapse} in=${open}>
+                <${PayloadTable} payload=${item.payload} />
+              <//>
+            `}
+            <${Typography} variant="caption" color="text.disabled">${item.meta}<//>
+          <//>
+        <//>
+      `;
+    }
+
+    function TabHistory() {
+      return html`
+        <${Paper} variant="outlined" sx=${{ p: 3 }}>
+          <${Typography} variant="overline" color="text.secondary" sx=${{ display: 'block', borderBottom: '1px solid', borderColor: 'divider', pb: 1.25, mb: 0.5 }}>
+            Aktivitäts-Timeline
+          <//>
+          <${Typography} variant="caption" color="text.secondary" sx=${{ display: 'block', mb: 1, fontStyle: 'italic' }}>
+            „Bearbeitet"-Einträge enthalten jetzt ein Payload mit dem geänderten Ist-Zustand der Opportunity zum
+            jeweiligen Bearbeitungszeitpunkt — bislang wurde hierfür kein Payload gespeichert.
+          <//>
+          <${Box}>
+            ${TIMELINE.map((item, i) => html`<${TimelineItem} key=${i} item=${item} i=${i} isLast=${i === TIMELINE.length - 1} />`)}
+          <//>
+        <//>
+      `;
+    }
+
+    function App() {
+      const [tab, setTab] = useState(1);
+      return html`
+        <${ThemeProvider} theme=${theme}>
+          <${CssBaseline} />
+          <${MockupBar} />
+          <${Box} sx=${{ bgcolor: '#F5F6F8', minHeight: '100vh', pb: 6 }}>
+          <${Container} maxWidth="md" sx=${{ pt: 3 }}>
+
+            <${Paper} variant="outlined" sx=${{ p: 3, mb: 2 }}>
+              <${Typography} variant="caption" color="primary.main" sx=${{ display: 'block', mb: 1, cursor: 'pointer' }}>← Opportunity-Liste<//>
+              <${Box} sx=${{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+                <${Box} sx=${{ flex: 1, minWidth: 0 }}>
+                  <${Stack} direction="row" alignItems="center" gap=${1.25} flexWrap="wrap" sx=${{ mb: 1 }}>
+                    <${Typography} variant="h6" fontWeight=${700}>Backend-Projekt Datenmigration<//>
+                    <${StatusPill} label="Offen" />
+                  <//>
+                  <${Stack} direction="row" alignItems="center" flexWrap="wrap" gap=${0} sx=${{ fontSize: '12px', color: 'text.secondary' }}>
+                    <${Typography} variant="caption">Erstellt von Jannik Schröder<//>
+                    <${Box} component="span" sx=${{ mx: 1.25, color: 'divider' }}>|<//>
+                    <${Typography} variant="caption">12.04.2026<//>
+                    <${Box} component="span" sx=${{ mx: 1.25, color: 'divider' }}>|<//>
+                    <${Box} sx=${{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                      <${Typography} variant="caption">Reaktionsfrist:<//>
+                      <${DaysBadge} days=${3} />
+                    <//>
+                  <//>
+                <//>
+                <${Stack} direction="row" spacing=${1} sx=${{ flexShrink: 0, pt: 0.25 }}>
+                  <${Button} variant="outlined" size="small">Bearbeiten<//>
+                  <${Button} variant="contained" size="small">Matches neu berechnen<//>
+                <//>
+              <//>
+            <//>
+
+            <${Tabs} value=${tab} onChange=${(_, v) => setTab(v)} sx=${{ mb: 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <${Tab} label="Matches" />
+              <${Tab} label="Status & Historie" />
+              <${Tab} label="Details" />
+            <//>
+
+            ${tab === 0 && html`<${Typography} variant="body2" color="text.secondary" sx=${{ fontStyle: 'italic', py: 4, textAlign: 'center' }}>Matches-Tab unverändert — siehe opportunity-details-sprint2.html.<//>`}
+            ${tab === 1 && html`<${TabHistory} />`}
+            ${tab === 2 && html`<${Typography} variant="body2" color="text.secondary" sx=${{ fontStyle: 'italic', py: 4, textAlign: 'center' }}>Details unverändert — siehe opportunity-details-sprint2.html.<//>`}
+
+          <//>
+          <//>
+        <//>
+      `;
+    }
+
+    createRoot(document.getElementById('root')).render(html`<${App} />`);
+  </script>
+</body>
+</html>

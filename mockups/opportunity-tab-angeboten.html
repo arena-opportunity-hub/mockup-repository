@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tab "Angeboten" in der Opportunity-Detailansicht — Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style> * { box-sizing: border-box; } body { margin: 0; } </style>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@mui/material@5/umd/material-ui.development.js"></script>
+  <script src="https://unpkg.com/htm/dist/htm.umd.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const { createElement: h, useState, useMemo } = React;
+    const { createRoot } = ReactDOM;
+    const {
+      Box, Typography, Button, Paper, Container, Stack, Tabs, Tab, List, ListItemButton, TextField,
+      Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
+      ThemeProvider, createTheme, CssBaseline,
+    } = MaterialUI;
+
+    const html = htm.bind(h);
+
+    const theme = createTheme({
+      palette: { primary: { main: '#1976D2' }, error: { main: '#E53935' } },
+      components: { MuiButton: { defaultProps: { disableElevation: true } } },
+    });
+
+    const STATUS_COLORS = {
+      'Offen':            { bgcolor: '#E3F0FC', color: '#1256A0' },
+      'Genehmigt':         { bgcolor: '#E1F5EE', color: '#0F6E56' },
+      'Angebot ausgelöst': { bgcolor: '#37474F', color: '#fff' },
+    };
+    function StatusPill({ label }) {
+      const s = STATUS_COLORS[label] || STATUS_COLORS['Offen'];
+      return html`<${Box} sx=${{ display: 'inline-block', bgcolor: s.bgcolor, color: s.color, px: 1.25, py: 0.25, borderRadius: '12px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, whiteSpace: 'nowrap' }}>${label}<//>`;
+    }
+    function DaysBadge({ days }) {
+      return html`<${Box} sx=${{ display: 'inline-block', bgcolor: '#FFF3E0', color: '#E65100', px: 1, py: 0.25, borderRadius: '10px', fontSize: '12px', fontWeight: 600 }}>${days} Tage<//>`;
+    }
+    function Avatar({ initials, bgcolor, size = 40 }) {
+      return html`<${Box} sx=${{ width: size, height: size, borderRadius: '50%', bgcolor, color: '#fff', fontWeight: 700, fontSize: size <= 40 ? '14px' : '14px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>${initials}<//>`;
+    }
+
+    function MockupBar() {
+      return html`
+        <${Paper} square elevation=${0} sx=${{ position: 'sticky', top: 0, zIndex: 1100, borderBottom: '1px solid', borderColor: 'divider', px: 4, py: 1.25, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <${Typography} variant="overline" color="text.secondary">
+            Mockup · <${Box} component="span" sx=${{ color: 'primary.main' }}>Issue #579 · Tab "Angeboten" in der Opportunity-Detailansicht<//>
+          <//>
+          <${Button} component="a" href="../index.html" size="small">← Katalog<//>
+        <//>
+      `;
+    }
+
+    const INITIAL_APPROVED = [
+      { name: 'Max Mustermann', initials: 'MM', avatarColor: '#1976D2', role: 'Senior Consultant', manager: 'Anna Schmidt',  status: 'Genehmigt' },
+      { name: 'David Klein',    initials: 'DK', avatarColor: '#37474F', role: 'Backend Developer',  manager: 'Anna Schmidt',  status: 'Genehmigt' },
+    ];
+
+    const ADD_POOL = [
+      { name: 'Tobias Schulz', initials: 'TS', avatarColor: '#558B2F', role: 'Backend Developer', team: 'Team Frankfurt Banking', manager: 'Anna Schmidt',  issues: [] },
+      {
+        name: 'Sarah Braun', initials: 'SB', avatarColor: '#E65100', role: 'Consultant', team: 'Team Frankfurt Banking', manager: 'Anna Schmidt',
+        issues: [
+          'Fehlende Skills: „AML" und „Compliance" nicht im Profil hinterlegt',
+          'Bereits ausgelastet: Prolongation bis 30.06.2026 (100 %)',
+        ],
+      },
+      {
+        name: 'Robert Becker', initials: 'RB', avatarColor: '#4527A0', role: 'Principal', team: 'Team Berlin Data', manager: 'Marco Lehmann',
+        issues: ['Zeitraumkonflikt: bereits auf „Cloud-Migration Allianz" ab 01.07.2026 eingeplant'],
+      },
+      { name: 'Nina Wagner', initials: 'NW', avatarColor: '#2E7D32', role: 'Consultant', team: 'Team Frankfurt Banking', manager: 'Anna Schmidt', issues: [] },
+      { name: 'Laura Zimmer', initials: 'LZ', avatarColor: '#00695C', role: 'Consultant', team: 'Team München Insurance', manager: 'Klaus Bauer', issues: [] },
+    ];
+
+    function AddDialog({ open, onClose, onAdd }) {
+      const [query, setQuery]       = useState('');
+      const [selected, setSelected] = useState(null);
+
+      const results = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        if (!q) return [];
+        return ADD_POOL.filter(p =>
+          p.name.toLowerCase().includes(q) ||
+          p.role.toLowerCase().includes(q) ||
+          p.team.toLowerCase().includes(q)
+        );
+      }, [query]);
+
+      const close = () => { setQuery(''); setSelected(null); onClose(); };
+      const add = () => { onAdd(selected); setQuery(''); setSelected(null); onClose(); };
+
+      return html`
+        <${Dialog} open=${open} onClose=${close} maxWidth="sm" fullWidth>
+          <${DialogTitle}>Mitarbeitenden hinzufügen<//>
+          <${DialogContent}>
+            <${Typography} variant="body2" color="text.secondary" sx=${{ mb: 2 }}>
+              Hinzufügen unabhängig vom Genehmigt-Status — z. B. um vor dem Angebot noch eine Alternative zu ergänzen.
+            <//>
+
+            <${TextField}
+              fullWidth size="small" autoFocus
+              label="Mitarbeitende suchen"
+              placeholder="Name, Rolle oder Team eingeben …"
+              value=${query} onChange=${e => { setQuery(e.target.value); setSelected(null); }}
+              sx=${{ mb: 2 }}
+            />
+
+            ${!query.trim() && html`
+              <${Typography} variant="body2" color="text.disabled" sx=${{ fontStyle: 'italic', textAlign: 'center', py: 2 }}>
+                Namen, Rolle oder Team eingeben, um Mitarbeitende zu finden.
+              <//>
+            `}
+
+            ${query.trim() && results.length === 0 && html`
+              <${Typography} variant="body2" color="text.disabled" sx=${{ fontStyle: 'italic', textAlign: 'center', py: 2 }}>
+                Keine Treffer für „${query}".
+              <//>
+            `}
+
+            ${results.length > 0 && html`
+              <${List} sx=${{ p: 0, mb: selected?.issues?.length ? 2 : 0 }}>
+                ${results.map(p => html`
+                  <${ListItemButton} key=${p.name} selected=${selected?.name === p.name} onClick=${() => setSelected(p)}
+                    sx=${{ border: '1px solid', borderColor: 'divider', borderRadius: 1, mb: 1, py: 1.25 }}>
+                    <${Stack} direction="row" alignItems="center" gap=${1.5} sx=${{ width: '100%' }}>
+                      <${Avatar} initials=${p.initials} bgcolor=${p.avatarColor} size=${36} />
+                      <${Box} sx=${{ flex: 1, minWidth: 0 }}>
+                        <${Typography} variant="body2" fontWeight=${700}>${p.name}<//>
+                        <${Typography} variant="caption" color="text.secondary">${p.role} · ${p.team} · Führungskraft: ${p.manager}<//>
+                      <//>
+                      ${p.issues.length > 0 && html`<${Box} sx=${{ color: '#E65100', fontSize: '16px' }}>⚠<//>`}
+                    <//>
+                  <//>
+                `)}
+              <//>
+            `}
+
+            ${selected?.issues?.length > 0 && html`
+              <${Box} sx=${{ bgcolor: '#FFF3E0', border: '1px solid #FFCC80', borderRadius: 1, px: 2, py: 1.5, display: 'flex', gap: 1.25, alignItems: 'flex-start' }}>
+                <${Box} sx=${{ color: '#E65100', fontSize: '20px', flexShrink: 0 }}>⚠<//>
+                <${Box}>
+                  <${Typography} variant="body2" fontWeight=${700} sx=${{ color: '#BF360C', mb: 0.5 }}>
+                    Plausibilitätsprobleme erkannt — Hinzufügen ist weiterhin möglich
+                  <//>
+                  <${Stack} component="ul" sx=${{ m: 0, pl: 2.5 }}>
+                    ${selected.issues.map((iss, i) => html`
+                      <${Box} component="li" key=${i} sx=${{ mb: i < selected.issues.length - 1 ? 0.5 : 0 }}>
+                        <${Typography} variant="body2" color="text.secondary">${iss}<//>
+                      <//>
+                    `)}
+                  <//>
+                <//>
+              <//>
+            `}
+          <//>
+          <${DialogActions}>
+            <${Button} onClick=${close}>Abbrechen<//>
+            <${Button} variant="contained" disabled=${!selected} onClick=${add}>
+              ${selected?.issues?.length > 0 ? 'Trotzdem hinzufügen' : 'Hinzufügen'}
+            <//>
+          <//>
+        <//>
+      `;
+    }
+
+    function TabOffered({ people, onRemove, onOfferAll, onAddClick }) {
+      const openCount = people.filter(p => p.status === 'Genehmigt').length;
+      return html`
+        <${Paper} variant="outlined" sx=${{ p: 3 }}>
+          <${Stack} direction="row" alignItems="center" justifyContent="space-between" sx=${{ mb: 1.5, pb: 1.25, borderBottom: '1px solid', borderColor: 'divider' }}>
+            <${Typography} variant="overline" color="text.secondary">Angeboten — final zu prüfen (${people.length})<//>
+            <${Stack} direction="row" spacing=${1}>
+              <${Button} size="small" variant="outlined" onClick=${onAddClick}>+ Mitarbeitenden hinzufügen<//>
+              <${Button} size="small" variant="contained" disabled=${openCount === 0} onClick=${onOfferAll}>
+                Anbieten auslösen${openCount > 0 ? ` (${openCount})` : ''}
+              <//>
+            <//>
+          <//>
+
+          ${people.length === 0
+            ? html`<${Typography} variant="body2" color="text.secondary" sx=${{ fontStyle: 'italic', py: 3, textAlign: 'center' }}>Keine Mitarbeitenden im Status „Genehmigt".<//>`
+            : html`
+              <${Stack} spacing=${0.75}>
+                ${people.map(p => html`
+                  <${Paper} key=${p.name} variant="outlined" sx=${{ p: 1.75, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <${Avatar} initials=${p.initials} bgcolor=${p.avatarColor} />
+                    <${Box} sx=${{ flex: 1, minWidth: 0 }}>
+                      <${Typography} variant="body2" fontWeight=${700}>${p.name}<//>
+                      <${Typography} variant="caption" color="text.secondary">${p.role} · Führungskraft: ${p.manager}<//>
+                    <//>
+                    <${StatusPill} label=${p.status} />
+                    ${p.status === 'Genehmigt' && html`
+                      <${Button} size="small" color="inherit" onClick=${() => onRemove(p.name)}>Entfernen<//>
+                    `}
+                  <//>
+                `)}
+              <//>
+            `
+          }
+        <//>
+      `;
+    }
+
+    function App() {
+      const [tab, setTab] = useState(1);
+      const [people, setPeople] = useState(INITIAL_APPROVED);
+      const [addOpen, setAddOpen] = useState(false);
+
+      const remove   = (name) => setPeople(prev => prev.filter(p => p.name !== name));
+      const offerAll = () => setPeople(prev => prev.map(p => p.status === 'Genehmigt' ? { ...p, status: 'Angebot ausgelöst' } : p));
+      const add      = (person) => setPeople(prev => [...prev, { ...person, status: 'Genehmigt' }]);
+
+      return html`
+        <${ThemeProvider} theme=${theme}>
+          <${CssBaseline} />
+          <${MockupBar} />
+          <${Box} sx=${{ bgcolor: '#F5F6F8', minHeight: '100vh', pb: 6 }}>
+          <${Container} maxWidth="md" sx=${{ pt: 3 }}>
+
+            <${Paper} variant="outlined" sx=${{ p: 3, mb: 2 }}>
+              <${Typography} variant="caption" color="primary.main" sx=${{ display: 'block', mb: 1, cursor: 'pointer' }}>← Opportunity-Liste<//>
+              <${Box} sx=${{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+                <${Box} sx=${{ flex: 1, minWidth: 0 }}>
+                  <${Stack} direction="row" alignItems="center" gap=${1.25} flexWrap="wrap" sx=${{ mb: 1 }}>
+                    <${Typography} variant="h6" fontWeight=${700}>Backend-Projekt Datenmigration<//>
+                    <${StatusPill} label="Offen" />
+                  <//>
+                  <${Stack} direction="row" alignItems="center" flexWrap="wrap" gap=${0} sx=${{ fontSize: '12px', color: 'text.secondary' }}>
+                    <${Typography} variant="caption">Erstellt von Jannik Schröder<//>
+                    <${Box} component="span" sx=${{ mx: 1.25, color: 'divider' }}>|<//>
+                    <${Typography} variant="caption">12.04.2026<//>
+                    <${Box} component="span" sx=${{ mx: 1.25, color: 'divider' }}>|<//>
+                    <${Box} sx=${{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                      <${Typography} variant="caption">Reaktionsfrist:<//>
+                      <${DaysBadge} days=${3} />
+                    <//>
+                  <//>
+                <//>
+                <${Stack} direction="row" spacing=${1} sx=${{ flexShrink: 0, pt: 0.25 }}>
+                  <${Button} variant="outlined" size="small">Bearbeiten<//>
+                  <${Button} variant="contained" size="small">Matches neu berechnen<//>
+                <//>
+              <//>
+            <//>
+
+            <${Tabs} value=${tab} onChange=${(_, v) => setTab(v)} sx=${{ mb: 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <${Tab} label="Matches" />
+              <${Tab} label=${html`
+                <${Stack} direction="row" alignItems="center" gap=${0.75}>
+                  Angeboten
+                  <${Box} sx=${{ bgcolor: '#E1F5EE', color: '#0F6E56', borderRadius: '10px', px: 0.875, fontSize: '11px', fontWeight: 700 }}>
+                    ${people.filter(p => p.status === 'Genehmigt').length}
+                  <//>
+                <//>
+              `} />
+              <${Tab} label="Status & Historie" />
+              <${Tab} label="Details" />
+            <//>
+
+            ${tab === 0 && html`<${Typography} variant="body2" color="text.secondary" sx=${{ fontStyle: 'italic', py: 4, textAlign: 'center' }}>Matches-Tab unverändert — siehe opportunity-details-sprint2.html.<//>`}
+            ${tab === 1 && html`<${TabOffered} people=${people} onRemove=${remove} onOfferAll=${offerAll} onAddClick=${() => setAddOpen(true)} />`}
+            ${tab === 2 && html`<${Typography} variant="body2" color="text.secondary" sx=${{ fontStyle: 'italic', py: 4, textAlign: 'center' }}>Status & Historie unverändert — siehe opportunity-details-sprint2.html.<//>`}
+            ${tab === 3 && html`<${Typography} variant="body2" color="text.secondary" sx=${{ fontStyle: 'italic', py: 4, textAlign: 'center' }}>Details unverändert — siehe opportunity-details-sprint2.html.<//>`}
+
+          <//>
+          <//>
+
+          <${AddDialog} open=${addOpen} onClose=${() => setAddOpen(false)} onAdd=${add} />
+
+        <//>
+      `;
+    }
+
+    createRoot(document.getElementById('root')).render(html`<${App} />`);
+  </script>
+</body>
+</html>

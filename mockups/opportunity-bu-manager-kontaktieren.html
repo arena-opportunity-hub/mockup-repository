@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manager kontaktieren / Broadcast — Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style> * { box-sizing: border-box; } body { margin: 0; } </style>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@mui/material@5/umd/material-ui.development.js"></script>
+  <script src="https://unpkg.com/htm/dist/htm.umd.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const { createElement: h, useState, useMemo } = React;
+    const { createRoot } = ReactDOM;
+    const {
+      Box, Typography, Button, Paper, Container, Stack, TextField, MenuItem,
+      Dialog, DialogTitle, DialogContent, DialogActions, Tabs, Tab, Snackbar, Alert,
+      ThemeProvider, createTheme, CssBaseline,
+    } = MaterialUI;
+
+    const html = htm.bind(h);
+
+    const theme = createTheme({
+      palette: { primary: { main: '#1976D2' }, error: { main: '#E53935' } },
+      components: { MuiButton: { defaultProps: { disableElevation: true } } },
+    });
+
+    function StatusPill({ label }) {
+      return html`<${Box} sx=${{ display: 'inline-block', bgcolor: '#E3F0FC', color: '#1256A0', px: 1.25, py: 0.25, borderRadius: '12px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>${label}<//>`;
+    }
+    function DaysBadge({ days }) {
+      return html`<${Box} sx=${{ display: 'inline-block', bgcolor: '#FFF3E0', color: '#E65100', px: 1, py: 0.25, borderRadius: '10px', fontSize: '12px', fontWeight: 600 }}>${days} Tage<//>`;
+    }
+
+    function MockupBar() {
+      return html`
+        <${Paper} square elevation=${0} sx=${{ position: 'sticky', top: 0, zIndex: 1100, borderBottom: '1px solid', borderColor: 'divider', px: 4, py: 1.25, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <${Typography} variant="overline" color="text.secondary">
+            Mockup · <${Box} component="span" sx=${{ color: 'primary.main' }}>Issue #569 · Owner kontaktiert BU-Manager gezielt oder per Broadcast<//>
+          <//>
+          <${Button} component="a" href="../index.html" size="small">← Katalog<//>
+        <//>
+      `;
+    }
+
+    const MANAGERS = [
+      { name: 'Anna Schmidt',  team: 'Team Frankfurt Banking' },
+      { name: 'Klaus Bauer',   team: 'Team München Insurance'  },
+      { name: 'Marco Lehmann', team: 'Team Berlin Data'        },
+    ];
+
+    const TEAMS = MANAGERS.map(m => m.team).filter((v, i, a) => a.indexOf(v) === i);
+
+    function ContactDialog({ open, onClose, onSent }) {
+      const [mode, setMode]       = useState(0); // 0 gezielt, 1 broadcast
+      const [manager, setManager] = useState('');
+      const [team, setTeam]       = useState('');
+      const [message, setMessage] = useState('');
+
+      const targets = useMemo(() => {
+        if (mode === 0) return manager ? MANAGERS.filter(m => m.name === manager) : [];
+        if (!team) return [];
+        return MANAGERS.filter(m => m.team === team);
+      }, [mode, manager, team]);
+
+      const canSend = message.trim() && targets.length > 0;
+
+      const reset = () => { setMode(0); setManager(''); setTeam(''); setMessage(''); };
+      const close = () => { reset(); onClose(); };
+      const send  = () => { onSent(mode === 0 ? 'einzeln' : 'broadcast', targets); reset(); onClose(); };
+
+      return html`
+        <${Dialog} open=${open} onClose=${close} maxWidth="sm" fullWidth>
+          <${DialogTitle}>Manager kontaktieren<//>
+          <${DialogContent}>
+            <${Tabs} value=${mode} onChange=${(_, v) => { setMode(v); setManager(''); setTeam(''); }} sx=${{ mb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <${Tab} label="Gezielt" />
+              <${Tab} label="Broadcast" />
+            <//>
+
+            ${mode === 0 ? html`
+              <${TextField} select fullWidth label="Manager" size="small" value=${manager}
+                onChange=${e => setManager(e.target.value)} sx=${{ mb: 2 }}>
+                <${MenuItem} value="" disabled><em>— bitte wählen —</em><//>
+                ${MANAGERS.map(m => html`<${MenuItem} key=${m.name} value=${m.name}>${m.name} — ${m.team}<//>`)}
+              <//>
+            ` : html`
+              <${TextField} select fullWidth label="Team auswählen" size="small" value=${team}
+                onChange=${e => setTeam(e.target.value)} sx=${{ mb: 2 }}>
+                <${MenuItem} value="" disabled><em>— bitte wählen —</em><//>
+                ${TEAMS.map(v => html`<${MenuItem} key=${v} value=${v}>${v}<//>`)}
+              <//>
+              ${targets.length > 0 && html`
+                <${Paper} variant="outlined" sx=${{ p: 1.5, mb: 2, bgcolor: '#F5F6F8' }}>
+                  <${Typography} variant="caption" color="text.secondary" sx=${{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.75 }}>
+                    Adressierte Manager (${targets.length})
+                  <//>
+                  <${Stack} direction="row" flexWrap="wrap" gap=${0.75}>
+                    ${targets.map(m => html`
+                      <${Box} key=${m.name} sx=${{ bgcolor: '#E3F0FC', color: '#1256A0', px: 1.25, py: 0.25, borderRadius: '12px', fontSize: '12px', fontWeight: 500 }}>
+                        ${m.name}
+                      <//>
+                    `)}
+                  <//>
+                <//>
+              `}
+            `}
+
+            <${TextField}
+              multiline minRows=${3} fullWidth size="small"
+              label="Nachricht" placeholder="Kurze Nachricht mit Bezug zur Opportunity …"
+              value=${message} onChange=${e => setMessage(e.target.value)}
+            />
+          <//>
+          <${DialogActions}>
+            <${Button} onClick=${close}>Abbrechen<//>
+            <${Button} variant="contained" disabled=${!canSend} onClick=${send}>
+              ${mode === 0 ? 'Nachricht senden' : 'Broadcast senden (' + targets.length + ')'}
+            <//>
+          <//>
+        <//>
+      `;
+    }
+
+    function App() {
+      const [open, setOpen] = useState(false);
+      const [snack, setSnack] = useState(null);
+
+      const handleSent = (kind, targets) => {
+        setSnack(kind === 'einzeln'
+          ? `Nachricht an ${targets[0].name} gesendet.`
+          : `Broadcast an ${targets.length} Manager gesendet: ${targets.map(t => t.name).join(', ')}.`);
+      };
+
+      return html`
+        <${ThemeProvider} theme=${theme}>
+          <${CssBaseline} />
+          <${MockupBar} />
+          <${Box} sx=${{ bgcolor: '#F5F6F8', minHeight: '100vh', pb: 6 }}>
+          <${Container} maxWidth="md" sx=${{ pt: 3 }}>
+
+            <${Paper} variant="outlined" sx=${{ p: 3, mb: 2 }}>
+              <${Typography} variant="caption" color="primary.main" sx=${{ display: 'block', mb: 1, cursor: 'pointer' }}>← Opportunity-Liste<//>
+              <${Box} sx=${{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+                <${Box} sx=${{ flex: 1, minWidth: 0 }}>
+                  <${Stack} direction="row" alignItems="center" gap=${1.25} flexWrap="wrap" sx=${{ mb: 1 }}>
+                    <${Typography} variant="h6" fontWeight=${700}>Backend-Projekt Datenmigration<//>
+                    <${StatusPill} label="Offen" />
+                  <//>
+                  <${Stack} direction="row" alignItems="center" flexWrap="wrap" gap=${0} sx=${{ fontSize: '12px', color: 'text.secondary' }}>
+                    <${Typography} variant="caption">Erstellt von Jannik Schröder<//>
+                    <${Box} component="span" sx=${{ mx: 1.25, color: 'divider' }}>|<//>
+                    <${Typography} variant="caption">12.04.2026<//>
+                    <${Box} component="span" sx=${{ mx: 1.25, color: 'divider' }}>|<//>
+                    <${Box} sx=${{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                      <${Typography} variant="caption">Reaktionsfrist:<//>
+                      <${DaysBadge} days=${3} />
+                    <//>
+                  <//>
+                <//>
+                <${Stack} direction="row" spacing=${1} sx=${{ flexShrink: 0, pt: 0.25 }}>
+                  <${Button} variant="outlined" size="small" onClick=${() => setOpen(true)}>Manager kontaktieren<//>
+                  <${Button} variant="contained" size="small">Matches neu berechnen<//>
+                <//>
+              <//>
+            <//>
+
+            <${Typography} variant="body2" color="text.secondary" sx=${{ fontStyle: 'italic', py: 2, textAlign: 'center' }}>
+              Tabs (Matches, Status & Historie, Details) unverändert — siehe opportunity-details-sprint2.html.
+              Jede Kontaktaufnahme erscheint zusätzlich als Eintrag in „Status & Historie".
+            <//>
+
+          <//>
+          <//>
+
+          <${ContactDialog} open=${open} onClose=${() => setOpen(false)} onSent=${handleSent} />
+
+          <${Snackbar} open=${!!snack} autoHideDuration=${4000} onClose=${() => setSnack(null)} anchorOrigin=${{ vertical: 'bottom', horizontal: 'center' }}>
+            <${Alert} severity="success" onClose=${() => setSnack(null)}>${snack}<//>
+          <//>
+
+        <//>
+      `;
+    }
+
+    createRoot(document.getElementById('root')).render(html`<${App} />`);
+  </script>
+</body>
+</html>
