@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Team — Übersicht (Redesign) — Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style> * { box-sizing: border-box; } body { margin: 0; font-family: Roboto, sans-serif; } </style>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@mui/material@5/umd/material-ui.development.js"></script>
+  <script src="https://unpkg.com/htm/dist/htm.umd.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script>
+  const { createElement: h, useState, useMemo } = React;
+  const { createRoot } = ReactDOM;
+  const {
+    Box, Typography, Button, Paper, Container, Stack, Tabs, Tab, Tooltip, Alert,
+    TextField, MenuItem, Select, FormControl, InputLabel,
+    Table, TableHead, TableBody, TableRow, TableCell, TableContainer,
+    Accordion, AccordionSummary, AccordionDetails, ListItemButton, Avatar, Drawer,
+    ThemeProvider, createTheme, CssBaseline
+  } = MaterialUI;
+
+  const html = htm.bind(h);
+
+  const theme = createTheme({
+    palette: { primary: { main: '#1976D2' }, error: { main: '#E53935' } },
+    components: { MuiButton: { defaultProps: { disableElevation: true } } },
+  });
+
+  /* ── Design tokens (aus apps/frontend/shared/src/theme/colors.ts uebernommen) ───── */
+  const STATUS_META = {
+    BILLABLE:               { dot: '#00B050', bg: '#E3F7EA', text: '#00753B', label: 'Billable' },
+    PROLONGATION_POSSIBLE:  { dot: '#B4F1B1', bg: '#EFFBEE', text: '#4C8A49', label: 'Prolongation möglich' },
+    RESERVED:               { dot: '#C4BD97', bg: '#F5F3EA', text: '#7A7350', label: 'Reserviert' },
+    OFFERED_TO:             { dot: '#00838F', bg: '#E0F2F4', text: '#00636C', label: 'Angeboten an' },
+    PARTTIME:               { dot: '#FFC000', bg: '#FFF6DE', text: '#8A6300', label: 'Teilzeit' },
+    ABSENCE:                { dot: '#1976D2', bg: '#E3F0FC', text: '#1256A0', label: 'Abwesenheit' },
+    LEFT:                   { dot: '#333333', bg: '#EDEDED', text: '#333333', label: 'Ausgeschieden' },
+    BENCH:                  { dot: '#FF0000', bg: '#FDEAEA', text: '#C40000', label: 'Bench' },
+    JUNIOR:                 { dot: '#512DA8', bg: '#EDE7F6', text: '#4527A0', label: 'Junior' },
+  };
+  const STATUS_ORDER = Object.keys(STATUS_META);
+  const COLUMNS_NEW = ['Mitarbeiter:in', 'Status', 'Kunde', 'Verfügbar ab', 'Verfügbar bis', 'Region', 'Mobilität', 'Auslastung', 'Kommentar'];
+  const MEMBER_ROW_GRID_TEMPLATE = '2fr 0.6fr 1.2fr 1fr 1fr 1fr 0.7fr 0.8fr 1.5fr';
+
+  function initials(name) {
+    return name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase();
+  }
+
+  function Av({ name, color }) {
+    return html`
+      <${Avatar} sx=${{ width: 32, height: 32, fontSize: 12, fontWeight: 700, flexShrink: 0, bgcolor: color }}>
+        ${initials(name)}
+      <//>
+    `;
+  }
+
+  /* ── Mock-Daten (Struktur analog TeamGroupNode / EmployeeListItem) ──────────────── */
+  const E = (name, level, color, status, customer, von, bis, region, mobility, capacity, comment) => ({
+    id: name, name, level, color, status, customer, von, bis, region, mobility, capacity, comment
+  });
+
+  const TREE = [
+    {
+      code: 'FS', label: 'Financial Services', leaderNames: ['Anna Schmidt'], degraded: false,
+      directMembers: [],
+      children: [
+        {
+          code: 'FS-BC', label: 'Banking Core', leaderNames: ['Klaus Bauer'], degraded: false, children: [],
+          directMembers: [
+            E('Max Mustermann', 'Senior Consultant', '#1976D2', 'BILLABLE', 'Hypoteq AG', '01.03.2026', '31.08.2026', 'Deutschland', 3, null, null),
+            E('Sandra Koch', 'Consultant', '#388E3C', 'PROLONGATION_POSSIBLE', 'Deutsche Leasing', '01.01.2026', '30.06.2026', 'Deutschland', 2, null, 'Verlängerung in Abstimmung'),
+            E('David Klein', 'Consultant', '#37474F', 'RESERVED', 'Commerzbank AG', '15.02.2026', '14.08.2026', 'Deutschland', 1, null, null),
+            E('Julia Neumann', 'Junior Consultant', '#6A1B9A', 'JUNIOR', null, null, null, 'Deutschland', 4, null, null),
+            E('Patrick Hoffmann', 'Consultant', '#00838F', 'BENCH', null, null, null, 'Österreich', 5, null, null),
+            E('Maria Keller', 'Principal Consultant', '#AD1457', 'ABSENCE', null, '10.06.2026', '24.06.2026', 'Deutschland', 1, null, 'Elternzeit'),
+          ]
+        },
+        {
+          code: 'FS-INS', label: 'Insurance', leaderNames: ['Marco Lehmann'], degraded: true, children: [
+            {
+              code: 'FS-INS-CLAIMS', label: 'Claims', leaderNames: ['Julia Wagner'], degraded: false, children: [],
+              directMembers: [
+                E('Kai Fischer', 'Consultant', '#1565C0', 'BILLABLE', 'HUK Coburg', '01.02.2026', '31.12.2026', 'Deutschland', 2, null, null),
+                E('Lisa Müller', 'Senior Consultant', '#0097A7', 'LEFT', null, null, '31.03.2026', 'Deutschland', 1, null, 'Kündigung zum 31.03.2026'),
+                E('Nina Wagner', 'Principal Consultant', '#2E7D32', 'RESERVED', 'ERGO Group', '01.05.2026', '31.10.2026', 'Schweiz', 4, null, null),
+              ]
+            }
+          ],
+          directMembers: [
+            E('Tobias Schulz', 'Senior Consultant', '#558B2F', 'OFFERED_TO', 'Allianz SE', '01.04.2026', '30.09.2026', 'Deutschland', 3, null, 'Angebot an Allianz läuft'),
+            E('Sarah Braun', 'Consultant', '#E65100', 'PARTTIME', 'Munich Re', '01.01.2026', null, 'Deutschland', 2, 60, null),
+            E('Thomas Berger', 'Senior Consultant', '#7B1FA2', 'PROLONGATION_POSSIBLE', 'Munich Re', '01.02.2026', '31.07.2026', 'Deutschland', 3, null, null),
+          ]
+        }
+      ]
+    },
+    {
+      code: 'PS', label: 'Public Sector', leaderNames: ['Petra Vogel'], degraded: false,
+      directMembers: [],
+      children: [
+        {
+          code: 'PS-FED', label: 'Federal', leaderNames: ['Stefan Wolf'], degraded: false, children: [],
+          directMembers: [
+            E('Robert Becker', 'Senior Consultant', '#4527A0', 'BILLABLE', 'Bundesagentur für Arbeit', '01.01.2026', '31.12.2026', 'Deutschland', 2, null, null),
+            E('Laura Zimmer', 'Consultant', '#00695C', 'PROLONGATION_POSSIBLE', 'Deutsche Rentenversicherung', '01.02.2026', '31.07.2026', 'Deutschland', 3, null, null),
+            E('Michael Krause', 'Junior Consultant', '#C62828', 'JUNIOR', null, null, null, 'Deutschland', 5, null, null),
+            E('Anna Richter', 'Consultant', '#F57F17', 'BENCH', null, null, null, 'Österreich', 4, null, null),
+            E('Stefan Vogel', 'Principal Consultant', '#01579B', 'OFFERED_TO', 'Zoll', '01.03.2026', '31.08.2026', 'Deutschland', 1, null, 'Angebot in Prüfung'),
+          ]
+        },
+        {
+          code: 'PS-MUN', label: 'Municipal', leaderNames: [], degraded: false, children: [],
+          directMembers: [
+            E('Petra Schwarz', 'Consultant', '#880E4F', 'PARTTIME', 'Stadt Köln', '01.01.2026', null, 'Deutschland', 2, 50, 'Elternzeit-Teilzeit'),
+            E('Jan Lange', 'Senior Consultant', '#827717', 'RESERVED', 'Stadt München', '01.04.2026', '30.09.2026', 'Deutschland', 3, null, null),
+            E('Eva Wolf', 'Consultant', '#4E342E', 'ABSENCE', null, '01.06.2026', '15.06.2026', 'Deutschland', 2, null, 'Fortbildung'),
+            E('Felix Weber', 'Consultant', '#F57C00', 'LEFT', null, null, '30.04.2026', 'Deutschland', 1, null, 'Wechsel zu Kunde'),
+          ]
+        }
+      ]
+    }
+  ];
+
+  /* ── Filter (Logik gespiegelt aus filter-team-tree.ts) ──────────────────────────── */
+  function matchesMember(m, f) {
+    if (f.status && m.status !== f.status) return false;
+    if (f.search && !m.name.toLowerCase().includes(f.search.toLowerCase())) return false;
+    if (f.region && !(m.region ?? '').toLowerCase().includes(f.region.toLowerCase())) return false;
+    if (f.mobility && m.mobility < f.mobility) return false;
+    return true;
+  }
+  function filterNode(node, f) {
+    const directMembers = node.directMembers.filter(m => matchesMember(m, f));
+    const children = node.children.map(c => filterNode(c, f)).filter(Boolean);
+    if (directMembers.length === 0 && children.length === 0) return null;
+    return { ...node, directMembers, children };
+  }
+  function filterTree(nodes, f) {
+    return nodes.map(n => filterNode(n, f)).filter(Boolean);
+  }
+  function subtreeCount(node) {
+    return node.directMembers.length + node.children.reduce((s, c) => s + subtreeCount(c), 0);
+  }
+  function hasActiveFilters(f) {
+    return !!(f.status || f.search || f.region || f.mobility);
+  }
+
+  /* ── FilterBar (identisch zu heute) ──────────────────────────────────────────────── */
+  function FilterBar({ f, setF }) {
+    return html`
+      <${Stack} direction="row" spacing=${2} useFlexGap sx=${{ alignItems: 'center', flexWrap: 'wrap' }}>
+        <${TextField} label="Name suchen" size="small" value=${f.search}
+          onChange=${e => setF({ ...f, search: e.target.value })} sx=${{ minWidth: 200 }} />
+        <${FormControl} size="small" sx=${{ minWidth: 210 }}>
+          <${InputLabel} id="status-label">Status<//>
+          <${Select} labelId="status-label" label="Status" value=${f.status}
+            onChange=${e => setF({ ...f, status: e.target.value })}>
+            <${MenuItem} value="">Alle Status<//>
+            ${STATUS_ORDER.map(s => html`
+              <${MenuItem} key=${s} value=${s}>
+                <${Stack} direction="row" spacing=${1} sx=${{ alignItems: 'center' }}>
+                  <${Box} sx=${{ width: 10, height: 10, borderRadius: '50%', bgcolor: STATUS_META[s].dot, flexShrink: 0 }} />
+                  <${Typography} variant="body2" component="span">${STATUS_META[s].label}<//>
+                <//>
+              <//>
+            `)}
+          <//>
+        <//>
+        <${TextField} label="Region" size="small" value=${f.region}
+          onChange=${e => setF({ ...f, region: e.target.value })} sx=${{ minWidth: 160 }} />
+        <${FormControl} size="small" sx=${{ minWidth: 160 }}>
+          <${InputLabel} id="mob-label">Mobilität<//>
+          <${Select} labelId="mob-label" label="Mobilität" value=${f.mobility}
+            onChange=${e => setF({ ...f, mobility: e.target.value })}>
+            <${MenuItem} value="">Alle<//>
+            ${[1, 2, 3, 4, 5].map(v => html`<${MenuItem} key=${v} value=${v}>mind. ${v}<//>`)}
+          <//>
+        <//>
+        ${hasActiveFilters(f) && html`
+          <${Button} variant="text" onClick=${() => setF({ search: '', status: '', region: '', mobility: '' })}>
+            Filter zurücksetzen
+          <//>
+        `}
+      <//>
+    `;
+  }
+
+  /* ═══════════════════════════ ALT: heutige Tree-Ansicht ═══════════════════════════ */
+  function StatusDotLegacy({ status }) {
+    return html`<${Box} sx=${{ width: 10, height: 10, borderRadius: '50%', bgcolor: STATUS_META[status].dot, flexShrink: 0 }} />`;
+  }
+
+  function StatusLegendLegacy() {
+    return html`
+      <${Stack} direction="row" spacing=${1.5} sx=${{ flexWrap: 'wrap', alignItems: 'center' }}>
+        ${STATUS_ORDER.map(s => html`
+          <${Stack} key=${s} direction="row" spacing=${0.5} alignItems="center">
+            <${Box} sx=${{ width: 14, height: 14, borderRadius: 0.5, bgcolor: STATUS_META[s].dot, flexShrink: 0 }} />
+            <${Typography} variant="caption" sx=${{ color: 'text.secondary', whiteSpace: 'nowrap' }}>${STATUS_META[s].label}<//>
+          <//>
+        `)}
+      <//>
+    `;
+  }
+
+  function MemberRowLegacy({ m, onOpen }) {
+    return html`
+      <${ListItemButton} onClick=${onOpen} sx=${{ borderRadius: 1 }}>
+        <${Box} sx=${{ display: 'grid', gridTemplateColumns: MEMBER_ROW_GRID_TEMPLATE, gap: 1, width: '100%', alignItems: 'center' }}>
+          <${Stack} direction="row" spacing=${1.25} sx=${{ alignItems: 'center', minWidth: 0 }}>
+            <${Av} name=${m.name} color=${m.color} />
+            <${Box} sx=${{ minWidth: 0, lineHeight: 1.3 }}>
+              <${Typography} variant="body2" noWrap sx=${{ fontWeight: 600 }}>${m.name}<//>
+              <${Typography} variant="caption" color="text.secondary" noWrap sx=${{ display: 'block' }}>${m.level}<//>
+            <//>
+          <//>
+          <${StatusDotLegacy} status=${m.status} />
+          <${Typography} variant="body2" noWrap>${m.customer ?? '—'}<//>
+          <${Typography} variant="body2" noWrap>${m.von ?? '—'}<//>
+          <${Typography} variant="body2" noWrap>${m.von ? (m.bis ?? 'unbegrenzt') : '—'}<//>
+          <${Typography} variant="body2" noWrap>${m.region ?? '—'}<//>
+          <${Typography} variant="body2" noWrap>${m.mobility != null ? String(m.mobility) : '—'}<//>
+          <${Typography} variant="body2" noWrap>${m.capacity != null && m.capacity !== 100 ? m.capacity + ' %' : '—'}<//>
+          <${Typography} variant="body2" noWrap>${m.comment ?? '—'}<//>
+        <//>
+      <//>
+    `;
+  }
+
+  function GroupNodeLegacy({ node, depth, onOpen }) {
+    const sorted = node.directMembers.toSorted((a, b) => a.name.localeCompare(b.name));
+    const isEmpty = node.directMembers.length === 0 && node.children.length === 0;
+    return html`
+      <${Accordion} disableGutters elevation=${0} defaultExpanded sx=${{ ml: depth * 2, '&:before': { display: 'none' } }}>
+        <${AccordionSummary} expandIcon=${html`<${Box} sx=${{ fontSize: 14 }}>▾<//>`}>
+          <${Stack} direction="row" spacing=${1} sx=${{ alignItems: 'center', width: '100%' }}>
+            <${Typography} variant=${depth === 0 ? 'subtitle1' : 'subtitle2'} sx=${{ fontWeight: 600 }}>${node.label}<//>
+            ${node.degraded && html`
+              <${Tooltip} title="Diese Gruppe ist unvollständig: nicht alle Verantwortlichen konnten aufgelöst werden.">
+                <${Box} component="span" sx=${{ color: 'warning.main', fontSize: 16 }}>⚠<//>
+              <//>
+            `}
+            ${node.leaderNames.length > 0 && html`
+              <${Typography} variant="caption" color="text.secondary">Leitung: ${node.leaderNames.join(', ')}<//>
+            `}
+            <${Typography} variant="caption" color="text.secondary" sx=${{ ml: 'auto' }}>
+              ${subtreeCount(node)} Mitarbeitende
+            <//>
+          <//>
+        <//>
+        <${AccordionDetails}>
+          ${isEmpty && html`<${Typography} color="text.secondary">Keine Mitarbeitenden in dieser Gruppe.<//>`}
+          ${sorted.length > 0 && html`
+            <${Stack} spacing=${0.5} sx=${{ mb: node.children.length > 0 ? 1.5 : 0 }}>
+              ${sorted.map(m => html`<${MemberRowLegacy} key=${m.id} m=${m} onOpen=${() => onOpen(m)} />`)}
+            <//>
+          `}
+          ${node.children.map(c => html`<${GroupNodeLegacy} key=${c.code} node=${c} depth=${depth + 1} onOpen=${onOpen} />`)}
+        <//>
+      <//>
+    `;
+  }
+
+  function LegacyView({ tree, onOpen }) {
+    return html`
+      <${Stack} spacing=${2}>
+        <${StatusLegendLegacy} />
+        <${Box}>
+          ${tree.map(n => html`<${GroupNodeLegacy} key=${n.code} node=${n} depth=${0} onOpen=${onOpen} />`)}
+        <//>
+      <//>
+    `;
+  }
+
+  /* ═══════════════════════════ NEU: Vorschlag ═══════════════════════════ */
+  function StatusPill({ status }) {
+    const s = STATUS_META[status];
+    return html`
+      <${Box} sx=${{
+        display: 'inline-flex', alignItems: 'center', gap: 0.625,
+        bgcolor: s.bg, color: s.text, px: 1.125, py: 0.375, borderRadius: '12px',
+        fontSize: '12px', fontWeight: 700, whiteSpace: 'nowrap'
+      }}>
+        <${Box} sx=${{ width: 7, height: 7, borderRadius: '50%', bgcolor: s.dot, flexShrink: 0 }} />
+        ${s.label}
+      <//>
+    `;
+  }
+
+  function MemberRowNew({ m, onOpen }) {
+    return html`
+      <${TableRow} hover onClick=${onOpen} sx=${{ cursor: 'pointer' }}>
+        <${TableCell}>
+          <${Stack} direction="row" spacing=${1.25} sx=${{ alignItems: 'center', minWidth: 0 }}>
+            <${Av} name=${m.name} color=${m.color} />
+            <${Box} sx=${{ minWidth: 0, lineHeight: 1.3 }}>
+              <${Typography} variant="body2" noWrap sx=${{ fontWeight: 600 }}>${m.name}<//>
+              <${Typography} variant="caption" color="text.secondary" noWrap sx=${{ display: 'block' }}>${m.level}<//>
+            <//>
+          <//>
+        <//>
+        <${TableCell}><${StatusPill} status=${m.status} /><//>
+        <${TableCell}><${Typography} variant="body2" noWrap>${m.customer ?? '—'}<//><//>
+        <${TableCell}><${Typography} variant="body2" noWrap>${m.von ?? '—'}<//><//>
+        <${TableCell}><${Typography} variant="body2" noWrap>${m.von ? (m.bis ?? 'unbegrenzt') : '—'}<//><//>
+        <${TableCell}><${Typography} variant="body2" noWrap>${m.region ?? '—'}<//><//>
+        <${TableCell}><${Typography} variant="body2" noWrap>${m.mobility != null ? 'Stufe ' + m.mobility : '—'}<//><//>
+        <${TableCell}><${Typography} variant="body2" noWrap>${m.capacity != null && m.capacity !== 100 ? m.capacity + ' %' : '—'}<//><//>
+        <${TableCell}><${Typography} variant="body2" noWrap>${m.comment ?? '—'}<//><//>
+      <//>
+    `;
+  }
+
+  function MemberTableNew({ members, onOpen }) {
+    const sorted = members.toSorted((a, b) => a.name.localeCompare(b.name));
+    return html`
+      <${TableContainer} sx=${{ border: '1px solid', borderColor: 'divider', borderRadius: 1, mb: 1.5, overflowX: 'auto' }}>
+        <${Table} size="small" sx=${{ minWidth: 1040 }}>
+          <${TableHead}>
+            <${TableRow} sx=${{ '& th': { fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: 0.4, color: 'text.secondary', bgcolor: '#FAFAFA' } }}>
+              ${COLUMNS_NEW.map(c => html`<${TableCell} key=${c}>${c}<//>`)}
+            <//>
+          <//>
+          <${TableBody}>
+            ${sorted.map(m => html`<${MemberRowNew} key=${m.id} m=${m} onOpen=${() => onOpen(m)} />`)}
+          <//>
+        <//>
+      <//>
+    `;
+  }
+
+  function GroupSectionNew({ node, depth, collapsed, onToggle, onOpen }) {
+    const isCollapsed = collapsed.has(node.code);
+    const isEmpty = node.directMembers.length === 0 && node.children.length === 0;
+    const depth0 = depth === 0;
+    return html`
+      <${Box} sx=${{ ml: depth * 3, mb: 1.5 }}>
+        <${Box}
+          onClick=${() => onToggle(node.code)}
+          sx=${{
+            display: 'flex', alignItems: 'center', gap: 1.25, cursor: 'pointer',
+            px: 1.75, py: 1, borderRadius: 1,
+            bgcolor: depth0 ? '#EAF2FC' : '#F5F6F8',
+            borderLeft: '4px solid', borderColor: depth0 ? 'primary.main' : '#B0BEC5',
+            mb: 1
+          }}
+        >
+          <${Box} sx=${{ fontSize: 13, color: 'text.secondary', transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.15s' }}>▾<//>
+          <${Typography} variant=${depth0 ? 'subtitle1' : 'subtitle2'} sx=${{ fontWeight: 700 }}>${node.label}<//>
+          ${node.degraded && html`
+            <${Tooltip} title="Diese Gruppe ist unvollständig: nicht alle Verantwortlichen konnten aufgelöst werden.">
+              <${Box} component="span" sx=${{ color: 'warning.main', fontSize: 16 }}>⚠<//>
+            <//>
+          `}
+          ${node.leaderNames.length > 0 && html`
+            <${Typography} variant="caption" color="text.secondary">Leitung: ${node.leaderNames.join(', ')}<//>
+          `}
+          <${Box} sx=${{
+            ml: 'auto', bgcolor: 'primary.main', color: '#fff', px: 1, py: 0.25,
+            borderRadius: '10px', fontSize: '12px', fontWeight: 700
+          }}>
+            ${subtreeCount(node)} Mitarbeitende
+          <//>
+        <//>
+        ${!isCollapsed && html`
+          <${Box} sx=${{ pl: depth0 ? 1 : 0 }}>
+            ${isEmpty && html`
+              <${Typography} color="text.secondary" sx=${{ fontStyle: 'italic', mb: 1.5 }}>
+                Keine Mitarbeitenden in dieser Gruppe.
+              <//>
+            `}
+            ${node.directMembers.length > 0 && html`<${MemberTableNew} members=${node.directMembers} onOpen=${onOpen} />`}
+            ${node.children.map(c => html`
+              <${GroupSectionNew} key=${c.code} node=${c} depth=${depth + 1} collapsed=${collapsed} onToggle=${onToggle} onOpen=${onOpen} />
+            `)}
+          <//>
+        `}
+      <//>
+    `;
+  }
+
+  function NewView({ tree, onOpen }) {
+    const [collapsed, setCollapsed] = useState(new Set());
+    const toggle = (code) => setCollapsed(prev => {
+      const next = new Set(prev);
+      next.has(code) ? next.delete(code) : next.add(code);
+      return next;
+    });
+    return html`
+      <${Box}>
+        ${tree.map(n => html`<${GroupSectionNew} key=${n.code} node=${n} depth=${0} collapsed=${collapsed} onToggle=${toggle} onOpen=${onOpen} />`)}
+      <//>
+    `;
+  }
+
+  /* ── Mitarbeiter-Drawer Placeholder (verlinkt auf bestehendes Mockup) ───────────── */
+  function EmployeePlaceholder({ employee, onClose }) {
+    if (!employee) return null;
+    return html`
+      <${Drawer} anchor="right" open=${true} onClose=${onClose} PaperProps=${{ sx: { width: 360 } }}>
+        <${Box} sx=${{ px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <${Av} name=${employee.name} color=${employee.color} />
+          <${Box} sx=${{ flex: 1 }}>
+            <${Typography} variant="subtitle1" fontWeight=${700}>${employee.name}<//>
+            <${Typography} variant="caption" color="text.secondary">${employee.level}<//>
+          <//>
+          <${Button} size="small" color="inherit" onClick=${onClose} sx=${{ minWidth: 0, px: 1 }}>✕<//>
+        <//>
+        <${Box} sx=${{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, px: 4, py: 6, textAlign: 'center' }}>
+          <${Typography} variant="body2" color="text.secondary">
+            Die Mitarbeiter-Detailansicht ist unverändert und im bestehenden Mitarbeiter-Drawer-Mockup abgebildet.
+          <//>
+          <${Button} variant="contained" component="a" href="mitarbeiter-drawer.html">
+            Mitarbeiter-Drawer öffnen →
+          <//>
+        <//>
+      <//>
+    `;
+  }
+
+  /* ── MockupBar mit Alt/Neu-Umschalter (Konvention aus opportunity-list.html) ────── */
+  function MockupBar({ mode, setMode }) {
+    return html`
+      <${Paper} square elevation=${0} sx=${{
+        position: 'sticky', top: 0, zIndex: 1100,
+        borderBottom: '1px solid', borderColor: 'divider',
+        px: 4, py: 1.25, display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+      }}>
+        <${Typography} variant="overline" color="text.secondary">
+          Mockup · <${Box} component="span" sx=${{ color: 'primary.main' }}>Team — Übersicht, Redesign (#651)<//>
+        <//>
+        <${Stack} direction="row" spacing=${1} alignItems="center">
+          <${Typography} variant="caption" color="text.secondary">Ansicht:<//>
+          ${[['old', 'Aktuell (Tree)'], ['new', 'Vorschlag (Neu)']].map(([key, label]) => html`
+            <${Button} key=${key} size="small"
+              variant=${mode === key ? 'contained' : 'outlined'}
+              onClick=${() => setMode(key)}
+              sx=${{ fontSize: '11px', py: 0.25, minWidth: 0, px: 1.25 }}>
+              ${label}
+            <//>
+          `)}
+          <${Box} sx=${{ ml: 1, borderLeft: '1px solid', borderColor: 'divider', pl: 1.5 }}>
+            <${Button} component="a" href="../index.html" size="small">← Katalog<//>
+          <//>
+        <//>
+      <//>
+    `;
+  }
+
+  /* ── App ─────────────────────────────────────────────────────────────────────── */
+  function App() {
+    const [mode, setMode] = useState('new');
+    const [f, setF] = useState({ search: '', status: '', region: '', mobility: '' });
+    const [openEmployee, setOpenEmployee] = useState(null);
+
+    const tree = useMemo(() => filterTree(TREE, f), [f]);
+    const noMatches = tree.length === 0 && hasActiveFilters(f);
+
+    return html`
+      <${ThemeProvider} theme=${theme}>
+        <${CssBaseline} />
+        <${MockupBar} mode=${mode} setMode=${setMode} />
+
+        <${Container} maxWidth="xl" sx=${{ py: 4, px: { xs: 2, md: 4 } }}>
+          <${Typography} variant="h5" sx=${{ mb: 2 }}>Mitarbeiterverwaltung<//>
+
+          <${FilterBar} f=${f} setF=${setF} />
+
+          <${Tabs} value=${0} sx=${{ mt: 2.5, borderBottom: 1, borderColor: 'divider' }}>
+            <${Tab} label="Übersicht" />
+            <${Tab} label="Kalenderansicht" disabled />
+          <//>
+          <${Typography} variant="caption" color="text.secondary" sx=${{ display: 'block', mb: 1.5 }}>
+            Kalenderansicht ist unverändert – siehe bestehendes Mitarbeiterverwaltung-Mockup.
+          <//>
+
+          <${Alert} severity="info" sx=${{ mb: 2.5 }}>
+            Beide Ansichten zeigen dieselben Daten. „Aktuell" bildet die produktive Tree-Ansicht nach
+            (verschachtelte Accordions, reine Statuspunkte, Spalten ohne Kopfzeile). „Vorschlag" ersetzt
+            das durch gruppierte Tabellen mit echten Spaltenüberschriften und beschrifteten Status-Badges —
+            die Gruppierung nach Organisationseinheit bleibt erhalten, ist aber nicht mehr tief verschachtelt
+            durchzuklicken, um die Spaltenbedeutung zu erschließen.
+          <//>
+
+          ${noMatches ? html`
+            <${Paper} variant="outlined" sx=${{ p: 6, textAlign: 'center' }}>
+              <${Typography} variant="h6" gutterBottom>Keine Treffer<//>
+              <${Typography} color="text.secondary" sx=${{ mb: 3 }}>
+                Keine Mitarbeitenden entsprechen den aktuellen Filtern.
+              <//>
+              <${Button} variant="outlined" onClick=${() => setF({ search: '', status: '', region: '', mobility: '' })}>
+                Filter zurücksetzen
+              <//>
+            <//>
+          ` : mode === 'old' ? html`
+            <${LegacyView} tree=${tree} onOpen=${setOpenEmployee} />
+          ` : html`
+            <${NewView} tree=${tree} onOpen=${setOpenEmployee} />
+          `}
+        <//>
+
+        <${EmployeePlaceholder} employee=${openEmployee} onClose=${() => setOpenEmployee(null)} />
+      <//>
+    `;
+  }
+
+  createRoot(document.getElementById('root')).render(html`<${App} />`);
+</script>
+</body>
+</html>
